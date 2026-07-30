@@ -90,62 +90,152 @@ Alamat / Blok     : Perumahan RT/RW Portal, Blok ${warga?.keluarga?.rumah_blok?.
                         </div>
                     </div>
 
-                    {/* Paper Document (Printable Area) */}
-                    <div id="print-area" className="bg-white p-12 md:p-20 shadow-xl border border-gray-200 min-h-[1056px] text-gray-900 mx-auto w-full max-w-[816px] font-serif leading-relaxed">
+                    {/* Paper Document A4 Portrait (Printable Area) */}
+                    <div id="print-area" className="bg-white shadow-xl border border-gray-300 mx-auto" style={{
+                        width: '210mm',
+                        minHeight: '297mm',
+                        padding: '1.2cm 2.5cm 2.5cm 2.5cm',
+                        fontFamily: 'Arial, sans-serif',
+                        fontSize: '12pt',
+                        lineHeight: '1.6',
+                        color: '#000'
+                    }}>
                         
                         {/* KOP SURAT */}
-                        <div className="border-b-4 border-double border-gray-900 pb-6 mb-8 flex items-center">
-                            <div className="w-24 flex-shrink-0">
-                                {profil?.logo_path ? (
-                                    <img src={`/storage/${profil.logo_path}`} alt="Logo RT" className="w-24 h-24 object-contain" />
-                                ) : (
-                                    <img src="/images/logo-rt.png" alt="Logo RT" className="w-24 h-24 object-contain" />
-                                )}
-                            </div>
-                            <div className="flex-1 text-center pr-24">
-                                <h1 className="text-2xl font-bold uppercase tracking-widest mb-1">{profil?.nama_rt || 'RUKUN TETANGGA / RUKUN WARGA'}</h1>
-                                <p className="text-sm font-medium">{profil?.alamat || 'Alamat Sekretariat Lingkungan'}</p>
-                                <p className="text-sm">Layanan Warga (WA): {profil?.nomor_wa || '-'}</p>
-                            </div>
+                        <div className="border-b-2 border-black pb-2 mb-4" style={{ marginTop: '0', paddingTop: '0' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ width: '90px', verticalAlign: 'middle', textAlign: 'center' }}>
+                                            {profil?.logo_path ? (
+                                                <img src={`/storage/${profil.logo_path}`} alt="Logo" style={{ width: '84px', height: '84px', objectFit: 'contain' }} />
+                                            ) : (
+                                                <div style={{ width: '84px', height: '84px', border: '1px solid #ccc', margin: '0 auto' }}></div>
+                                            )}
+                                        </td>
+                                        <td style={{ textAlign: 'center', verticalAlign: 'middle', padding: '0 8px' }}>
+                                            <h1 style={{ fontSize: '15pt', fontWeight: 'bold', margin: '0 0 4px 0', letterSpacing: '0.5px', lineHeight: '1.2' }}>
+                                                {profil?.nama_rt || 'LINGKUNGAN PERUMAHAN RT 009 / RW 006'}
+                                            </h1>
+                                            <p style={{ fontSize: '12pt', margin: '2px 0', lineHeight: '1.35', fontWeight: 'bold' }}>
+                                                {profil?.alamat || 'Perum Puri Delta Kiara Blok BB No. 21 Kel. Kiara Kec. Walantaka Kota. Serang Banten'}
+                                            </p>
+                                            <p style={{ fontSize: '12pt', margin: '2px 0', fontWeight: 'bold' }}>
+                                                Layanan Warga (WA): {profil?.nomor_wa || '085210454561'}
+                                            </p>
+                                        </td>
+                                        <td style={{ width: '90px' }}></td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
 
                         {/* JUDUL SURAT */}
-                        <div className="text-center mb-10">
-                            <h3 className="text-xl font-bold uppercase underline underline-offset-4">{surat.jenis_surat}</h3>
-                            <p className="mt-1">Nomor: {new Date().getFullYear()}/RT01/RW02/{String(surat.id).padStart(3, '0')}</p>
+                        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                            <h2 style={{ fontSize: '14pt', fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 6px 0', letterSpacing: '0.5px' }}>
+                                {surat.jenis_surat.toUpperCase()}
+                            </h2>
+                            <p style={{ fontSize: '11pt', margin: '0' }}>
+                                Nomor: {new Date().getFullYear()}/RT01/RW02/{String(surat.id).padStart(3, '0')}
+                            </p>
                         </div>
 
                         {/* ISI SURAT */}
-                        <div className="text-justify space-y-4">
-                            <p className="indent-8">{template.pembuka}</p>
+                        <div style={{ textAlign: 'justify', marginBottom: '32px' }}>
+                            <p style={{ marginBottom: '16px', textIndent: '48px' }}>
+                                {template.pembuka}
+                            </p>
                             
-                            <div className="pl-12 pr-4 py-4 whitespace-pre text-sm sm:text-base">
-                                {template.identitas}
-                            </div>
+                            <table style={{ width: '100%', marginLeft: '48px', marginBottom: '16px', fontSize: '11pt', lineHeight: '1.8' }}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ width: '160px', verticalAlign: 'top' }}>Nama Lengkap</td>
+                                        <td style={{ width: '20px', verticalAlign: 'top' }}>:</td>
+                                        <td>{surat.warga?.nama_lengkap || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ verticalAlign: 'top' }}>Nomor KK</td>
+                                        <td style={{ verticalAlign: 'top' }}>:</td>
+                                        <td>{surat.warga?.keluarga?.no_kk || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ verticalAlign: 'top' }}>Nomor HP</td>
+                                        <td style={{ verticalAlign: 'top' }}>:</td>
+                                        <td>{surat.warga?.no_hp || '-'}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style={{ verticalAlign: 'top' }}>Alamat / Blok</td>
+                                        <td style={{ verticalAlign: 'top' }}>:</td>
+                                        <td>
+                                            Perumahan RT/RW Portal, Blok {surat.warga?.keluarga?.rumah_blok?.blok || '-'} Nomor {surat.warga?.keluarga?.rumah_blok?.nomor_rumah || '-'}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                             
-                            <p className="indent-8 whitespace-pre-wrap">{template.isi}</p>
+                            <p style={{ marginBottom: '16px', textIndent: '48px', whiteSpace: 'pre-wrap' }}>
+                                {template.isi}
+                            </p>
                             
-                            <p className="indent-8 mt-4">Demikian surat pengantar ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.</p>
+                            <p style={{ marginTop: '16px', textIndent: '48px' }}>
+                                Demikian surat pengantar ini dibuat dengan sebenarnya agar dapat dipergunakan sebagaimana mestinya.
+                            </p>
                         </div>
 
                         {/* TANDA TANGAN */}
-                        <div className="mt-16 flex justify-between px-12">
-                            <div className="text-center">
-                                <p className="mb-28">Sekretaris,</p>
-                                <p className="font-bold underline uppercase">{sekretaris}</p>
+                        <div style={{ marginTop: '72px', paddingBottom: '24px' }}>
+                            <div style={{ textAlign: 'right', marginBottom: '12px' }}>
+                                <p style={{ margin: '0', fontSize: '11pt' }}>
+                                    Kota Serang, {template.tanggal}
+                                </p>
                             </div>
-                            <div className="text-center">
-                                <p className="mb-1">{template.tanggal}</p>
-                                <p className="mb-24">Ketua RT,</p>
-                                <div className="relative inline-block">
-                                    {surat.status === 'Disetujui' && (
-                                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-red-500/20 text-5xl border-4 border-red-500/20 rounded-full px-4 py-2 -rotate-12 pointer-events-none select-none font-sans font-black tracking-widest">
-                                            SAH
-                                        </div>
-                                    )}
-                                    <p className="font-bold underline uppercase">{ketuaRt}</p>
-                                </div>
-                            </div>
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <tbody>
+                                    <tr>
+                                        <td style={{ width: '50%', verticalAlign: 'top', textAlign: 'center', paddingTop: '24px' }}>
+                                            <div style={{ minHeight: '92px' }}>
+                                                <p style={{ margin: '0 0 8px 0' }}>Mengetahui,</p>
+                                                <p style={{ margin: '0 0 4px 0' }}>Sekretaris</p>
+                                            </div>
+                                            
+                                            {/* Tanda Tangan Sekretaris */}
+                                            <div style={{ height: '96px', margin: '8px 0 8px 0', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {profil?.ttd_sekretaris_path ? (
+                                                    <img 
+                                                        src={`/storage/${profil.ttd_sekretaris_path}`} 
+                                                        alt="TTD Sekretaris" 
+                                                        style={{ maxHeight: '96px', maxWidth: '140px', objectFit: 'contain' }}
+                                                    />
+                                                ) : null}
+                                            </div>
+                                            
+                                            <p style={{ margin: '8px 0 0 0', fontWeight: 'bold', textDecoration: 'underline' }}>
+                                                {sekretaris}
+                                            </p>
+                                        </td>
+                                        <td style={{ width: '50%', verticalAlign: 'top', textAlign: 'center', paddingTop: '24px' }}>
+                                            <div style={{ minHeight: '92px' }}>
+                                                <p style={{ margin: '0 0 4px 0' }}>Ketua RT</p>
+                                            </div>
+                                            
+                                            {/* Tanda Tangan Ketua */}
+                                            <div style={{ height: '96px', margin: '8px 0 8px 0', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                {profil?.ttd_ketua_path ? (
+                                                    <img 
+                                                        src={`/storage/${profil.ttd_ketua_path}`} 
+                                                        alt="TTD Ketua" 
+                                                        style={{ maxHeight: '96px', maxWidth: '140px', objectFit: 'contain' }}
+                                                    />
+                                                ) : null}
+                                            </div>
+                                            
+                                            <p style={{ margin: '8px 0 0 0', fontWeight: 'bold', textDecoration: 'underline' }}>
+                                                {ketuaRt}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
 
                     </div>
@@ -153,23 +243,47 @@ Alamat / Blok     : Perumahan RT/RW Portal, Blok ${warga?.keluarga?.rumah_blok?.
                 </div>
             </div>
             
-            <style jsx global>{`
+            <style>{`
                 @media print {
+                    @page {
+                        size: A4 portrait;
+                        margin: 0;
+                    }
+                    
+                    body {
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
                     body * {
                         visibility: hidden;
                     }
+                    
                     #print-area, #print-area * {
                         visibility: visible;
                     }
+                    
                     #print-area {
                         position: absolute;
                         left: 0;
                         top: 0;
-                        width: 100%;
-                        margin: 0;
-                        padding: 0;
-                        box-shadow: none;
-                        border: none;
+                        width: 210mm !important;
+                        min-height: 297mm !important;
+                        margin: 0 !important;
+                        padding: 3cm 3cm 3cm 3cm !important;
+                        box-shadow: none !important;
+                        border: none !important;
+                        font-family: Arial, sans-serif !important;
+                        font-size: 12pt !important;
+                        line-height: 1.6 !important;
+                        color: #000 !important;
+                        background: white !important;
+                    }
+                }
+                
+                @media screen {
+                    #print-area {
+                        box-sizing: border-box;
                     }
                 }
             `}</style>
