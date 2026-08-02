@@ -90,6 +90,19 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
         }).format(val);
     };
 
+    const formatDate = (raw) => {
+        if (!raw) return null;
+        const d = new Date(raw);
+        if (isNaN(d.getTime())) return raw;
+        const dd   = String(d.getDate()).padStart(2, '0');
+        const mm   = String(d.getMonth() + 1).padStart(2, '0');
+        const yyyy = d.getFullYear();
+        const HH   = String(d.getHours()).padStart(2, '0');
+        const MM   = String(d.getMinutes()).padStart(2, '0');
+        const SS   = String(d.getSeconds()).padStart(2, '0');
+        return `${dd}-${mm}-${yyyy} | ${HH}:${MM}:${SS}`;
+    };
+
     const getStatusBadge = (st) => {
         switch (st) {
             case 'Sedang Berjalan':
@@ -285,8 +298,13 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
                                                 📅
                                             </span>
                                             <span className="font-medium text-gray-800">
-                                                {program.tanggal_mulai}
-                                                {program.tanggal_selesai ? ` - ${program.tanggal_selesai}` : ''}
+                                                {formatDate(program.tanggal_mulai)}
+                                                {program.tanggal_selesai ? (
+                                                    <>
+                                                        <br />
+                                                        <span className="text-gray-400">→</span> {formatDate(program.tanggal_selesai)}
+                                                    </>
+                                                ) : null}
                                             </span>
                                         </div>
 

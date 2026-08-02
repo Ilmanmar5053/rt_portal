@@ -92,6 +92,20 @@ const kategoriBadge = {
     'Lain-lain': 'bg-rose-600/90 text-white',
 };
 
+// ─── Date Formatter ───────────────────────────────────────────────────────────
+function formatDate(raw) {
+    if (!raw) return null;
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return raw;
+    const dd   = String(d.getDate()).padStart(2, '0');
+    const mm   = String(d.getMonth() + 1).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    const HH   = String(d.getHours()).padStart(2, '0');
+    const MM   = String(d.getMinutes()).padStart(2, '0');
+    const SS   = String(d.getSeconds()).padStart(2, '0');
+    return `${dd}-${mm}-${yyyy} | ${HH}:${MM}:${SS}`;
+}
+
 // ─── Compact Program Card ─────────────────────────────────────────────────────
 function ProgramCard({ program, formatCurrency, handleDelete }) {
     const isBerjalan = program.status === 'Sedang Berjalan';
@@ -168,8 +182,13 @@ function ProgramCard({ program, formatCurrency, handleDelete }) {
                     <div className="flex items-center gap-1.5">
                         <span className="w-4 h-4 rounded bg-emerald-50 text-emerald-600 flex items-center justify-center text-[10px] flex-shrink-0">📅</span>
                         <span className="truncate font-medium text-gray-700">
-                            {program.tanggal_mulai}
-                            {program.tanggal_selesai ? ` — ${program.tanggal_selesai}` : ''}
+                            {formatDate(program.tanggal_mulai)}
+                            {program.tanggal_selesai ? (
+                                <>
+                                    <br />
+                                    <span className="text-gray-400">→</span> {formatDate(program.tanggal_selesai)}
+                                </>
+                            ) : null}
                         </span>
                     </div>
 
