@@ -76,6 +76,7 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     // Management Hak Akses & User
     Route::get('/permissions', [\App\Http\Controllers\Admin\RolePermissionController::class, 'index'])->name('permissions.index')->middleware('role:superadmin');
     Route::post('/permissions', [\App\Http\Controllers\Admin\RolePermissionController::class, 'update'])->name('permissions.update')->middleware('role:superadmin');
+    Route::put('/permissions/bulk', [\App\Http\Controllers\Admin\RolePermissionController::class, 'updateBulk'])->name('permissions.bulk')->middleware('role:superadmin');
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->middleware('role:superadmin');
 
     Route::post('warga/{warga}/generate-account', [WargaController::class, 'generateAccount'])->name('warga.generate-account')->middleware('module.access:data_warga');
