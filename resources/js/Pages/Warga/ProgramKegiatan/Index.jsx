@@ -1,6 +1,49 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import WargaLayout from '@/Layouts/WargaLayout';
+
+// ─── Countdown Hook
+function useCountdown(tanggalSelesai) {
+    const [timeLeft, setTimeLeft] = useState(null);
+    useEffect(() => {
+        if (!tanggalSelesai) return;
+        const end = new Date(tanggalSelesai).getTime();
+        const tick = () => {
+            const diff = end - Date.now();
+            if (diff <= 0) { setTimeLeft({ d: 0, h: 0, m: 0, s: 0, expired: true }); return; }
+            setTimeLeft({
+                d: Math.floor(diff / 86400000),
+                h: Math.floor((diff % 86400000) / 3600000),
+                m: Math.floor((diff % 3600000) / 60000),
+                s: Math.floor((diff % 60000) / 1000),
+                expired: false,
+            });
+        };
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [tanggalSelesai]);
+    return timeLeft;
+}
+
+function CountdownBadge({ tanggalSelesai }) {
+    const t = useCountdown(tanggalSelesai);
+    if (!t) return null;
+    if (t.expired) return <div className="mt-1.5 px-2 py-1 rounded-lg bg-gray-100 text-gray-500 text-[10px] font-bold text-center">⏱ Berakhir</div>;
+    return (
+        <div className="mt-1.5 rounded-lg bg-emerald-950/90 border border-emerald-600/40 px-2 py-1.5">
+            <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider text-center mb-1">⏱ Sisa Waktu</div>
+            <div className="flex items-center justify-center gap-1">
+                {[{v:t.d,l:'H'},{v:t.h,l:'J'},{v:t.m,l:'M'},{v:t.s,l:'D'}].map(({v,l})=>(
+                    <div key={l} className="flex flex-col items-center">
+                        <span className="bg-emerald-700 text-white font-black text-xs w-7 h-6 flex items-center justify-center rounded-md tabular-nums shadow">{String(v).padStart(2,'0')}</span>
+                        <span className="text-emerald-400 text-[8px] font-bold mt-0.5">{l}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 export default function Index({ programs, filters, kategoriList, statusList }) {
     const [search, setSearch] = useState(filters.search || '');
@@ -177,19 +220,23 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
                 </div>
             </div>
 
-            {/* Card-Card Style Grid */}
+            {/* Card-Card Style Grid — 5 per row */}
             {programs.data.length === 0 ? (
                 <div className="card-residential p-12 text-center text-gray-500">
-                    <div className="text-5xl mb-3">📭</div>
+                    <div className="text-5xl mb-3">💭</div>
                     <p className="text-lg font-bold text-gray-700">Belum ada kegiatan yang sesuai</p>
                     <p className="text-sm mt-1">Silakan coba kata kunci atau filter status yang lain.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {programs.data.map((program) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    {programs.data.map((program) => {
+                        const isBerjalan = program.status === 'Sedang Berjalan';
+                        return (
                         <div
                             key={program.id}
-                            className="card-residential overflow-hidden flex flex-col justify-between bg-white hover:shadow-xl transition-all duration-300 border border-gray-100 group"
+                            className={`group bg-white rounded-2xl overflow-hidden flex flex-col border-2 transition-all duration-300 ease-out
+                                hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.025] cursor-pointer
+                                ${isBerjalan ? 'border-emerald-400 shadow-md shadow-emerald-100' : 'border-gray-100 shadow-sm hover:border-emerald-200'}`}
                         >
                             {/* Card Header (Image / Illustration) */}
                             <div>
@@ -300,7 +347,8 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
                                 </Link>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 

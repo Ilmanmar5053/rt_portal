@@ -32,7 +32,7 @@ class ProgramKegiatanController extends Controller
             $query->where('status', $request->status);
         }
 
-        $programs = $query->orderBy('tanggal_mulai', 'desc')->paginate(9)->withQueryString();
+        $programs = $query->orderBy('tanggal_mulai', 'desc')->paginate(10)->withQueryString();
 
         // Summary metrics
         $allPrograms = ProgramKegiatan::all();
