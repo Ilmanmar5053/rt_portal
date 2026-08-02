@@ -9,37 +9,37 @@ export default function Welcome({ auth, profil }) {
             title: 'Iuran Kas Lingkungan',
             description: 'Pantau pembayaran iuran bulanan dan laporan arus kas RT secara transparan, akuntabel, dan real-time dari mana saja.',
             icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-            color: 'text-emerald-600',
-            bg: 'bg-emerald-50 border-emerald-100',
+            color: 'text-emerald-700',
+            bg: 'bg-emerald-50 border-emerald-200',
             badge: 'Transparan',
-            badgeColor: 'bg-emerald-100 text-emerald-800'
+            badgeColor: 'bg-emerald-100 text-emerald-800 border border-emerald-200'
         },
         {
             title: 'Surat Pengantar Online',
             description: 'Ajukan pembuatan surat pengantar RT/RW secara digital tanpa antri dan langsung diproses oleh pengurus lingkungan.',
             icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
-            color: 'text-blue-600',
-            bg: 'bg-blue-50 border-blue-100',
+            color: 'text-teal-700',
+            bg: 'bg-teal-50 border-teal-200',
             badge: 'Cepat & Praktis',
-            badgeColor: 'bg-blue-100 text-blue-800'
+            badgeColor: 'bg-teal-100 text-teal-800 border border-teal-200'
         },
         {
             title: 'Pengaduan & Aspirasi',
             description: 'Sampaikan laporan keamanan, kebersihan lingkungan, atau masalah fasilitas umum langsung kepada pengurus secara responsif.',
             icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z',
-            color: 'text-amber-600',
-            bg: 'bg-amber-50 border-amber-100',
+            color: 'text-rose-700',
+            bg: 'bg-rose-50 border-rose-200',
             badge: 'Responsif',
-            badgeColor: 'bg-amber-100 text-amber-800'
+            badgeColor: 'bg-rose-100 text-rose-800 border border-rose-200'
         },
         {
             title: 'Sensus & Data Kependudukan',
             description: 'Pembaruan data keluarga, anggota KK, dan domisili secara digital dan terpusat dengan jaminan kerahasiaan data.',
             icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z',
-            color: 'text-purple-600',
-            bg: 'bg-purple-50 border-purple-100',
+            color: 'text-emerald-700',
+            bg: 'bg-emerald-50 border-emerald-200',
             badge: 'Akurat & Aman',
-            badgeColor: 'bg-purple-100 text-purple-800'
+            badgeColor: 'bg-emerald-100 text-emerald-800 border border-emerald-200'
         },
     ];
 
@@ -127,8 +127,8 @@ export default function Welcome({ auth, profil }) {
                 <section id="beranda" className="relative pt-28 pb-16 md:pt-36 md:pb-24 overflow-hidden bg-gradient-to-b from-slate-50 via-white to-slate-50">
                     {/* Subtle decorative background shapes */}
                     <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                        <div className="absolute -top-24 right-0 w-[450px] h-[450px] bg-gradient-to-br from-emerald-100/40 via-teal-100/30 to-blue-100/20 rounded-full blur-[80px] max-w-full"></div>
-                        <div className="absolute -bottom-24 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-teal-100/30 via-emerald-100/20 to-sky-100/20 rounded-full blur-[80px] max-w-full"></div>
+                        <div className="absolute -top-24 right-0 w-[450px] h-[450px] bg-gradient-to-br from-emerald-200/40 via-teal-100/30 to-rose-200/20 rounded-full blur-[80px] max-w-full"></div>
+                        <div className="absolute -bottom-24 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-teal-100/30 via-emerald-100/20 to-rose-100/20 rounded-full blur-[80px] max-w-full"></div>
                     </div>
 
                     <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -137,14 +137,14 @@ export default function Welcome({ auth, profil }) {
                             {/* Left Text Column */}
                             <div className="lg:col-span-7 text-center lg:text-left">
                                 {/* Top Badge */}
-                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-800 text-xs sm:text-sm font-bold mb-6 border border-emerald-200/60 shadow-sm">
+                                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-50 text-emerald-900 text-xs sm:text-sm font-bold mb-6 border border-emerald-300/60 shadow-sm">
                                     <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                                    <span>Transformasi Digital Lingkungan {namaRt}</span>
+                                    <span>🏡 Transformasi Digital Lingkungan {namaRt}</span>
                                 </div>
 
                                 {/* Main Title */}
                                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight leading-[1.12] mb-6">
-                                    Harmoni Bertetangga, dalam <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600">Satu Portal Digital.</span>
+                                    Harmoni Bertetangga, dalam <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-700 via-teal-700 to-rose-800">Satu Portal Digital.</span>
                                 </h1>
 
                                 {/* Subtitle */}
@@ -191,15 +191,15 @@ export default function Welcome({ auth, profil }) {
                                 {/* Quick Trust Badges */}
                                 <div className="pt-6 border-t border-gray-200/70 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-xs sm:text-sm font-semibold text-gray-500">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">✓</span>
+                                        <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">✓</span>
                                         <span>100% Transparan &amp; Terbuka</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">⚡</span>
+                                        <span className="w-6 h-6 rounded-full bg-rose-100 text-rose-800 flex items-center justify-center font-bold">⚡</span>
                                         <span>Surat Online 24/7</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold">🔒</span>
+                                        <span className="w-6 h-6 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold">🔒</span>
                                         <span>Data Warga Terlindungi</span>
                                     </div>
                                 </div>
@@ -219,7 +219,7 @@ export default function Welcome({ auth, profil }) {
                                             <span className="w-3 h-3 rounded-full bg-yellow-400"></span>
                                             <span className="w-3 h-3 rounded-full bg-emerald-400"></span>
                                         </div>
-                                        <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                        <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200/60">
                                             Status: Lingkungan Kondusif 🟢
                                         </span>
                                     </div>
@@ -237,7 +237,7 @@ export default function Welcome({ auth, profil }) {
                                         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent"></div>
                                         
                                         <div className="absolute bottom-4 left-4 right-4 text-white">
-                                            <span className="inline-block px-2.5 py-1 rounded-md bg-emerald-600/90 backdrop-blur-sm text-xs font-bold mb-1.5">
+                                            <span className="inline-block px-2.5 py-1 rounded-md bg-emerald-700/90 backdrop-blur-sm text-xs font-bold mb-1.5">
                                                 {namaRt}
                                             </span>
                                             <p className="text-sm font-bold leading-snug">
@@ -248,8 +248,8 @@ export default function Welcome({ auth, profil }) {
 
                                     {/* Floating Stats Widget inside Card */}
                                     <div className="grid grid-cols-2 gap-3 mt-3">
-                                        <div className="bg-emerald-50/80 border border-emerald-100 rounded-xl p-3 flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                                        <div className="bg-emerald-50/80 border border-emerald-200 rounded-xl p-3 flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-emerald-700 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
                                                 💰
                                             </div>
                                             <div className="min-w-0">
@@ -257,12 +257,12 @@ export default function Welcome({ auth, profil }) {
                                                 <p className="text-xs font-extrabold text-gray-900 truncate">100% Transparan</p>
                                             </div>
                                         </div>
-                                        <div className="bg-blue-50/80 border border-blue-100 rounded-xl p-3 flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
+                                        <div className="bg-rose-50/80 border border-rose-200 rounded-xl p-3 flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-lg bg-rose-800 text-white flex items-center justify-center font-bold text-lg flex-shrink-0">
                                                 📄
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-[11px] font-bold text-blue-800 uppercase tracking-wider">Surat Online</p>
+                                                <p className="text-[11px] font-bold text-rose-900 uppercase tracking-wider">Surat Online</p>
                                                 <p className="text-xs font-extrabold text-gray-900 truncate">Selesai Cepat</p>
                                             </div>
                                         </div>
@@ -399,7 +399,7 @@ export default function Welcome({ auth, profil }) {
                                     </div>
 
                                     <div className="flex items-start gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0 font-bold">
+                                        <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-800 flex items-center justify-center flex-shrink-0 font-bold">
                                             🏛️
                                         </div>
                                         <div>
@@ -465,12 +465,12 @@ export default function Welcome({ auth, profil }) {
                 {/* Call To Action Banner */}
                 <section className="py-16 bg-white relative z-10">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-blue-700 rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
+                        <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-rose-900 rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
                             <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none max-w-full"></div>
                             
                             <div className="relative z-10 max-w-2xl text-center md:text-left">
-                                <span className="inline-block px-3.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-bold mb-3 uppercase tracking-wider">
-                                    Portal Digital RT 009
+                                <span className="inline-block px-3.5 py-1 rounded-full bg-rose-950/40 backdrop-blur-sm text-rose-100 text-xs font-bold mb-3 uppercase tracking-wider border border-rose-300/30">
+                                    🏡 Portal Digital RT 009
                                 </span>
                                 <h3 className="text-2xl sm:text-4xl font-extrabold tracking-tight mb-3">
                                     Siap Mengakses Layanan Lingkungan Anda?

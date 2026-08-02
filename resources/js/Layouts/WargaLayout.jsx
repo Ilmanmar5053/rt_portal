@@ -73,29 +73,36 @@ export default function WargaLayout({ header, children }) {
             name: 'Dashboard',
             href: route('dashboard'),
             active: route().current('dashboard') || route().current('warga.dashboard'),
-            icon: { emoji: '🏠', bg: 'bg-blue-100', color: 'text-blue-600' },
+            icon: { emoji: '🏡', bg: 'bg-emerald-100', color: 'text-emerald-700' },
             permission: null, // always visible
         },
         {
             name: 'Iuran Kas',
             href: route('warga.iuran.index'),
             active: route().current('warga.iuran.*'),
-            icon: { emoji: '💰', bg: 'bg-emerald-100', color: 'text-emerald-600' },
+            icon: { emoji: '💰', bg: 'bg-emerald-100', color: 'text-emerald-700' },
             permission: 'iuran_kas',
         },
         {
             name: 'Pengaduan',
             href: route('warga.pengaduan.index'),
             active: route().current('warga.pengaduan.*'),
-            icon: { emoji: '📢', bg: 'bg-orange-100', color: 'text-orange-600' },
+            icon: { emoji: '📢', bg: 'bg-rose-100', color: 'text-rose-700' },
             permission: 'pengaduan',
         },
         {
             name: 'Surat Pengantar',
             href: route('warga.surat.index'),
             active: route().current('warga.surat.*'),
-            icon: { emoji: '📄', bg: 'bg-indigo-100', color: 'text-indigo-600' },
+            icon: { emoji: '📄', bg: 'bg-teal-100', color: 'text-teal-700' },
             permission: 'surat_pengantar',
+        },
+        {
+            name: 'Program & Kegiatan',
+            href: route('warga.program-kegiatan.index'),
+            active: route().current('warga.program-kegiatan.*'),
+            icon: { emoji: '🗓️', bg: 'bg-emerald-100', color: 'text-emerald-700' },
+            permission: 'program_kegiatan',
         },
     ];
 
@@ -153,7 +160,7 @@ export default function WargaLayout({ header, children }) {
                             className={`menu-link flex items-center px-3 py-3 rounded-xl transition-all duration-200 group ${
                                 item.active
                                     ? 'bg-emerald-600/10 text-emerald-900 font-semibold shadow-sm border border-emerald-200/50 backdrop-blur-sm active'
-                                    : 'text-emerald-900/70 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
+                                    : 'text-emerald-800 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
                             }`}
                             title={!isExpanded ? item.name : undefined}
                         >
@@ -244,7 +251,7 @@ export default function WargaLayout({ header, children }) {
                             className={`menu-link flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group ${
                                 item.active
                                     ? 'bg-emerald-600/10 text-emerald-900 font-semibold shadow-sm border border-emerald-200/50 backdrop-blur-sm active'
-                                    : 'text-emerald-900/70 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
+                                    : 'text-emerald-800 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
                             }`}
                         >
                             <div className={`menu-icon shadow-sm ${item.icon.bg} ${item.icon.color}`}>
@@ -278,7 +285,7 @@ export default function WargaLayout({ header, children }) {
                         {/* Desktop Toggle button */}
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="hidden md:block text-gray-500 hover:text-blue-600 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-gray-100"
+                            className="hidden md:block text-gray-500 hover:text-emerald-700 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-emerald-50"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -288,7 +295,7 @@ export default function WargaLayout({ header, children }) {
                         {/* Mobile Toggle button */}
                         <button
                             onClick={() => setIsMobileSidebarOpen(true)}
-                            className="md:hidden text-gray-500 hover:text-blue-600 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-gray-100"
+                            className="md:hidden text-gray-500 hover:text-emerald-700 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-emerald-50"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>

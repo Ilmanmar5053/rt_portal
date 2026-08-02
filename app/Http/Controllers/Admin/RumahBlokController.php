@@ -49,7 +49,7 @@ class RumahBlokController extends Controller
                       ->orWhere('nomor_rumah', 'like', "%{$alamat}%");
                 });
             })
-            ->when($status && $status !== 'Semua', function ($query, $status) {
+            ->when($status && $status !== 'Semua', function ($query) use ($status) {
                 $query->where('status_hunian', $status);
             })
             ->when(is_numeric($jumlahKeluarga), function ($query) use ($jumlahKeluarga) {

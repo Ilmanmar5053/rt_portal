@@ -42,7 +42,7 @@ const columnDefinitions = {
         { key: 'jumlah_keluarga', label: 'Jumlah KK', value: (item) => item.keluargas_count ?? item.keluargas?.length ?? '—' },
     ],
     iuran: [
-        { key: 'nama_lengkap', label: 'Nama Warga', value: (item) => item.warga?.nama_lengkap || '—' },
+        { key: 'nama_lengkap', label: 'KK / Kepala Keluarga', value: (item) => item.warga?.nama_lengkap || '—' },
         { key: 'no_kk', label: 'No KK', value: (item) => item.warga?.keluarga?.no_kk || '—' },
         { key: 'jenis_iuran', label: 'Jenis Iuran', value: (item) => item.jenis_iuran || '—' },
         { key: 'periode', label: 'Periode', value: (item) => `${item.periode_bulan ?? '—'}/${item.periode_tahun ?? '—'}` },

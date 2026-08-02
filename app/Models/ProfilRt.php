@@ -14,6 +14,8 @@ class ProfilRt extends Model
         'alamat',
         'nomor_wa',
         'logo_path',
+        'ttd_ketua_path',
+        'ttd_sekretaris_path',
         'pengurus',
     ];
 

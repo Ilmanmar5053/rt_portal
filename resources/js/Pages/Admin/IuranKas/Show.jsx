@@ -47,9 +47,12 @@ export default function Show({ iuran }) {
                         <div className="p-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                                 <div>
-                                    <p className="text-sm text-gray-500 mb-1">Diterima Dari:</p>
+                                    <p className="text-sm text-gray-500 mb-1">Diterima Dari (Perwakilan KK):</p>
                                     <p className="text-lg font-bold text-gray-900">{iuran.warga?.nama_lengkap}</p>
-                                    <p className="text-sm text-gray-600">Blok {iuran.warga?.keluarga?.rumah_blok?.blok} - {iuran.warga?.keluarga?.rumah_blok?.nomor_rumah}</p>
+                                    <p className="text-sm text-gray-600 font-medium">
+                                        {iuran.warga?.keluarga?.no_kk ? `No. KK: ${iuran.warga.keluarga.no_kk} • ` : ''}
+                                        {iuran.warga?.keluarga?.rumah_blok ? `Blok ${iuran.warga.keluarga.rumah_blok.blok}-${iuran.warga.keluarga.rumah_blok.nomor_rumah}` : 'Tanpa Blok'}
+                                    </p>
                                 </div>
                                 <div className="md:text-right">
                                     <p className="text-sm text-gray-500 mb-1">Tanggal Transaksi:</p>

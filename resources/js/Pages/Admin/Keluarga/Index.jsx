@@ -1,5 +1,5 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, router } from '@inertiajs/react';
 import TextInput from '@/Components/TextInput';
 
 export default function Index({ keluargas, filters }) {
@@ -18,9 +18,7 @@ export default function Index({ keluargas, filters }) {
 
     const handleSort = (field) => {
         const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
-        setData('sort_field', field);
-        setData('sort_direction', newDirection);
-        get(route('admin.keluarga.index'), { ...data, sort_field: field, sort_direction: newDirection }, { preserveState: true, replace: true });
+        router.get(route('admin.keluarga.index'), { ...data, sort_field: field, sort_direction: newDirection }, { preserveState: true, replace: true });
     };
 
     const SortIndicator = ({ field }) => {
@@ -29,12 +27,13 @@ export default function Index({ keluargas, filters }) {
     };
 
     const handleSearch = (e) => {
-        e.preventDefault();
-        get(route('admin.keluarga.index'), data, { preserveState: true, replace: true });
+        if (e && e.preventDefault) e.preventDefault();
+        router.get(route('admin.keluarga.index'), data, { preserveState: true, replace: true });
     };
 
-    const handleFilter = () => {
-        get(route('admin.keluarga.index'), data, { preserveState: true, replace: true });
+    const handleFilter = (e) => {
+        if (e && e.preventDefault) e.preventDefault();
+        router.get(route('admin.keluarga.index'), data, { preserveState: true, replace: true });
     };
 
     return (
@@ -92,6 +91,7 @@ export default function Index({ keluargas, filters }) {
                                         placeholder="Filter No KK"
                                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                                         onChange={(e) => setData('no_kk', e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleFilter(e)}
                                     />
                                 </td>
                                 <td className="px-4 py-2">
@@ -102,6 +102,7 @@ export default function Index({ keluargas, filters }) {
                                         placeholder="Filter Kepala"
                                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                                         onChange={(e) => setData('kepala', e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleFilter(e)}
                                     />
                                 </td>
                                 <td className="px-4 py-2">
@@ -112,6 +113,7 @@ export default function Index({ keluargas, filters }) {
                                         placeholder="Filter Alamat"
                                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                                         onChange={(e) => setData('alamat', e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleFilter(e)}
                                     />
                                 </td>
                                 <td className="px-4 py-2">
@@ -122,13 +124,14 @@ export default function Index({ keluargas, filters }) {
                                         placeholder="Filter Jumlah"
                                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
                                         onChange={(e) => setData('jumlah_anggota', e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && handleFilter(e)}
                                     />
                                 </td>
                                 <td className="px-4 py-2 text-right">
                                     <button
                                         type="button"
                                         onClick={handleFilter}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                                        className="bg-emerald-700 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 text-sm font-bold shadow-sm"
                                     >
                                         Terapkan
                                     </button>

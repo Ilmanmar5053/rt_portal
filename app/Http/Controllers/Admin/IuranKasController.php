@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\IuranKas;
 use App\Models\Warga;
+use App\Models\Keluarga;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -28,10 +29,93 @@ class IuranKasController extends Controller
             $query->where('status_pembayaran', $request->status);
         }
 
+        // 1. Dashboard Cards Summary berdasarkan data yang difilter
+        $summaryQuery = clone $query;
+        $allFiltered = $summaryQuery->get(['id', 'warga_id', 'jumlah_bayar', 'status_pembayaran']);
+        $lunasData = $allFiltered->where('status_pembayaran', 'Approved');
+        $belumLunasData = $allFiltered->where('status_pembayaran', '!=', 'Approved');
+
+        $summary = [
+            'total_nominal' => (float) $allFiltered->sum('jumlah_bayar'),
+            'nominal_lunas' => (float) $lunasData->sum('jumlah_bayar'),
+            'nominal_belum_lunas' => (float) $belumLunasData->sum('jumlah_bayar'),
+            'warga_lunas' => (int) $lunasData->unique('warga_id')->count(),
+            'warga_belum_lunas' => (int) $belumLunasData->unique('warga_id')->count(),
+            'total_data_lunas' => (int) $lunasData->count(),
+            'total_data_belum_lunas' => (int) $belumLunasData->count(),
+            'total_data' => (int) $allFiltered->count(),
+        ];
+
+        // 2. Grafik Perbandingan Iuran per Bulan (Lunas vs Belum Lunas)
+        $chartYear = $request->query('year', IuranKas::max('periode_tahun') ?? date('Y'));
+        $monthlyRaw = IuranKas::where('periode_tahun', $chartYear)
+            ->selectRaw('periode_bulan, status_pembayaran, SUM(jumlah_bayar) as total_nominal, COUNT(*) as total_count')
+            ->groupBy('periode_bulan', 'status_pembayaran')
+            ->get();
+
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $chartData = [
+            'year' => (int) $chartYear,
+            'labels' => $months,
+            'lunas_nominal' => [],
+            'belum_lunas_nominal' => [],
+            'lunas_count' => [],
+            'belum_lunas_count' => [],
+        ];
+
+        for ($m = 1; $m <= 12; $m++) {
+            $lunas = $monthlyRaw->where('periode_bulan', $m)->where('status_pembayaran', 'Approved');
+            $belum = $monthlyRaw->where('periode_bulan', $m)->where('status_pembayaran', '!=', 'Approved');
+
+            $chartData['lunas_nominal'][] = (float) $lunas->sum('total_nominal');
+            $chartData['belum_lunas_nominal'][] = (float) $belum->sum('total_nominal');
+            $chartData['lunas_count'][] = (int) $lunas->sum('total_count');
+            $chartData['belum_lunas_count'][] = (int) $belum->sum('total_count');
+        }
+
+        // 3. Rekapitulasi Relevan (per Jenis Iuran & per Blok)
+        $jenisList = ['Wajib', 'Sukarela', 'Keamanan', 'Sampah'];
+        $rekapJenis = [];
+        foreach ($jenisList as $jenis) {
+            $queryJenis = IuranKas::where('jenis_iuran', $jenis);
+            $rekapJenis[] = [
+                'jenis' => $jenis,
+                'total_nominal' => (float) (clone $queryJenis)->where('status_pembayaran', 'Approved')->sum('jumlah_bayar'),
+                'total_transaksi' => (int) (clone $queryJenis)->count(),
+                'lunas_transaksi' => (int) (clone $queryJenis)->where('status_pembayaran', 'Approved')->count(),
+            ];
+        }
+
+        $allIuranForRekap = IuranKas::with('warga.keluarga.rumahBlok')->get();
+        $rekapBlokMap = [];
+        foreach ($allIuranForRekap as $item) {
+            $blokName = $item->warga?->keluarga?->rumahBlok?->nama_blok ?? 'Tanpa Blok';
+            if (!isset($rekapBlokMap[$blokName])) {
+                $rekapBlokMap[$blokName] = [
+                    'blok' => $blokName,
+                    'total_nominal' => 0,
+                    'total_transaksi' => 0,
+                    'lunas_transaksi' => 0,
+                ];
+            }
+            $rekapBlokMap[$blokName]['total_transaksi']++;
+            if ($item->status_pembayaran === 'Approved') {
+                $rekapBlokMap[$blokName]['total_nominal'] += $item->jumlah_bayar;
+                $rekapBlokMap[$blokName]['lunas_transaksi']++;
+            }
+        }
+        $rekapBlok = array_values($rekapBlokMap);
+        usort($rekapBlok, fn($a, $b) => $b['total_nominal'] <=> $a['total_nominal']);
+        $rekapBlok = array_slice($rekapBlok, 0, 5);
+
         $iurans = $query->paginate(10)->withQueryString();
 
         return Inertia::render('Admin/IuranKas/Index', [
             'iurans' => $iurans,
+            'summary' => $summary,
+            'chartData' => $chartData,
+            'rekapJenis' => $rekapJenis,
+            'rekapBlok' => $rekapBlok,
             'filters' => [
                 'search' => $request->search,
                 'status' => $request->status ?? 'Semua',
@@ -43,7 +127,12 @@ class IuranKasController extends Controller
 
     public function create()
     {
-        $wargas = Warga::with('keluarga:id,no_kk')->orderBy('nama_lengkap')->get(['id', 'nama_lengkap', 'keluarga_id']);
+        $wargas = Warga::with(['keluarga.rumahBlok'])
+            ->where('status_hubungan_keluarga', 'Kepala Keluarga')
+            ->orWhereIn('id', Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id'))
+            ->orderBy('nama_lengkap')
+            ->get(['id', 'nama_lengkap', 'keluarga_id']);
+
         return Inertia::render('Admin/IuranKas/Create', [
             'wargas' => $wargas
         ]);
@@ -76,7 +165,11 @@ class IuranKasController extends Controller
     public function edit($id)
     {
         $iuran = IuranKas::findOrFail($id);
-        $wargas = Warga::with('keluarga:id,no_kk')->orderBy('nama_lengkap')->get(['id', 'nama_lengkap', 'keluarga_id']);
+        $wargas = Warga::with(['keluarga.rumahBlok'])
+            ->where('status_hubungan_keluarga', 'Kepala Keluarga')
+            ->orWhereIn('id', Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id'))
+            ->orderBy('nama_lengkap')
+            ->get(['id', 'nama_lengkap', 'keluarga_id']);
         
         return Inertia::render('Admin/IuranKas/Edit', [
             'iuran' => $iuran,
@@ -119,7 +212,11 @@ class IuranKasController extends Controller
             'jumlah_bayar' => 'required|numeric|min:0',
         ]);
 
-        $wargas = Warga::all();
+        // 1 KK = 1 Iuran (Hanya untuk Kepala Keluarga dari masing-masing KK / Rumah)
+        $wargas = Warga::where('status_hubungan_keluarga', 'Kepala Keluarga')
+            ->orWhereIn('id', Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id'))
+            ->get();
+
         $generatedCount = 0;
 
         foreach ($wargas as $warga) {
@@ -143,7 +240,7 @@ class IuranKasController extends Controller
             }
         }
 
-        return redirect()->route('admin.iuran.index')->with('success', "Berhasil men-generate $generatedCount tagihan iuran baru.");
+        return redirect()->route('admin.iuran.index')->with('success', "Berhasil men-generate $generatedCount tagihan iuran kas baru untuk Kartu Keluarga (Per KK / Rumah).");
     }
 
     public function toggleLunas($id)

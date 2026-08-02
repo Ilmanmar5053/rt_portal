@@ -14,6 +14,10 @@ class KeluargaController extends Controller
     public function index(Request $request)
     {
         $search = $request->query('search');
+        $noKk = $request->query('no_kk');
+        $kepala = $request->query('kepala');
+        $alamat = $request->query('alamat');
+        $jumlahAnggota = $request->query('jumlah_anggota');
         $sortField = $request->query('sort_field', 'no_kk');
         $sortDirection = $request->query('sort_direction', 'asc');
 
@@ -28,10 +32,26 @@ class KeluargaController extends Controller
 
         $keluargas = Keluarga::withCount('wargas')->with(['kepalaKeluarga', 'rumahBlok', 'wargas'])
             ->when($search, function ($query, $search) {
-                $query->where('no_kk', 'like', "%{$search}%")
-                      ->orWhereHas('kepalaKeluarga', function ($q) use ($search) {
-                          $q->where('nama_lengkap', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search) {
+                    $q->where('no_kk', 'like', "%{$search}%")
+                      ->orWhereHas('kepalaKeluarga', function ($q2) use ($search) {
+                          $q2->where('nama_lengkap', 'like', "%{$search}%");
                       });
+                });
+            })
+            ->when($noKk, function ($query, $noKk) {
+                $query->where('no_kk', 'like', "%{$noKk}%");
+            })
+            ->when($kepala, function ($query, $kepala) {
+                $query->whereHas('kepalaKeluarga', function ($q) use ($kepala) {
+                    $q->where('nama_lengkap', 'like', "%{$kepala}%");
+                });
+            })
+            ->when($alamat, function ($query, $alamat) {
+                $query->where('alamat_lengkap', 'like', "%{$alamat}%");
+            })
+            ->when(is_numeric($jumlahAnggota), function ($query) use ($jumlahAnggota) {
+                $query->having('wargas_count', '=', $jumlahAnggota);
             })
             ->when($sortField === 'nama_lengkap', function ($query) use ($sortDirection) {
                 $query->leftJoin('wargas', 'keluargas.kepala_keluarga_id', '=', 'wargas.id')
@@ -46,6 +66,10 @@ class KeluargaController extends Controller
             'keluargas' => $keluargas,
             'filters' => [
                 'search' => $search,
+                'no_kk' => $noKk,
+                'kepala' => $kepala,
+                'alamat' => $alamat,
+                'jumlah_anggota' => $jumlahAnggota,
                 'sort_field' => $sortField,
                 'sort_direction' => $sortDirection,
             ]

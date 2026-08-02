@@ -13,11 +13,21 @@ export default function Edit({ auth, profil }) {
         alamat: profil.alamat || '',
         nomor_wa: profil.nomor_wa || '',
         logo: null,
+        ttd_ketua: null,
+        ttd_sekretaris: null,
         pengurus: profil.pengurus || [],
     });
 
     const [previewLogo, setPreviewLogo] = useState(
         profil.logo_path ? `/storage/${profil.logo_path}` : null
+    );
+    
+    const [previewTtdKetua, setPreviewTtdKetua] = useState(
+        profil.ttd_ketua_path ? `/storage/${profil.ttd_ketua_path}` : null
+    );
+    
+    const [previewTtdSekretaris, setPreviewTtdSekretaris] = useState(
+        profil.ttd_sekretaris_path ? `/storage/${profil.ttd_sekretaris_path}` : null
     );
 
     const handleLogoChange = (e) => {
@@ -25,6 +35,22 @@ export default function Edit({ auth, profil }) {
         if (file) {
             setData('logo', file);
             setPreviewLogo(URL.createObjectURL(file));
+        }
+    };
+    
+    const handleTtdKetuaChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData('ttd_ketua', file);
+            setPreviewTtdKetua(URL.createObjectURL(file));
+        }
+    };
+    
+    const handleTtdSekretarisChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData('ttd_sekretaris', file);
+            setPreviewTtdSekretaris(URL.createObjectURL(file));
         }
     };
 
@@ -146,6 +172,64 @@ export default function Edit({ auth, profil }) {
                                             />
                                             <p className="mt-2 text-sm text-gray-500">Gunakan format PNG, JPG, atau SVG transparan agar terlihat rapi.</p>
                                             <InputError className="mt-2" message={errors.logo} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bagian Tanda Tangan Digital */}
+                                <div>
+                                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Tanda Tangan Digital (E-Surat)</h3>
+                                    <p className="text-sm text-gray-600 mb-6">Upload tanda tangan dalam format PNG dengan background transparan untuk digunakan di surat resmi.</p>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {/* TTD Ketua */}
+                                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                                            <h4 className="font-semibold text-gray-800 mb-4">Tanda Tangan Ketua RT</h4>
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="w-full h-32 bg-white rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                                                    {previewTtdKetua ? (
+                                                        <img src={previewTtdKetua} alt="TTD Ketua Preview" className="max-w-full max-h-full object-contain p-2" />
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm text-center px-4">Belum ada tanda tangan</span>
+                                                    )}
+                                                </div>
+                                                <div className="w-full">
+                                                    <input 
+                                                        type="file" 
+                                                        id="ttd_ketua" 
+                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
+                                                        accept="image/png"
+                                                        onChange={handleTtdKetuaChange}
+                                                    />
+                                                    <p className="mt-2 text-xs text-gray-500">Format: PNG transparan saja</p>
+                                                    <InputError className="mt-2" message={errors.ttd_ketua} />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* TTD Sekretaris */}
+                                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                                            <h4 className="font-semibold text-gray-800 mb-4">Tanda Tangan Sekretaris</h4>
+                                            <div className="flex flex-col items-center gap-4">
+                                                <div className="w-full h-32 bg-white rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
+                                                    {previewTtdSekretaris ? (
+                                                        <img src={previewTtdSekretaris} alt="TTD Sekretaris Preview" className="max-w-full max-h-full object-contain p-2" />
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm text-center px-4">Belum ada tanda tangan</span>
+                                                    )}
+                                                </div>
+                                                <div className="w-full">
+                                                    <input 
+                                                        type="file" 
+                                                        id="ttd_sekretaris" 
+                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+                                                        accept="image/png"
+                                                        onChange={handleTtdSekretarisChange}
+                                                    />
+                                                    <p className="mt-2 text-xs text-gray-500">Format: PNG transparan saja</p>
+                                                    <InputError className="mt-2" message={errors.ttd_sekretaris} />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

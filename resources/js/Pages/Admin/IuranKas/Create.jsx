@@ -29,16 +29,18 @@ export default function Create({ wargas }) {
                             
                             {/* Warga Selection */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Warga (Pembayar) *</label>
+                                <label className="block text-sm font-medium text-gray-700">Kepala Keluarga (Perwakilan KK) *</label>
                                 <select
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     value={data.warga_id}
                                     onChange={e => setData('warga_id', e.target.value)}
                                     required
                                 >
-                                    <option value="">-- Pilih Warga --</option>
+                                    <option value="">-- Pilih KK / Kepala Keluarga --</option>
                                     {wargas.map(w => (
-                                        <option key={w.id} value={w.id}>{w.nama_lengkap} (KK: {w.keluarga?.no_kk || 'Tanpa KK'})</option>
+                                        <option key={w.id} value={w.id}>
+                                            {w.nama_lengkap} (KK: {w.keluarga?.no_kk || '—'}){w.keluarga?.rumah_blok ? ` • Blok ${w.keluarga.rumah_blok.blok}-${w.keluarga.rumah_blok.nomor_rumah}` : ''}
+                                        </option>
                                     ))}
                                 </select>
                                 {errors.warga_id && <p className="mt-1 text-sm text-red-600">{errors.warga_id}</p>}

@@ -51,6 +51,60 @@ class TransaksiKasController extends Controller
         $totalPengeluaran = (clone $filteredQuery)->where('jenis', 'Pengeluaran')->sum('jumlah');
         $saldoAkhir = TransaksiKas::getSaldo();
 
+        // 2. Grafik Perbandingan Arus Kas per Bulan (Pemasukan vs Pengeluaran)
+        $chartYear = $request->query('chart_year', ($request->filled('tahun') && $request->tahun !== 'Semua') ? $request->tahun : (TransaksiKas::selectRaw('MAX(YEAR(tanggal)) as max_year')->value('max_year') ?? date('Y')));
+        $monthlyRaw = TransaksiKas::whereYear('tanggal', $chartYear)
+            ->selectRaw('MONTH(tanggal) as bulan, jenis, SUM(jumlah) as total_nominal, COUNT(*) as total_count')
+            ->groupBy('bulan', 'jenis')
+            ->get();
+
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $chartData = [
+            'year' => (int) $chartYear,
+            'labels' => $months,
+            'pemasukan_nominal' => [],
+            'pengeluaran_nominal' => [],
+            'pemasukan_count' => [],
+            'pengeluaran_count' => [],
+        ];
+
+        for ($m = 1; $m <= 12; $m++) {
+            $pemasukan = $monthlyRaw->where('bulan', $m)->where('jenis', 'Pemasukan');
+            $pengeluaran = $monthlyRaw->where('bulan', $m)->where('jenis', 'Pengeluaran');
+
+            $chartData['pemasukan_nominal'][] = (float) $pemasukan->sum('total_nominal');
+            $chartData['pengeluaran_nominal'][] = (float) $pengeluaran->sum('total_nominal');
+            $chartData['pemasukan_count'][] = (int) $pemasukan->sum('total_count');
+            $chartData['pengeluaran_count'][] = (int) $pengeluaran->sum('total_count');
+        }
+
+        // 3. Rekapitulasi per Kategori
+        $kategoriPemasukanList = TransaksiKas::getKategoriPemasukan();
+        $rekapPemasukan = [];
+        foreach ($kategoriPemasukanList as $kat) {
+            $queryKat = TransaksiKas::where('jenis', 'Pemasukan')->where('kategori', $kat);
+            $rekapPemasukan[] = [
+                'kategori' => $kat,
+                'total_nominal' => (float) (clone $queryKat)->sum('jumlah'),
+                'total_transaksi' => (int) (clone $queryKat)->count(),
+            ];
+        }
+        usort($rekapPemasukan, fn($a, $b) => $b['total_nominal'] <=> $a['total_nominal']);
+        $rekapPemasukan = array_slice($rekapPemasukan, 0, 5);
+
+        $kategoriPengeluaranList = TransaksiKas::getKategoriPengeluaran();
+        $rekapPengeluaran = [];
+        foreach ($kategoriPengeluaranList as $kat) {
+            $queryKat = TransaksiKas::where('jenis', 'Pengeluaran')->where('kategori', $kat);
+            $rekapPengeluaran[] = [
+                'kategori' => $kat,
+                'total_nominal' => (float) (clone $queryKat)->sum('jumlah'),
+                'total_transaksi' => (int) (clone $queryKat)->count(),
+            ];
+        }
+        usort($rekapPengeluaran, fn($a, $b) => $b['total_nominal'] <=> $a['total_nominal']);
+        $rekapPengeluaran = array_slice($rekapPengeluaran, 0, 5);
+
         // Tahun yang tersedia untuk filter
         $tahunList = TransaksiKas::selectRaw('YEAR(tanggal) as tahun')
             ->groupBy('tahun')
@@ -65,6 +119,9 @@ class TransaksiKasController extends Controller
                 'saldo_bersih' => (float) ($totalPemasukan - $totalPengeluaran),
                 'saldo_akhir' => $saldoAkhir,
             ],
+            'chartData' => $chartData,
+            'rekapPemasukan' => $rekapPemasukan,
+            'rekapPengeluaran' => $rekapPengeluaran,
             'filters' => [
                 'search' => $request->search,
                 'jenis' => $request->jenis ?? 'Semua',

@@ -15,15 +15,21 @@ export default function Index({ users, filters }) {
     const [sortDirection, setSortDirection] = useState('asc');
 
     const handleFilter = (e) => {
-        if (e) e.preventDefault();
-        get(route('admin.users.index'), data, { preserveState: true, replace: true });
+        if (e && e.preventDefault) e.preventDefault();
+        router.get(route('admin.users.index'), data, { preserveState: true, replace: true });
+    };
+
+    const handleRoleChange = (e) => {
+        const value = e.target.value;
+        setData('role', value);
+        router.get(route('admin.users.index'), { ...data, role: value }, { preserveState: true, replace: true });
     };
 
     const handleSort = (field) => {
         const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
         setSortField(field);
         setSortDirection(newDirection);
-        get(route('admin.users.index'), { ...data, sort_field: field, sort_direction: newDirection }, { preserveState: true, replace: true });
+        router.get(route('admin.users.index'), { ...data, sort_field: field, sort_direction: newDirection }, { preserveState: true, replace: true });
     };
 
     const handleDelete = (id) => {
@@ -131,6 +137,7 @@ export default function Index({ users, filters }) {
                                             name="name"
                                             value={data.name}
                                             onChange={(e) => setData('name', e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleFilter(e)}
                                             placeholder="Filter nama"
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                                         />
@@ -141,6 +148,7 @@ export default function Index({ users, filters }) {
                                             name="email"
                                             value={data.email}
                                             onChange={(e) => setData('email', e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleFilter(e)}
                                             placeholder="Filter email"
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                                         />
@@ -149,7 +157,7 @@ export default function Index({ users, filters }) {
                                         <select
                                             name="role"
                                             value={data.role}
-                                            onChange={(e) => setData('role', e.target.value)}
+                                            onChange={handleRoleChange}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                                         >
                                             <option value="Semua">Semua</option>
@@ -168,6 +176,7 @@ export default function Index({ users, filters }) {
                                             name="registered"
                                             value={data.registered}
                                             onChange={(e) => setData('registered', e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleFilter(e)}
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
                                         />
                                     </td>
@@ -175,7 +184,7 @@ export default function Index({ users, filters }) {
                                         <button
                                             type="button"
                                             onClick={handleFilter}
-                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm"
+                                        className="bg-emerald-700 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 text-sm font-bold shadow-sm"
                                         >
                                             Terapkan
                                         </button>

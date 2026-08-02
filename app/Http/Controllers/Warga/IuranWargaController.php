@@ -22,9 +22,16 @@ class IuranWargaController extends Controller
             ]);
         }
 
-        $query = IuranKas::where('warga_id', $warga->id)
-            ->orderBy('periode_tahun', 'desc')
-            ->orderBy('periode_bulan', 'desc');
+        if ($warga->keluarga_id) {
+            $kkWargaIds = Warga::where('keluarga_id', $warga->keluarga_id)->pluck('id');
+            $query = IuranKas::whereIn('warga_id', $kkWargaIds)
+                ->orderBy('periode_tahun', 'desc')
+                ->orderBy('periode_bulan', 'desc');
+        } else {
+            $query = IuranKas::where('warga_id', $warga->id)
+                ->orderBy('periode_tahun', 'desc')
+                ->orderBy('periode_bulan', 'desc');
+        }
 
         if ($request->has('status') && $request->status != 'Semua') {
             $query->where('status_pembayaran', $request->status);
@@ -46,10 +53,18 @@ class IuranWargaController extends Controller
         $user = auth()->user();
         $warga = Warga::where('user_id', $user->id)->firstOrFail();
 
-        $iuran = IuranKas::with('warga.keluarga.rumahBlok')
-            ->where('id', $id)
-            ->where('warga_id', $warga->id)
-            ->firstOrFail();
+        if ($warga->keluarga_id) {
+            $kkWargaIds = Warga::where('keluarga_id', $warga->keluarga_id)->pluck('id');
+            $iuran = IuranKas::with('warga.keluarga.rumahBlok')
+                ->where('id', $id)
+                ->whereIn('warga_id', $kkWargaIds)
+                ->firstOrFail();
+        } else {
+            $iuran = IuranKas::with('warga.keluarga.rumahBlok')
+                ->where('id', $id)
+                ->where('warga_id', $warga->id)
+                ->firstOrFail();
+        }
 
         return Inertia::render('Warga/Iuran/Show', [
             'iuran' => $iuran,

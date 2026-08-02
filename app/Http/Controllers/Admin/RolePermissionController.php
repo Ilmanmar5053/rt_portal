@@ -19,6 +19,8 @@ class RolePermissionController extends Controller
             'data_keluarga' => 'Data Keluarga',
             'data_warga' => 'Data Warga',
             'iuran_kas' => 'Iuran Kas',
+            'transaksi_kas' => 'Arus Kas',
+            'program_kegiatan' => 'Program & Kegiatan',
             'pengaduan' => 'Pengaduan',
             'surat_pengantar' => 'Surat Pengantar',
         ];

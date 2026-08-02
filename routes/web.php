@@ -78,6 +78,7 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     Route::post('/permissions', [\App\Http\Controllers\Admin\RolePermissionController::class, 'update'])->name('permissions.update')->middleware('role:superadmin');
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->middleware('role:superadmin');
 
+    Route::post('warga/{warga}/generate-account', [WargaController::class, 'generateAccount'])->name('warga.generate-account')->middleware('module.access:data_warga');
     Route::resource('warga', WargaController::class)->middleware('module.access:data_warga');
     Route::resource('keluarga', App\Http\Controllers\Admin\KeluargaController::class)->middleware('module.access:data_keluarga');
     Route::resource('rumah', \App\Http\Controllers\Admin\RumahBlokController::class)->middleware('module.access:data_rumah');
@@ -96,6 +97,9 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     // Transaksi Arus Kas
     Route::resource('transaksi-kas', \App\Http\Controllers\Admin\TransaksiKasController::class)->middleware('module.access:transaksi_kas');
     
+    // Program & Kegiatan
+    Route::resource('program-kegiatan', \App\Http\Controllers\Admin\ProgramKegiatanController::class)->middleware('module.access:program_kegiatan');
+
     // Profil RT routes
     Route::get('profil', [ProfilRtController::class, 'edit'])->name('profil.edit');
     Route::post('profil', [ProfilRtController::class, 'update'])->name('profil.update');
@@ -164,6 +168,11 @@ Route::middleware(['auth', 'verified', 'role:warga_kk,warga_anggota'])->group(fu
 
     Route::middleware('module.access:iuran_kas')->group(function () {
         Route::get('/warga/iuran', [\App\Http\Controllers\Warga\IuranWargaController::class, 'index'])->name('warga.iuran.index');
+    });
+
+    Route::middleware('module.access:program_kegiatan')->group(function () {
+        Route::get('/warga/program-kegiatan', [\App\Http\Controllers\Warga\ProgramKegiatanWargaController::class, 'index'])->name('warga.program-kegiatan.index');
+        Route::get('/warga/program-kegiatan/{id}', [\App\Http\Controllers\Warga\ProgramKegiatanWargaController::class, 'show'])->name('warga.program-kegiatan.show');
     });
 });
 

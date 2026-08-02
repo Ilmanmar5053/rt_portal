@@ -115,7 +115,7 @@ export default function Register() {
                 <button
                     type="submit"
                     disabled={processing}
-                    className={`w-full mt-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 shadow-lg shadow-emerald-600/20 transition-all transform focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    className={`w-full mt-2 py-3 px-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 via-teal-700 to-rose-800 hover:from-emerald-700 hover:to-rose-900 shadow-lg shadow-emerald-700/25 transition-all transform focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                         processing ? 'opacity-75 cursor-not-allowed' : 'hover:-translate-y-0.5'
                     }`}
                 >

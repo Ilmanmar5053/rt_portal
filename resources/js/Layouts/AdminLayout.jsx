@@ -89,30 +89,30 @@ export default function AdminLayout({ header, children }) {
             name: 'Dashboard',
             href: route('dashboard'),
             active: route().current('dashboard'),
-            icon: { emoji: '🏠', bg: 'bg-blue-100', color: 'text-blue-600' },
+            icon: { emoji: '🏡', bg: 'bg-emerald-100', color: 'text-emerald-700' },
         },
         {
             type: 'group',
             name: 'Data Master',
-            icon: { emoji: '📋', bg: 'bg-purple-100', color: 'text-purple-600' },
+            icon: { emoji: '📋', bg: 'bg-emerald-100', color: 'text-emerald-700' },
             children: [
                 {
                     name: 'Data Rumah',
                     href: route('admin.rumah.index'),
                     active: route().current('admin.rumah.*'),
-                    icon: { emoji: '🏡', bg: 'bg-orange-100', color: 'text-orange-600' },
+                    icon: { emoji: '🏠', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
                 {
                     name: 'Data KK (Keluarga)',
                     href: route('admin.keluarga.index'),
                     active: route().current('admin.keluarga.*'),
-                    icon: { emoji: '👨‍👩‍👧‍👦', bg: 'bg-pink-100', color: 'text-pink-600' },
+                    icon: { emoji: '👨‍👩‍👧‍👦', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
                 {
                     name: 'Data Anggota Warga',
                     href: route('admin.warga.index'),
                     active: route().current('admin.warga.*'),
-                    icon: { emoji: '👤', bg: 'bg-violet-100', color: 'text-violet-600' },
+                    icon: { emoji: '👤', bg: 'bg-teal-100', color: 'text-teal-700' },
                 },
             ]
         },
@@ -121,43 +121,49 @@ export default function AdminLayout({ header, children }) {
             name: 'Laporan',
             href: route('admin.laporan.index'),
             active: route().current('admin.laporan.*'),
-            icon: { emoji: '📈', bg: 'bg-amber-100', color: 'text-amber-600' },
+            icon: { emoji: '📈', bg: 'bg-rose-100', color: 'text-rose-700' },
         },
         {
             type: 'group',
             name: 'Keuangan',
-            icon: { emoji: '💼', bg: 'bg-green-100', color: 'text-green-600' },
+            icon: { emoji: '💼', bg: 'bg-emerald-100', color: 'text-emerald-700' },
             children: [
                 {
                     name: 'Iuran Kas',
                     href: route('admin.iuran.index'),
                     active: route().current('admin.iuran.*'),
-                    icon: { emoji: '💰', bg: 'bg-emerald-100', color: 'text-emerald-600' },
+                    icon: { emoji: '💰', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
                 {
                     name: 'Arus Kas',
                     href: route('admin.transaksi-kas.index'),
                     active: route().current('admin.transaksi-kas.*'),
-                    icon: { emoji: '📊', bg: 'bg-teal-100', color: 'text-teal-600' },
+                    icon: { emoji: '📊', bg: 'bg-teal-100', color: 'text-teal-700' },
                 },
             ]
         },
         {
             type: 'group',
             name: 'Layanan',
-            icon: { emoji: '🛎️', bg: 'bg-cyan-100', color: 'text-cyan-600' },
+            icon: { emoji: '🛎️', bg: 'bg-rose-100', color: 'text-rose-700' },
             children: [
                 {
                     name: 'Pengaduan',
                     href: route('admin.pengaduan.index'),
                     active: route().current('admin.pengaduan.*'),
-                    icon: { emoji: '📢', bg: 'bg-red-100', color: 'text-red-600' },
+                    icon: { emoji: '📢', bg: 'bg-rose-100', color: 'text-rose-700' },
                 },
                 {
                     name: 'Surat Pengantar',
                     href: route('admin.surat.index'),
                     active: route().current('admin.surat.*'),
-                    icon: { emoji: '📄', bg: 'bg-sky-100', color: 'text-sky-600' },
+                    icon: { emoji: '📄', bg: 'bg-teal-100', color: 'text-teal-700' },
+                },
+                {
+                    name: 'Program & Kegiatan',
+                    href: route('admin.program-kegiatan.index'),
+                    active: route().current('admin.program-kegiatan.*'),
+                    icon: { emoji: '🗓️', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
             ]
         },
@@ -168,25 +174,25 @@ export default function AdminLayout({ header, children }) {
         menuGroups.push({
             type: 'group',
             name: 'Pengaturan',
-            icon: { emoji: '⚙️', bg: 'bg-gray-100', color: 'text-gray-600' },
+            icon: { emoji: '⚙️', bg: 'bg-rose-100', color: 'text-rose-700' },
             children: [
                 {
                     name: 'Manajemen Akses',
                     href: route('admin.permissions.index'),
                     active: route().current('admin.permissions.*'),
-                    icon: { emoji: '🔐', bg: 'bg-yellow-100', color: 'text-yellow-600' },
+                    icon: { emoji: '🔐', bg: 'bg-rose-100', color: 'text-rose-700' },
                 },
                 {
                     name: 'Manajemen User',
                     href: route('admin.users.index'),
                     active: route().current('admin.users.*'),
-                    icon: { emoji: '👥', bg: 'bg-indigo-100', color: 'text-indigo-600' },
+                    icon: { emoji: '👥', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
                 {
                     name: 'Profil Lingkungan',
                     href: route('admin.profil.edit'),
                     active: route().current('admin.profil.*'),
-                    icon: { emoji: '🏘️', bg: 'bg-teal-100', color: 'text-teal-600' },
+                    icon: { emoji: '🏘️', bg: 'bg-teal-100', color: 'text-teal-700' },
                 },
             ]
         });
@@ -227,7 +233,7 @@ export default function AdminLayout({ header, children }) {
                     className={`menu-link flex items-center px-3 py-3 rounded-xl transition-all duration-200 group ${
                         item.active
                             ? 'bg-emerald-600/10 text-emerald-900 font-bold shadow-sm border border-emerald-200/50 backdrop-blur-sm active'
-                            : 'text-emerald-900/70 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
+                            : 'text-emerald-800 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
                     }`}
                     title={!isExpanded && !isMobile ? item.name : undefined}
                 >
@@ -253,7 +259,7 @@ export default function AdminLayout({ header, children }) {
                     className={`menu-parent ${isOpen ? 'open' : ''} w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 group ${
                         hasActiveChild
                             ? 'bg-emerald-600/10 text-emerald-900 font-bold shadow-sm border border-emerald-200/50 backdrop-blur-sm'
-                            : 'text-emerald-900/70 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
+                            : 'text-emerald-800 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
                     }`}
                     title={!isExpanded && !isMobile ? item.name : undefined}
                 >
@@ -439,7 +445,7 @@ export default function AdminLayout({ header, children }) {
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             aria-expanded={isSidebarOpen}
                             aria-label="Toggle sidebar"
-                            className="hidden md:block text-gray-500 hover:text-blue-600 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-gray-100"
+                            className="hidden md:block text-gray-500 hover:text-emerald-700 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-emerald-50"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -451,7 +457,7 @@ export default function AdminLayout({ header, children }) {
                             onClick={() => setIsMobileSidebarOpen(true)}
                             aria-expanded={isMobileSidebarOpen}
                             aria-label="Open navigation menu"
-                            className="md:hidden text-gray-500 hover:text-blue-600 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-gray-100"
+                            className="md:hidden text-gray-500 hover:text-emerald-700 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-emerald-50"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>

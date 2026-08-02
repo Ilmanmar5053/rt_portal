@@ -26,13 +26,15 @@ class WargaController extends Controller
         $status = $request->query('status');
         $ttl = $request->query('ttl');
 
-        $wargas = Warga::with('keluarga')
+        $wargas = Warga::with(['keluarga', 'user'])
             ->when($search, function ($query, $search) {
-                $query->where('nama_lengkap', 'like', "%{$search}%")
+                $query->where(function ($q) use ($search) {
+                    $q->where('nama_lengkap', 'like', "%{$search}%")
                       ->orWhere('nik', 'like', "%{$search}%")
-                      ->orWhereHas('keluarga', function ($q) use ($search) {
-                          $q->where('no_kk', 'like', "%{$search}%");
+                      ->orWhereHas('keluarga', function ($q2) use ($search) {
+                          $q2->where('no_kk', 'like', "%{$search}%");
                       });
+                });
             })
             ->when($nik, function ($query, $nik) {
                 $query->where('nik', 'like', "%{$nik}%");
@@ -45,7 +47,7 @@ class WargaController extends Controller
                     $q->where('no_kk', 'like', "%{$kk}%");
                 });
             })
-            ->when($status && $status !== 'Semua', function ($query, $status) {
+            ->when($status && $status !== 'Semua', function ($query) use ($status) {
                 $query->where('status_hubungan_keluarga', $status);
             })
             ->when($ttl, function ($query, $ttl) {
@@ -130,10 +132,55 @@ class WargaController extends Controller
 
     public function show(Warga $warga)
     {
-        $warga->load('keluarga');
+        $warga->load(['keluarga', 'user']);
         return Inertia::render('Admin/Warga/Show', [
             'warga' => $warga
         ]);
+    }
+
+    public function generateAccount(Warga $warga)
+    {
+        if ($warga->status_hubungan_keluarga !== 'Kepala Keluarga') {
+            return back()->with('error', 'Hanya warga dengan status Kepala Keluarga yang dapat dibuatkan akun login.');
+        }
+
+        $generatedEmail = "warga.{$warga->nik}@rt.com";
+        $generatedPassword = $warga->nik;
+
+        $user = null;
+        if ($warga->user_id) {
+            $user = User::find($warga->user_id);
+        }
+
+        if (!$user) {
+            $user = User::where('email', $generatedEmail)->first();
+        }
+
+        $alreadyRegistered = $user !== null;
+
+        if ($user) {
+            $user->update([
+                'name' => $warga->nama_lengkap,
+                'email' => $generatedEmail,
+                'password' => Hash::make($generatedPassword),
+                'role' => 'warga_kk',
+            ]);
+        } else {
+            $user = User::create([
+                'name' => $warga->nama_lengkap,
+                'email' => $generatedEmail,
+                'password' => Hash::make($generatedPassword),
+                'role' => 'warga_kk',
+            ]);
+        }
+
+        $warga->update(['user_id' => $user->id]);
+
+        if ($alreadyRegistered) {
+            return back()->with('message', "Akun dari warga ini sudah terdaftar ({$generatedEmail}). Jika lupa password gunakan password general yaitu NIK ({$warga->nik}).");
+        }
+
+        return back()->with('success', "Akun login berhasil digenerate untuk {$warga->nama_lengkap}! Username (Email): {$generatedEmail} | Password: {$generatedPassword} (NIK) | Hak Akses: Warga (Kepala Keluarga)");
     }
 
     public function edit(Warga $warga)

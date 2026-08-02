@@ -18,7 +18,7 @@ export default function Error({ status }) {
     return (
         <div className="antialiased min-h-screen flex items-center justify-center bg-gray-50">
             <Head title={title} />
-            <div className="max-w-lg w-full px-6 py-12 bg-white shadow-xl shadow-red-900/5 rounded-3xl text-center border border-gray-100">
+            <div className="max-w-sm sm:max-w-md w-full px-6 py-10 bg-white shadow-xl shadow-red-900/5 rounded-3xl text-center border border-gray-100">
                 <div className="mb-8 flex justify-center">
                     <div className="w-32 h-32 bg-red-100 rounded-full flex items-center justify-center animate-bounce">
                         {status === 403 ? (

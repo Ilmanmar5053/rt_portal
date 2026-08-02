@@ -50,10 +50,10 @@ export default function Index({ pengaduans, filters, warga }) {
 
     const statusConfig = (status) => {
         switch (status) {
-            case 'Diajukan': return { cls: 'bg-yellow-100 text-yellow-800 border-yellow-200', dot: 'bg-yellow-500' };
-            case 'Diproses': return { cls: 'bg-blue-100 text-blue-800 border-blue-200', dot: 'bg-blue-500' };
-            case 'Selesai': return { cls: 'bg-green-100 text-green-800 border-green-200', dot: 'bg-green-500' };
-            default: return { cls: 'bg-gray-100 text-gray-800 border-gray-200', dot: 'bg-gray-500' };
+            case 'Diajukan': return { cls: 'bg-rose-100 text-rose-800 border-rose-200 font-bold', dot: 'bg-rose-500' };
+            case 'Diproses': return { cls: 'bg-teal-100 text-teal-800 border-teal-200 font-bold', dot: 'bg-teal-500' };
+            case 'Selesai': return { cls: 'bg-emerald-100 text-emerald-800 border-emerald-200 font-bold', dot: 'bg-emerald-500' };
+            default: return { cls: 'bg-gray-100 text-gray-800 border-gray-200 font-bold', dot: 'bg-gray-500' };
         }
     };
 
@@ -207,7 +207,7 @@ export default function Index({ pengaduans, filters, warga }) {
                                 </label>
                             </div>
 
-                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700 flex items-start gap-2">
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm text-emerald-800 flex items-start gap-2">
                                 <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 <span>Pengaduan Anda akan otomatis berstatus <strong>"Diajukan"</strong> dan akan diproses oleh pengurus RT sesegera mungkin.</span>
                             </div>
@@ -219,7 +219,7 @@ export default function Index({ pengaduans, filters, warga }) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm rounded-xl transition-all shadow-sm hover:shadow-md disabled:opacity-50 flex items-center gap-2"
+                                    className="px-6 py-2.5 bg-gradient-to-r from-emerald-700 via-teal-700 to-rose-800 hover:from-emerald-800 hover:to-rose-900 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-emerald-700/20 disabled:opacity-50 flex items-center gap-2"
                                 >
                                     {processing ? (
                                         <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Mengirim...</>
