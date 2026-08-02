@@ -92,11 +92,24 @@ function PermCheckbox({ checked, disabled, onChange, actionKey, label }) {
     );
 }
 
+// ─── Chevron Icon ─────────────────────────────────────────────────────────────
+function ChevronIcon({ open }) {
+    return (
+        <svg
+            className={`w-5 h-5 text-white/70 transition-transform duration-300 ${open ? 'rotate-180' : 'rotate-0'}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+        </svg>
+    );
+}
+
 // ─── Role Card ────────────────────────────────────────────────────────────────
 function RoleCard({ roleKey, roleInfo, modules, actions, permissions, isSuperAdmin, isWargaRole, onSave, saving }) {
     const colors = roleColors[roleKey] || roleColors.rw;
     const [localPerms, setLocalPerms] = useState(permissions);
     const [dirty, setDirty] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
         setLocalPerms(permissions);
@@ -137,11 +150,16 @@ function RoleCard({ roleKey, roleInfo, modules, actions, permissions, isSuperAdm
         acc + Object.values(mod).filter(Boolean).length, 0
     );
     const totalPossible = Object.keys(modules).length * Object.keys(actions).length;
+    const totalModulesActive = Object.values(localPerms).filter(mod => Object.values(mod).some(Boolean)).length;
 
     return (
         <div className={`rounded-2xl border-2 ${colors.border} overflow-hidden shadow-sm transition-all duration-200 ${dirty ? 'ring-2 ring-amber-400 ring-offset-2' : ''}`}>
-            {/* ── Card Header ── */}
-            <div className={`${colors.header} px-5 py-4 flex items-center justify-between`}>
+            {/* ── Card Header (clickable to collapse) ── */}
+            <button
+                type="button"
+                onClick={() => setIsOpen(prev => !prev)}
+                className={`w-full ${colors.header} px-5 py-4 flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white/40 transition-opacity hover:opacity-90`}
+            >
                 <div className="flex items-center gap-3">
                     {isSuperAdmin ? (
                         <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
@@ -154,16 +172,20 @@ function RoleCard({ roleKey, roleInfo, modules, actions, permissions, isSuperAdm
                             <Icon name="shield" className="w-5 h-5 text-white" />
                         </div>
                     )}
-                    <div>
+                    <div className="text-left">
                         <h3 className="font-bold text-white text-base">{roleInfo.label}</h3>
                         <p className="text-white/70 text-xs mt-0.5">
-                            {isSuperAdmin ? 'Hak akses penuh — tidak dapat diubah' :
-                             isWargaRole ? 'Hanya akses lihat yang dapat diatur' :
-                             `${totalGranted} dari ${totalPossible} hak akses aktif`}
+                            {isSuperAdmin
+                                ? 'Hak akses penuh — tidak dapat diubah'
+                                : isOpen
+                                    ? (isWargaRole ? 'Hanya akses lihat yang dapat diatur' : `${totalGranted} dari ${totalPossible} hak akses aktif`)
+                                    : `${totalModulesActive} modul aktif · klik untuk ${isOpen ? 'tutup' : 'lihat detail'}`
+                            }
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
+                    {/* Pill badges */}
                     {isSuperAdmin && (
                         <span className="flex items-center gap-1.5 bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full text-xs font-bold shadow">
                             <Icon name="lock" className="w-3.5 h-3.5" />
@@ -180,10 +202,21 @@ function RoleCard({ roleKey, roleInfo, modules, actions, permissions, isSuperAdm
                             ● Belum Disimpan
                         </span>
                     )}
+                    {/* Mini stat badge when closed */}
+                    {!isOpen && !isSuperAdmin && (
+                        <span className="hidden sm:flex items-center gap-1 bg-white/20 text-white px-2.5 py-1 rounded-full text-xs font-semibold">
+                            {totalGranted}/{totalPossible} akses
+                        </span>
+                    )}
+                    {/* Chevron */}
+                    <ChevronIcon open={isOpen} />
                 </div>
-            </div>
+            </button>
 
-            {/* ── Permission Table ── */}
+            {/* ── Permission Table (collapsible) ── */}
+            <div
+                className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'}`}
+            >
             <div className={`${colors.bg}`}>
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
@@ -307,6 +340,7 @@ function RoleCard({ roleKey, roleInfo, modules, actions, permissions, isSuperAdm
                     </div>
                 )}
             </div>
+            </div> {/* end collapsible */}
         </div>
     );
 }
