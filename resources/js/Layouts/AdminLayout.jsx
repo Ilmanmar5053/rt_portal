@@ -189,6 +189,12 @@ export default function AdminLayout({ header, children }) {
                     icon: { emoji: '👥', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
                 {
+                    name: 'Manajemen Database',
+                    href: route('admin.database.index'),
+                    active: route().current('admin.database.*'),
+                    icon: { emoji: '🗄️', bg: 'bg-amber-100', color: 'text-amber-700' },
+                },
+                {
                     name: 'Profil Lingkungan',
                     href: route('admin.profil.edit'),
                     active: route().current('admin.profil.*'),
@@ -203,7 +209,7 @@ export default function AdminLayout({ header, children }) {
     
     // Helper to check if menu should be visible based on permissions
     const canAccess = (menuName) => {
-        if (isAdmin && (menuName === 'Manajemen Akses' || menuName === 'Manajemen User' || menuName === 'Pengaturan')) return true;
+        if (isAdmin && (menuName === 'Manajemen Akses' || menuName === 'Manajemen User' || menuName === 'Manajemen Database' || menuName === 'Pengaturan')) return true;
         if (menuName === 'Dashboard' || menuName === 'Profil Lingkungan') return true;
 
         if (menuName === 'Data Rumah') return permissions['data_rumah']?.access !== false;

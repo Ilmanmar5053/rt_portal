@@ -79,6 +79,12 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     Route::put('/permissions/bulk', [\App\Http\Controllers\Admin\RolePermissionController::class, 'updateBulk'])->name('permissions.bulk')->middleware('role:superadmin');
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class)->middleware('role:superadmin');
 
+    // Management Database & Backup (Khusus Superadmin)
+    Route::get('/database', [\App\Http\Controllers\Admin\DatabaseController::class, 'index'])->name('database.index')->middleware('role:superadmin');
+    Route::get('/database/backup/sql', [\App\Http\Controllers\Admin\DatabaseController::class, 'backupSql'])->name('database.backup.sql')->middleware('role:superadmin');
+    Route::get('/database/backup/json', [\App\Http\Controllers\Admin\DatabaseController::class, 'backupJson'])->name('database.backup.json')->middleware('role:superadmin');
+    Route::post('/database/reset', [\App\Http\Controllers\Admin\DatabaseController::class, 'reset'])->name('database.reset')->middleware('role:superadmin');
+
     Route::post('warga/{warga}/generate-account', [WargaController::class, 'generateAccount'])->name('warga.generate-account')->middleware('module.access:data_warga');
     Route::resource('warga', WargaController::class)->middleware('module.access:data_warga');
     Route::resource('keluarga', App\Http\Controllers\Admin\KeluargaController::class)->middleware('module.access:data_keluarga');
