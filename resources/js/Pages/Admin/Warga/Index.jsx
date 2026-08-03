@@ -3,7 +3,11 @@ import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { debounce } from 'lodash';
 
-export default function Index({ wargas, filters }) {
+export default function Index({ wargas, filters, stats = {} }) {
+    const totalWargaCount = stats.total_warga || 0;
+    const pctLaki = totalWargaCount > 0 ? Math.round(((stats.laki_laki || 0) / totalWargaCount) * 100) : 0;
+    const pctPerempuan = totalWargaCount > 0 ? Math.round(((stats.perempuan || 0) / totalWargaCount) * 100) : 0;
+
     const { flash } = usePage().props;
     const { data, setData, get } = useForm({
         search: filters.search || '',
@@ -91,6 +95,128 @@ export default function Index({ wargas, filters }) {
                     <span>{flash.error}</span>
                 </div>
             )}
+
+            {/* ── DASHBOARD STATISTIK WARGA & RENTANG USIA ── */}
+            <div className="mb-8 space-y-5">
+                {/* Row 1: Total Warga, Laki-laki, Perempuan */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    {/* Total Warga */}
+                    <div className="rounded-2xl bg-gradient-to-br from-emerald-800 via-emerald-700 to-teal-800 text-white p-5 shadow-lg border border-emerald-600/40 relative overflow-hidden flex items-center justify-between">
+                        <div className="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                        <div>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/50 text-emerald-200 text-xs font-bold border border-emerald-500/30">
+                                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Total Penduduk
+                            </span>
+                            <div className="text-3xl font-black text-white mt-2 tracking-tight">
+                                {totalWargaCount} <span className="text-sm font-bold text-emerald-200 uppercase">Jiwa</span>
+                            </div>
+                            <p className="text-xs text-emerald-100/90 mt-1">
+                                Seluruh anggota keluarga terdaftar di RT
+                            </p>
+                        </div>
+                        <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center text-3xl border border-white/20 shadow-inner">
+                            👨‍👩‍👧‍👦
+                        </div>
+                    </div>
+
+                    {/* Warga Laki-laki */}
+                    <div className="rounded-2xl bg-gradient-to-br from-white via-blue-50/40 to-indigo-50/60 p-5 shadow-sm border border-blue-200/80 hover:shadow-md transition-all flex items-center justify-between">
+                        <div>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-bold border border-blue-200">
+                                Laki-laki
+                            </span>
+                            <div className="text-3xl font-black text-gray-900 mt-2 tracking-tight">
+                                {stats.laki_laki || 0} <span className="text-sm font-bold text-gray-500 uppercase">Jiwa</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                                <div className="w-24 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                    <div className="bg-blue-600 h-1.5 rounded-full" style={{ width: `${pctLaki}%` }}></div>
+                                </div>
+                                <span className="text-xs font-extrabold text-blue-700">{pctLaki}% total</span>
+                            </div>
+                        </div>
+                        <div className="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-3xl border border-blue-200 shadow-inner">
+                            👨
+                        </div>
+                    </div>
+
+                    {/* Warga Perempuan */}
+                    <div className="rounded-2xl bg-gradient-to-br from-white via-rose-50/40 to-pink-50/60 p-5 shadow-sm border border-rose-200/80 hover:shadow-md transition-all flex items-center justify-between">
+                        <div>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs font-bold border border-rose-200">
+                                Perempuan
+                            </span>
+                            <div className="text-3xl font-black text-gray-900 mt-2 tracking-tight">
+                                {stats.perempuan || 0} <span className="text-sm font-bold text-gray-500 uppercase">Jiwa</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                                <div className="w-24 bg-gray-200 rounded-full h-1.5 overflow-hidden">
+                                    <div className="bg-rose-600 h-1.5 rounded-full" style={{ width: `${pctPerempuan}%` }}></div>
+                                </div>
+                                <span className="text-xs font-extrabold text-rose-700">{pctPerempuan}% total</span>
+                            </div>
+                        </div>
+                        <div className="w-14 h-14 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-3xl border border-rose-200 shadow-inner">
+                            👩
+                        </div>
+                    </div>
+                </div>
+
+                {/* Row 2: Sebaran Kelompok Usia Warga */}
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5 pb-3.5 border-b border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <span className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl shadow-sm border border-amber-200">
+                                🎂
+                            </span>
+                            <div>
+                                <h3 className="text-base font-black text-gray-900 tracking-tight">
+                                    Sebaran Kelompok Usia Warga
+                                </h3>
+                                <p className="text-xs text-gray-500 font-medium">
+                                    Dihitung otomatis berdasarkan tanggal lahir masing-masing warga terdaftar
+                                </p>
+                            </div>
+                        </div>
+                        <div className="inline-flex items-center gap-1.5 text-xs font-extrabold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3.5 py-1.5 rounded-xl self-start sm:self-auto">
+                            <span>🎉 6 Rentang Usia Terdata</span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        {stats.rentang_usia && Object.entries(stats.rentang_usia).map(([key, item]) => {
+                            const pct = totalWargaCount > 0 ? Math.round((item.count / totalWargaCount) * 100) : 0;
+                            return (
+                                <div
+                                    key={key}
+                                    className={`rounded-2xl p-4 bg-gradient-to-br ${item.cardBg} border ${item.border} shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between`}
+                                >
+                                    <div>
+                                        <div className="flex items-center justify-between">
+                                            <span className={`w-11 h-11 rounded-xl ${item.bg} flex items-center justify-center text-2xl shadow-inner border border-white/70`}>
+                                                {item.icon}
+                                            </span>
+                                            <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${item.bg} ${item.text} border ${item.border}`}>
+                                                {pct}%
+                                            </span>
+                                        </div>
+                                        <div className="mt-3.5">
+                                            <h4 className="text-xs font-black text-gray-900 tracking-tight">{item.label}</h4>
+                                            <p className="text-[10px] font-bold text-gray-500 truncate mt-0.5">{item.sub}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 pt-2.5 border-t border-gray-200/60 flex items-baseline justify-between">
+                                        <span className="text-xl font-black text-gray-900">{item.count}</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500">Jiwa</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
 
             <div>
                 <div className="overflow-hidden bg-white/80 backdrop-blur-xl shadow-sm sm:rounded-2xl border border-gray-100 mb-6">

@@ -60,8 +60,67 @@ class WargaController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        // ── STATISTIK DEMOGRAFI & RENTANG USIA WARGA (Hitung Otomatis berdasarkan tanggal_lahir) ──
+        $allWargas = Warga::select('tanggal_lahir', 'jenis_kelamin')->get();
+        $totalWarga = $allWargas->count();
+        $lakiLaki = 0;
+        $perempuan = 0;
+
+        $usia0_6 = 0;
+        $usia6_12 = 0;
+        $usia12_18 = 0;
+        $usia18_25 = 0;
+        $usia25_50 = 0;
+        $usia50_plus = 0;
+
+        foreach ($allWargas as $w) {
+            // Jenis Kelamin
+            if (stripos($w->jenis_kelamin, 'Laki') !== false) {
+                $lakiLaki++;
+            } elseif (stripos($w->jenis_kelamin, 'Perempuan') !== false) {
+                $perempuan++;
+            }
+
+            // Hitung Usia dari tanggal_lahir
+            if ($w->tanggal_lahir) {
+                try {
+                    $age = \Carbon\Carbon::parse($w->tanggal_lahir)->age;
+                    if ($age >= 0 && $age <= 6) {
+                        $usia0_6++;
+                    } elseif ($age > 6 && $age <= 12) {
+                        $usia6_12++;
+                    } elseif ($age > 12 && $age <= 18) {
+                        $usia12_18++;
+                    } elseif ($age > 18 && $age <= 25) {
+                        $usia18_25++;
+                    } elseif ($age > 25 && $age <= 50) {
+                        $usia25_50++;
+                    } elseif ($age > 50) {
+                        $usia50_plus++;
+                    }
+                } catch (\Exception $e) {
+                    // Abaikan format tanggal lahir yang tidak valid
+                }
+            }
+        }
+
+        $stats = [
+            'total_warga' => $totalWarga,
+            'laki_laki'   => $lakiLaki,
+            'perempuan'   => $perempuan,
+            'rentang_usia'=> [
+                'usia_0_6'    => ['label' => '0 – 6 Tahun',    'sub' => 'Balita & Usia Dini',   'count' => $usia0_6,    'icon' => '👶', 'bg' => 'bg-amber-100',   'text' => 'text-amber-700',   'border' => 'border-amber-200',   'cardBg' => 'from-amber-50/80 to-orange-50/40'],
+                'usia_6_12'   => ['label' => '>6 – 12 Tahun',  'sub' => 'Anak-anak (SD)',       'count' => $usia6_12,   'icon' => '🧒', 'bg' => 'bg-emerald-100', 'text' => 'text-emerald-700', 'border' => 'border-emerald-200', 'cardBg' => 'from-emerald-50/80 to-teal-50/40'],
+                'usia_12_18'  => ['label' => '>12 – 18 Tahun', 'sub' => 'Remaja (SMP–SMA)',     'count' => $usia12_18,  'icon' => '👦', 'bg' => 'bg-blue-100',    'text' => 'text-blue-700',    'border' => 'border-blue-200',    'cardBg' => 'from-blue-50/80 to-cyan-50/40'],
+                'usia_18_25'  => ['label' => '>18 – 25 Tahun', 'sub' => 'Pemuda / Dewasa Muda', 'count' => $usia18_25,  'icon' => '🧑', 'bg' => 'bg-indigo-100',  'text' => 'text-indigo-700',  'border' => 'border-indigo-200',  'cardBg' => 'from-indigo-50/80 to-purple-50/40'],
+                'usia_25_50'  => ['label' => '>25 – 50 Tahun', 'sub' => 'Dewasa Produktif',     'count' => $usia25_50,  'icon' => '👨', 'bg' => 'bg-purple-100',  'text' => 'text-purple-700',  'border' => 'border-purple-200',  'cardBg' => 'from-purple-50/80 to-fuchsia-50/40'],
+                'usia_50_plus'=> ['label' => '>50 Tahun',      'sub' => 'Lansia / Senior',      'count' => $usia50_plus,'icon' => '👴', 'bg' => 'bg-rose-100',    'text' => 'text-rose-700',    'border' => 'border-rose-200',    'cardBg' => 'from-rose-50/80 to-pink-50/40'],
+            ]
+        ];
+
         return Inertia::render('Admin/Warga/Index', [
             'wargas' => $wargas,
+            'stats'  => $stats,
             'filters' => [
                 'search' => $search,
                 'sort_field' => $sortField,
