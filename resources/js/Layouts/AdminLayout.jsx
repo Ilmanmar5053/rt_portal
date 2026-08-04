@@ -143,6 +143,12 @@ export default function AdminLayout({ header, children }) {
                     icon: { emoji: '💰', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
                 {
+                    name: 'Transaksi Iuran',
+                    href: route('admin.transaksi-iuran.index'),
+                    active: route().current('admin.transaksi-iuran.*'),
+                    icon: { emoji: '🧾', bg: 'bg-indigo-100', color: 'text-indigo-700' },
+                },
+                {
                     name: 'Arus Kas',
                     href: route('admin.transaksi-kas.index'),
                     active: route().current('admin.transaksi-kas.*'),

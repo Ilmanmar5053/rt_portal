@@ -143,8 +143,9 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     Route::resource('pengaduan', PengaduanController::class)->middleware('module.access:pengaduan');
     Route::resource('surat', SuratPengantarController::class)->middleware('module.access:surat_pengantar');
     
-    // Transaksi Arus Kas
+    // Transaksi Arus Kas & Penyerahan Iuran
     Route::resource('transaksi-kas', \App\Http\Controllers\Admin\TransaksiKasController::class)->middleware('module.access:transaksi_kas');
+    Route::resource('transaksi-iuran', \App\Http\Controllers\Admin\TransaksiIuranController::class)->middleware('module.access:iuran_kas');
     
     // Program & Kegiatan
     Route::resource('program-kegiatan', \App\Http\Controllers\Admin\ProgramKegiatanController::class)->middleware('module.access:program_kegiatan');
