@@ -150,7 +150,11 @@ export default function Index({ keluargas, filters }) {
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap">
                                             <div className="text-sm font-semibold text-gray-900">
-                                                {kk.kepala_keluarga ? kk.kepala_keluarga.nama_lengkap : <span className="text-red-500 italic">Belum Ada</span>}
+                                                {kk.kepala_keluarga
+                                                    ? kk.kepala_keluarga.nama_lengkap
+                                                    : kk.kepala_keluarga_nama
+                                                        ? <span>{kk.kepala_keluarga_nama}</span>
+                                                        : <span className="text-red-500 italic">Belum Ada</span>}
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">

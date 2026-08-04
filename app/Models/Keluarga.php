@@ -20,7 +20,8 @@ class Keluarga extends Model
 
     public function wargas(): HasMany
     {
-        return $this->hasMany(Warga::class);
+        return $this->hasMany(Warga::class)
+            ->orderByRaw("FIELD(status_hubungan_keluarga, 'Kepala Keluarga', 'Istri', 'Anak', 'Menantu', 'Cucu', 'Orang Tua', 'Mertua', 'Famili Lain', 'Lainnya'), tanggal_lahir ASC, id ASC");
     }
 
     public function rumahBlok(): BelongsTo

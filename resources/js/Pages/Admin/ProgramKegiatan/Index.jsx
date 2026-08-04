@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { getNamaRt } from '@/Utils/profilHelper';
 
 // ─── Countdown Hook ───────────────────────────────────────────────────────────
-function useCountdown(tanggalSelesai) {
+function useCountdown(tanggalSelesai, tanggalMulai) {
     const [timeLeft, setTimeLeft] = useState(null);
 
     useEffect(() => {
-        if (!tanggalSelesai) return;
-        const end = new Date(tanggalSelesai).getTime();
+        const targetDate = tanggalSelesai || tanggalMulai;
+        if (!targetDate) return;
+
+        const d = new Date(targetDate);
+        if (!isNaN(d.getTime())) {
+            d.setHours(23, 59, 59, 999);
+        }
+        const end = d.getTime();
 
         const tick = () => {
             const now = Date.now();
@@ -27,20 +34,20 @@ function useCountdown(tanggalSelesai) {
         tick();
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
-    }, [tanggalSelesai]);
+    }, [tanggalSelesai, tanggalMulai]);
 
     return timeLeft;
 }
 
 // ─── Countdown Badge ──────────────────────────────────────────────────────────
-function CountdownBadge({ tanggalSelesai }) {
-    const t = useCountdown(tanggalSelesai);
+function CountdownBadge({ tanggalSelesai, tanggalMulai, status }) {
+    const t = useCountdown(tanggalSelesai, tanggalMulai);
     if (!t) return null;
 
-    if (t.expired) {
+    if (t.expired || status === 'Selesai') {
         return (
             <div className="w-full mt-1.5 px-2 py-1 rounded-lg bg-gray-100 text-gray-500 text-[10px] font-bold text-center">
-                ⏱ Berakhir
+                ⏱ Berakhir / Selesai
             </div>
         );
     }
@@ -108,6 +115,8 @@ function formatDate(raw) {
 
 // ─── Compact Program Card ─────────────────────────────────────────────────────
 function ProgramCard({ program, formatCurrency, handleDelete }) {
+    const { profil } = usePage().props;
+    const namaRt = getNamaRt(profil);
     const isBerjalan = program.status === 'Sedang Berjalan';
 
     return (
@@ -139,7 +148,7 @@ function ProgramCard({ program, formatCurrency, handleDelete }) {
                         <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center text-2xl mb-1 shadow-lg border border-white/20 transition-transform duration-300 group-hover:scale-110">
                             🎪
                         </div>
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-200">RT 05 / RW 08</span>
+                        <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-200">{namaRt}</span>
                         <h4 className="text-xs font-black leading-tight mt-1 text-white line-clamp-2">
                             {program.nama_program}
                         </h4>
@@ -172,9 +181,9 @@ function ProgramCard({ program, formatCurrency, handleDelete }) {
                     {program.nama_program}
                 </h3>
 
-                {/* Countdown for ongoing events */}
-                {isBerjalan && (
-                    <CountdownBadge tanggalSelesai={program.tanggal_selesai} />
+                {/* Countdown for all active/planned events */}
+                {program.status !== 'Dibatalkan' && (
+                    <CountdownBadge tanggalSelesai={program.tanggal_selesai} tanggalMulai={program.tanggal_mulai} status={program.status} />
                 )}
 
                 {/* Meta info */}

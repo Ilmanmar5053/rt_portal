@@ -143,8 +143,9 @@ class KeluargaController extends Controller
 
     public function edit(Keluarga $keluarga)
     {
+        $keluarga->load('kepalaKeluarga'); // load nama kepala keluarga
         $rumahBloks = RumahBlok::orderBy('blok')->orderBy('nomor_rumah')->get();
-        $wargas = $keluarga->wargas()->orderBy('nama_lengkap')->get();
+        $wargas = $keluarga->wargas()->get();
         return Inertia::render('Admin/Keluarga/Edit', [
             'keluarga' => $keluarga,
             'rumahBloks' => $rumahBloks,
@@ -169,7 +170,18 @@ class KeluargaController extends Controller
             'file_kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'file_ktp_kepala' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'kepala_keluarga_id' => 'nullable|exists:wargas,id',
+            'kepala_keluarga_nama' => 'nullable|string|max:255',
         ]);
+
+        // Jika nama diinput manual (tanpa ID), cari warga berdasarkan nama di KK ini
+        if (empty($validated['kepala_keluarga_id']) && !empty($validated['kepala_keluarga_nama'])) {
+            $wargaDitemukan = \App\Models\Warga::where('keluarga_id', $keluarga->id)
+                ->whereRaw('LOWER(nama_lengkap) = ?', [strtolower(trim($validated['kepala_keluarga_nama']))])
+                ->first();
+            if ($wargaDitemukan) {
+                $validated['kepala_keluarga_id'] = $wargaDitemukan->id;
+            }
+        }
 
         $rumahBlok = RumahBlok::firstOrCreate(
             ['blok' => $validated['blok'], 'nomor_rumah' => $validated['nomor_rumah']],
@@ -188,6 +200,10 @@ class KeluargaController extends Controller
             'kelurahan' => $validated['kelurahan'],
             'kode_pos' => $validated['kode_pos'] ?? null,
             'kepala_keluarga_id' => $validated['kepala_keluarga_id'] ?? null,
+            // Simpan nama manual sebagai fallback tampilan jika tidak ada ID warga
+            'kepala_keluarga_nama' => !empty($validated['kepala_keluarga_id'])
+                ? null  // kalau sudah ada ID, nama diambil dari relasi (tidak perlu dobel)
+                : ($validated['kepala_keluarga_nama'] ?? null),
         ];
 
         if ($request->hasFile('file_kk')) {

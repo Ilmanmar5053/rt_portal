@@ -40,85 +40,92 @@ export default function DeleteUserForm({ className = '' }) {
 
     const closeModal = () => {
         setConfirmingUserDeletion(false);
-
         clearErrors();
         reset();
     };
 
     return (
-        <section className={`space-y-6 ${className}`}>
-            <header>
-                <h2 className="text-lg font-semibold text-gray-800">
-                    Hapus Akun
-                </h2>
-
-                <p className="mt-1 text-sm text-gray-500">
-                    Setelah akun Anda dihapus, semua data dan sumber daya yang terkait
-                    akan dihapus secara permanen.
-                </p>
+        <section className={`space-y-4 ${className}`}>
+            <header className="flex items-center gap-3 border-b border-rose-100 pb-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center text-lg font-bold">
+                    ⚠️
+                </div>
+                <div>
+                    <h2 className="text-base font-extrabold text-rose-900">
+                        Zona Bahaya: Hapus Akun
+                    </h2>
+                    <p className="text-xs text-rose-600 font-medium">
+                        Penghapusan akun akan memusnahkan seluruh akses & data permanen.
+                    </p>
+                </div>
             </header>
 
-            <button 
-                onClick={confirmUserDeletion}
-                className="inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150"
-            >
-                Hapus Akun
-            </button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+                <p className="text-xs text-gray-500 max-w-xl">
+                    Pastikan Anda benar-benar yakin. Setelah akun dihapus, tidak ada opsi pemulihan data kembali.
+                </p>
+                <button 
+                    onClick={confirmUserDeletion}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-md shadow-rose-500/20 transition-all cursor-pointer whitespace-nowrap"
+                >
+                    <span>🗑️ Minta Hapus Akun</span>
+                </button>
+            </div>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
-                <form onSubmit={deleteUser} className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900">
-                        Apakah Anda yakin ingin menghapus akun ini?
-                    </h2>
-
-                    <p className="mt-1 text-sm text-gray-600">
-                        Setelah akun Anda dihapus, semua data dan sumber daya
-                        akan dihapus secara permanen. Silakan masukkan password
-                        Anda untuk mengonfirmasi bahwa Anda ingin menghapus
-                        akun ini secara permanen.
-                    </p>
-
-                    <div className="mt-6">
-                        <InputLabel
-                            htmlFor="password"
-                            value="Password"
-                            className="sr-only"
-                        />
-
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            ref={passwordInput}
-                            value={data.password}
-                            onChange={(e) =>
-                                setData('password', e.target.value)
-                            }
-                            className="mt-1 block w-3/4"
-                            isFocused
-                            placeholder="Password"
-                        />
-
-                        <InputError
-                            message={errors.password}
-                            className="mt-2"
-                        />
+                <form onSubmit={deleteUser} className="p-6 space-y-4">
+                    <div className="flex items-center gap-3 border-b border-gray-100 pb-3">
+                        <div className="w-10 h-10 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center text-xl font-bold">
+                            🚨
+                        </div>
+                        <div>
+                            <h2 className="text-base font-black text-gray-900">
+                                Konfirmasi Hapus Akun Permanen
+                            </h2>
+                            <p className="text-xs text-gray-500">
+                                Masukkan kata sandi akun Anda untuk melanjutkan tindakan ini.
+                            </p>
+                        </div>
                     </div>
 
-                    <div className="mt-6 flex justify-end">
+                    <div>
+                        <InputLabel
+                            htmlFor="password"
+                            value="Password Akun"
+                            className="text-xs font-bold text-gray-700 uppercase tracking-wider"
+                        />
+                        <div className="relative mt-1">
+                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 text-sm">
+                                🔒
+                            </span>
+                            <TextInput
+                                id="password"
+                                type="password"
+                                name="password"
+                                ref={passwordInput}
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                className="pl-9 text-sm font-semibold block w-full rounded-xl border-gray-200 focus:border-rose-500 focus:ring-rose-500"
+                                isFocused
+                                placeholder="Masukkan Password Anda"
+                            />
+                        </div>
+                        <InputError message={errors.password} className="mt-1" />
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
                         <button 
                             type="button"
                             onClick={closeModal}
-                            className="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150"
+                            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition"
                         >
                             Batal
                         </button>
-
                         <button 
                             disabled={processing}
-                            className="ms-3 inline-flex items-center px-4 py-2 bg-red-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-50"
+                            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-500/20 transition disabled:opacity-50"
                         >
-                            Hapus Akun
+                            {processing ? 'Memproses...' : 'Hapus Sekarang'}
                         </button>
                     </div>
                 </form>

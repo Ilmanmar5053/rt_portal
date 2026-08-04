@@ -107,7 +107,7 @@ export default function Edit({ warga, keluargas }) {
                                         <option value="">-- Pilih Kartu Keluarga --</option>
                                         {keluargas.map(kk => (
                                             <option key={kk.id} value={kk.id}>
-                                                {kk.no_kk} - {kk.kepala_keluarga ? `Kepala: ${kk.kepala_keluarga.nama_lengkap}` : 'Belum ada Kepala Keluarga'}
+                                                {kk.no_kk} - {kk.kepala_keluarga ? `Kepala: ${kk.kepala_keluarga.nama_lengkap}` : kk.kepala_keluarga_nama ? `Kepala: ${kk.kepala_keluarga_nama}` : 'Belum ada Kepala Keluarga'}
                                             </option>
                                         ))}
                                     </select>

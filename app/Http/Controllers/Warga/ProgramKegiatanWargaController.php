@@ -11,6 +11,8 @@ class ProgramKegiatanWargaController extends Controller
 {
     public function index(Request $request)
     {
+        ProgramKegiatan::syncAllStatuses();
+
         $query = ProgramKegiatan::with('creator');
 
         if ($request->filled('search')) {

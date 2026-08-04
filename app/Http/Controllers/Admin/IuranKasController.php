@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\IuranKas;
+use App\Models\JenisIuran;
 use App\Models\Warga;
 use App\Models\Keluarga;
 use Illuminate\Http\Request;
@@ -13,6 +14,8 @@ class IuranKasController extends Controller
 {
     public function index(Request $request)
     {
+        \App\Models\TransaksiKas::syncApprovedIuran();
+
         $sortField = $request->query('sort_field', 'created_at');
         $sortDirection = $request->query('sort_direction', 'desc');
 
@@ -74,7 +77,11 @@ class IuranKasController extends Controller
         }
 
         // 3. Rekapitulasi Relevan (per Jenis Iuran & per Blok)
-        $jenisList = ['Wajib', 'Sukarela', 'Keamanan', 'Sampah'];
+        $jenisIurans = JenisIuran::orderBy('urutan')->get();
+        $masterNames = $jenisIurans->pluck('nama_iuran')->toArray();
+        $existingNames = IuranKas::distinct()->pluck('jenis_iuran')->toArray();
+        $jenisList = array_values(array_unique(array_merge($masterNames, $existingNames)));
+
         $rekapJenis = [];
         foreach ($jenisList as $jenis) {
             $queryJenis = IuranKas::where('jenis_iuran', $jenis);
@@ -108,7 +115,7 @@ class IuranKasController extends Controller
         usort($rekapBlok, fn($a, $b) => $b['total_nominal'] <=> $a['total_nominal']);
         $rekapBlok = array_slice($rekapBlok, 0, 5);
 
-        $iurans = $query->paginate(10)->withQueryString();
+        $iurans = $query->paginate(30)->withQueryString();
 
         return Inertia::render('Admin/IuranKas/Index', [
             'iurans' => $iurans,
@@ -116,6 +123,8 @@ class IuranKasController extends Controller
             'chartData' => $chartData,
             'rekapJenis' => $rekapJenis,
             'rekapBlok' => $rekapBlok,
+            'jenisIurans' => $jenisIurans,
+            'jenisList' => $jenisList,
             'filters' => [
                 'search' => $request->search,
                 'status' => $request->status ?? 'Semua',
@@ -133,8 +142,11 @@ class IuranKasController extends Controller
             ->orderBy('nama_lengkap')
             ->get(['id', 'nama_lengkap', 'keluarga_id']);
 
+        $jenisIurans = JenisIuran::where('is_active', true)->orderBy('urutan')->get();
+
         return Inertia::render('Admin/IuranKas/Create', [
-            'wargas' => $wargas
+            'wargas' => $wargas,
+            'jenisIurans' => $jenisIurans,
         ]);
     }
 
@@ -142,7 +154,7 @@ class IuranKasController extends Controller
     {
         $validated = $request->validate([
             'warga_id' => 'required|exists:wargas,id',
-            'jenis_iuran' => 'required|string|in:Wajib,Sukarela,Keamanan,Sampah',
+            'jenis_iuran' => 'required|string|max:100',
             'periode_bulan' => 'required|integer|min:1|max:12',
             'periode_tahun' => 'required|integer|min:2000',
             'jumlah_bayar' => 'required|numeric|min:0',
@@ -171,9 +183,12 @@ class IuranKasController extends Controller
             ->orderBy('nama_lengkap')
             ->get(['id', 'nama_lengkap', 'keluarga_id']);
         
+        $jenisIurans = JenisIuran::where('is_active', true)->orderBy('urutan')->get();
+
         return Inertia::render('Admin/IuranKas/Edit', [
             'iuran' => $iuran,
-            'wargas' => $wargas
+            'wargas' => $wargas,
+            'jenisIurans' => $jenisIurans,
         ]);
     }
 
@@ -183,7 +198,7 @@ class IuranKasController extends Controller
 
         $validated = $request->validate([
             'warga_id' => 'required|exists:wargas,id',
-            'jenis_iuran' => 'required|string|in:Wajib,Sukarela,Keamanan,Sampah',
+            'jenis_iuran' => 'required|string|max:100',
             'periode_bulan' => 'required|integer|min:1|max:12',
             'periode_tahun' => 'required|integer|min:2000',
             'jumlah_bayar' => 'required|numeric|min:0',
@@ -206,41 +221,66 @@ class IuranKasController extends Controller
     public function generate(Request $request)
     {
         $validated = $request->validate([
-            'jenis_iuran' => 'required|string|in:Wajib,Sukarela,Keamanan,Sampah',
             'periode_bulan' => 'required|integer|min:1|max:12',
             'periode_tahun' => 'required|integer|min:2000',
-            'jumlah_bayar' => 'required|numeric|min:0',
+            'komponen_iuran' => 'nullable|array',
+            'komponen_iuran.*.nama' => 'required_with:komponen_iuran|string|max:100',
+            'komponen_iuran.*.nominal' => 'required_with:komponen_iuran|numeric|min:0',
+            'jenis_iuran' => 'nullable|string|max:100',
+            'jumlah_bayar' => 'nullable|numeric|min:0',
         ]);
 
-        // 1 KK = 1 Iuran (Hanya untuk Kepala Keluarga dari masing-masing KK / Rumah)
+        $komponenList = [];
+        if (!empty($validated['komponen_iuran'])) {
+            $komponenList = $validated['komponen_iuran'];
+        } elseif (!empty($validated['jenis_iuran']) && isset($validated['jumlah_bayar'])) {
+            $komponenList = [
+                [
+                    'nama' => $validated['jenis_iuran'],
+                    'nominal' => $validated['jumlah_bayar'],
+                ],
+            ];
+        } else {
+            return redirect()->back()->with('error', 'Pilih minimal satu jenis/komponen iuran untuk digenerate.');
+        }
+
+        // 1 KK = Semua Tagihan Komponen (Hanya untuk Kepala Keluarga dari masing-masing KK / Rumah)
         $wargas = Warga::where('status_hubungan_keluarga', 'Kepala Keluarga')
             ->orWhereIn('id', Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id'))
             ->get();
 
         $generatedCount = 0;
+        $kkCount = 0;
 
         foreach ($wargas as $warga) {
-            // Check if iuran already exists for this warga, type, month, year
-            $exists = IuranKas::where('warga_id', $warga->id)
-                ->where('jenis_iuran', $validated['jenis_iuran'])
-                ->where('periode_bulan', $validated['periode_bulan'])
-                ->where('periode_tahun', $validated['periode_tahun'])
-                ->exists();
+            $createdForThisKK = false;
+            foreach ($komponenList as $komponen) {
+                // Check if iuran already exists for this warga, type, month, year
+                $exists = IuranKas::where('warga_id', $warga->id)
+                    ->where('jenis_iuran', $komponen['nama'])
+                    ->where('periode_bulan', $validated['periode_bulan'])
+                    ->where('periode_tahun', $validated['periode_tahun'])
+                    ->exists();
 
-            if (!$exists) {
-                IuranKas::create([
-                    'warga_id' => $warga->id,
-                    'jenis_iuran' => $validated['jenis_iuran'],
-                    'periode_bulan' => $validated['periode_bulan'],
-                    'periode_tahun' => $validated['periode_tahun'],
-                    'jumlah_bayar' => $validated['jumlah_bayar'],
-                    'status_pembayaran' => 'Pending',
-                ]);
-                $generatedCount++;
+                if (!$exists && floatval($komponen['nominal']) >= 0) {
+                    IuranKas::create([
+                        'warga_id' => $warga->id,
+                        'jenis_iuran' => $komponen['nama'],
+                        'periode_bulan' => $validated['periode_bulan'],
+                        'periode_tahun' => $validated['periode_tahun'],
+                        'jumlah_bayar' => $komponen['nominal'],
+                        'status_pembayaran' => 'Pending',
+                    ]);
+                    $generatedCount++;
+                    $createdForThisKK = true;
+                }
+            }
+            if ($createdForThisKK) {
+                $kkCount++;
             }
         }
 
-        return redirect()->route('admin.iuran.index')->with('success', "Berhasil men-generate $generatedCount tagihan iuran kas baru untuk Kartu Keluarga (Per KK / Rumah).");
+        return redirect()->route('admin.iuran.index')->with('success', "Berhasil men-generate {$generatedCount} tagihan iuran baru untuk {$kkCount} Kartu Keluarga (Per KK / Rumah).");
     }
 
     public function toggleLunas($id)
@@ -255,6 +295,8 @@ class IuranKasController extends Controller
         }
         
         $iuran->save();
+
+        \App\Models\TransaksiKas::syncApprovedIuran();
 
         return redirect()->back()->with('success', 'Status pembayaran iuran berhasil diubah.');
     }
@@ -285,6 +327,8 @@ class IuranKasController extends Controller
                 $message = "{$count} data berhasil dihapus.";
                 break;
         }
+
+        \App\Models\TransaksiKas::syncApprovedIuran();
 
         return redirect()->back()->with('success', $message);
     }

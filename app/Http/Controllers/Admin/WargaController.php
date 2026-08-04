@@ -134,11 +134,12 @@ class WargaController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(\Illuminate\Http\Request $request)
     {
         $keluargas = Keluarga::with('kepalaKeluarga')->orderBy('no_kk')->get();
         return Inertia::render('Admin/Warga/Create', [
-            'keluargas' => $keluargas
+            'keluargas' => $keluargas,
+            'default_keluarga_id' => $request->query('keluarga_id')
         ]);
     }
 

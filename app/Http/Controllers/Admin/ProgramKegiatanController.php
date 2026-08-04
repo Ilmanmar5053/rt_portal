@@ -12,6 +12,8 @@ class ProgramKegiatanController extends Controller
 {
     public function index(Request $request)
     {
+        ProgramKegiatan::syncAllStatuses();
+
         $query = ProgramKegiatan::with('creator');
 
         if ($request->filled('search')) {
@@ -70,7 +72,7 @@ class ProgramKegiatanController extends Controller
         $validated = $request->validate([
             'nama_program' => 'required|string|max:255',
             'kategori' => 'required|string|in:Program,Kegiatan,Informasi,Lain-lain',
-            'status' => 'required|string|in:Direncanakan,Sedang Berjalan,Selesai,Dibatalkan',
+            'status' => 'nullable|string|in:Direncanakan,Sedang Berjalan,Selesai,Dibatalkan',
             'tanggal_mulai' => 'required|date',
             'tanggal_selesai' => 'nullable|date|after_or_equal:tanggal_mulai',
             'waktu' => 'nullable|string|max:100',
@@ -88,10 +90,10 @@ class ProgramKegiatanController extends Controller
             $eflyerPath = '/storage/' . $request->file('eflyer')->store('eflyers', 'public');
         }
 
-        ProgramKegiatan::create([
+        $program = ProgramKegiatan::create([
             'nama_program' => $validated['nama_program'],
             'kategori' => $validated['kategori'],
-            'status' => $validated['status'],
+            'status' => $validated['status'] ?? 'Direncanakan',
             'tanggal_mulai' => $validated['tanggal_mulai'],
             'tanggal_selesai' => $validated['tanggal_selesai'] ?? null,
             'waktu' => $validated['waktu'] ?? null,

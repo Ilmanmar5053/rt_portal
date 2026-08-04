@@ -5,7 +5,6 @@ import { useState } from 'react';
 export default function Index({ users, filters }) {
     const { flash, auth } = usePage().props;
     const { data, setData, get } = useForm({
-        search: filters.search || '',
         name: filters.name || '',
         email: filters.email || '',
         role: filters.role || 'Semua',
@@ -16,13 +15,33 @@ export default function Index({ users, filters }) {
 
     const handleFilter = (e) => {
         if (e && e.preventDefault) e.preventDefault();
-        router.get(route('admin.users.index'), data, { preserveState: true, replace: true });
+        router.get(route('admin.users.index'), {
+            name: data.name || undefined,
+            email: data.email || undefined,
+            role: (data.role && data.role !== 'Semua') ? data.role : undefined,
+            registered: data.registered || undefined,
+        }, { preserveState: true, replace: true });
+    };
+
+    const handleResetFilter = () => {
+        setData({
+            name: '',
+            email: '',
+            role: 'Semua',
+            registered: '',
+        });
+        router.get(route('admin.users.index'), {}, { preserveState: true, replace: true });
     };
 
     const handleRoleChange = (e) => {
         const value = e.target.value;
         setData('role', value);
-        router.get(route('admin.users.index'), { ...data, role: value }, { preserveState: true, replace: true });
+        router.get(route('admin.users.index'), {
+            name: data.name || undefined,
+            email: data.email || undefined,
+            role: (value && value !== 'Semua') ? value : undefined,
+            registered: data.registered || undefined,
+        }, { preserveState: true, replace: true });
     };
 
     const handleSort = (field) => {
@@ -82,41 +101,14 @@ export default function Index({ users, filters }) {
                     </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-                    <form onSubmit={handleFilter} className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        <input
-                            type="text"
-                            name="search"
-                            placeholder="Cari nama atau email..."
-                            className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 flex-1"
-                            value={data.search}
-                            onChange={(e) => setData('search', e.target.value)}
-                        />
-                        <select
-                            name="role"
-                            className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            value={data.role}
-                            onChange={(e) => setData('role', e.target.value)}
-                        >
-                            <option value="Semua">Semua Role</option>
-                            <option value="superadmin">Administrator</option>
-                            <option value="rw">Ketua RW</option>
-                            <option value="rt">Ketua RT</option>
-                            <option value="bendahara">Bendahara</option>
-                            <option value="sekretaris">Sekretaris</option>
-                            <option value="warga_kk">Warga (KK)</option>
-                            <option value="warga_anggota">Warga (Anggota)</option>
-                        </select>
-                        <button id="filter-btn" type="submit" className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                            Cari
-                        </button>
-                    </form>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <Link href={route('admin.users.create')} className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 flex items-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                            Tambah Akun
-                        </Link>
+                <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-xs border border-gray-100">
+                    <div className="text-xs font-bold text-gray-500">
+                        Total Akun User: <span className="text-gray-900 font-extrabold">{users.total || 0}</span>
                     </div>
+                    <Link href={route('admin.users.create')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-extrabold shadow-xs transition flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 4v16m8-8H4"></path></svg>
+                        Tambah Akun
+                    </Link>
                 </div>
 
                 <div className="overflow-hidden bg-white shadow-sm sm:rounded-lg border border-gray-100">
@@ -181,13 +173,26 @@ export default function Index({ users, filters }) {
                                         />
                                     </td>
                                 <td className="px-4 py-2 text-right">
-                                        <button
-                                            type="button"
-                                            onClick={handleFilter}
-                                        className="bg-emerald-700 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 text-sm font-bold shadow-sm"
-                                        >
-                                            Terapkan
-                                        </button>
+                                        <div className="flex items-center justify-end gap-1.5">
+                                            <button
+                                                type="button"
+                                                onClick={handleFilter}
+                                                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-extrabold shadow-2xs transition"
+                                                title="Terapkan Filter"
+                                            >
+                                                Terapkan
+                                            </button>
+                                            {(data.name || data.email || (data.role && data.role !== 'Semua') || data.registered) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResetFilter}
+                                                    className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1.5 rounded-lg text-xs font-bold transition"
+                                                    title="Reset Filter"
+                                                >
+                                                    ✕
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             </thead>

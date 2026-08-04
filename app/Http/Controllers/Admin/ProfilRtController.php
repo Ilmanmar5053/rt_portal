@@ -21,8 +21,32 @@ class ProfilRtController extends Controller
                 'alamat' => '',
                 'nomor_wa' => '',
                 'logo_path' => null,
-                'pengurus' => []
+                'pengurus' => [],
+                'rekening_bank' => []
             ]);
+        }
+
+        if (empty($profil->rekening_bank)) {
+            $profil->rekening_bank = [
+                [
+                    'bank' => 'BCA',
+                    'nomor_rekening' => '54800012345',
+                    'atas_nama' => 'Pengurus RT 009 / RW 006',
+                    'catatan' => 'Rekening Utama Kas RT'
+                ],
+                [
+                    'bank' => 'Mandiri',
+                    'nomor_rekening' => '1230009876543',
+                    'atas_nama' => 'Kas RT 009',
+                    'catatan' => 'Iuran Warga & Kebersihan'
+                ],
+                [
+                    'bank' => 'BSI',
+                    'nomor_rekening' => '7123456789',
+                    'atas_nama' => 'Lingkungan RT 009',
+                    'catatan' => 'Bank Syariah / Sosial'
+                ]
+            ];
         }
 
         return Inertia::render('Admin/Profil/Edit', [
@@ -42,6 +66,11 @@ class ProfilRtController extends Controller
             'pengurus' => 'nullable|array',
             'pengurus.*.jabatan' => 'required|string',
             'pengurus.*.nama' => 'required|string',
+            'rekening_bank' => 'nullable|array',
+            'rekening_bank.*.bank' => 'required|string',
+            'rekening_bank.*.nomor_rekening' => 'required|string',
+            'rekening_bank.*.atas_nama' => 'required|string',
+            'rekening_bank.*.catatan' => 'nullable|string',
         ]);
 
         $profil = ProfilRt::first();
@@ -53,6 +82,7 @@ class ProfilRtController extends Controller
         $profil->alamat = $validated['alamat'];
         $profil->nomor_wa = $validated['nomor_wa'];
         $profil->pengurus = $validated['pengurus'] ?? [];
+        $profil->rekening_bank = $validated['rekening_bank'] ?? [];
 
         // Handle logo upload
         if ($request->hasFile('logo')) {

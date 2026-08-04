@@ -18,6 +18,7 @@ class PengaduanWargaController extends Controller
         if (!$warga) {
             return Inertia::render('Warga/Pengaduan/Index', [
                 'pengaduans' => ['data' => [], 'links' => [], 'from' => 0, 'to' => 0, 'total' => 0],
+                'stats' => ['total' => 0, 'baru' => 0, 'diproses' => 0, 'selesai' => 0],
                 'filters' => ['search' => null, 'status' => 'Semua'],
             ]);
         }
@@ -34,8 +35,16 @@ class PengaduanWargaController extends Controller
 
         $pengaduans = $query->paginate(10)->withQueryString();
 
+        $stats = [
+            'total' => Pengaduan::where('warga_id', $warga->id)->count(),
+            'baru' => Pengaduan::where('warga_id', $warga->id)->where('status_progres', 'Diajukan')->count(),
+            'diproses' => Pengaduan::where('warga_id', $warga->id)->where('status_progres', 'Diproses')->count(),
+            'selesai' => Pengaduan::where('warga_id', $warga->id)->where('status_progres', 'Selesai')->count(),
+        ];
+
         return Inertia::render('Warga/Pengaduan/Index', [
             'pengaduans' => $pengaduans,
+            'stats' => $stats,
             'filters' => [
                 'search' => $request->search,
                 'status' => $request->status ?? 'Semua',

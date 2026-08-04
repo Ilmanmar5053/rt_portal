@@ -1,8 +1,11 @@
 import React from 'react';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import WargaLayout from '@/Layouts/WargaLayout';
+import { getNamaRt } from '@/Utils/profilHelper';
 
 export default function Show({ program }) {
+    const { profil } = usePage().props;
+    const namaRt = getNamaRt(profil);
     const formatCurrency = (val) => {
         if (!val || isNaN(val)) return 'Rp 0';
         return new Intl.NumberFormat('id-ID', {
@@ -96,7 +99,7 @@ export default function Show({ program }) {
                                         🎪
                                     </div>
                                     <p className="text-xs text-emerald-200 font-semibold uppercase tracking-widest">
-                                        RT 05 / RW 08
+                                        {namaRt}
                                     </p>
                                     <h4 className="text-sm font-black mt-2 text-white">
                                         {program.nama_program}

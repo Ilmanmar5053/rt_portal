@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+use App\Models\IuranKas;
+
 class TransaksiKas extends Model
 {
     use HasFactory;
@@ -34,12 +36,60 @@ class TransaksiKas extends Model
     }
 
     /**
-     * Get current total balance
+     * Get current total balance (auto-sync first)
      */
     public static function getSaldo(): float
     {
+        self::syncApprovedIuran();
         $last = self::orderBy('tanggal', 'desc')->orderBy('id', 'desc')->first();
         return $last ? (float) $last->saldo_setelah : 0;
+    }
+
+    /**
+     * Sinkronkan Iuran Warga bertipe 'Kas RT' yang Approved ke Transaksi Kas (Kas RT).
+     * Komponen 'Kebersihan (Sampah)' & 'Duka Cita' disalurkan ke Pihak Pengelola Sampah & DKM Masjid,
+     * sehingga TIDAK dimasukkan ke dalam Saldo Kas RT.
+     */
+    public static function syncApprovedIuran(): void
+    {
+        // 1. Ambil seluruh iuran warga bertipe 'Kas RT' yang sudah 'Approved' (Lunas)
+        $approvedKasRtIurans = IuranKas::with('warga')
+            ->where('status_pembayaran', 'Approved')
+            ->where(function ($q) {
+                $q->where('jenis_iuran', 'Kas RT')
+                  ->orWhere('jenis_iuran', 'like', '%Kas RT%');
+            })
+            ->get();
+
+        $activeRefs = [];
+
+        foreach ($approvedKasRtIurans as $iuran) {
+            $ref = "IURAN-KASRT-" . $iuran->id;
+            $activeRefs[] = $ref;
+
+            $namaWarga = $iuran->warga ? $iuran->warga->nama_lengkap : 'Warga';
+            $keterangan = "Pemasukan Iuran Kas RT - {$namaWarga} ({$iuran->periode_bulan}/{$iuran->periode_tahun})";
+            $tanggal = $iuran->updated_at ? $iuran->updated_at->toDateString() : date('Y-m-d');
+
+            self::updateOrCreate(
+                ['referensi' => $ref],
+                [
+                    'tanggal' => $tanggal,
+                    'jenis' => 'Pemasukan',
+                    'kategori' => 'Iuran Wajib',
+                    'keterangan' => $keterangan,
+                    'jumlah' => $iuran->jumlah_bayar,
+                ]
+            );
+        }
+
+        // 2. Hapus transaksi kas otomatis untuk iuran RT yang statusnya sudah bukan Approved
+        self::where('referensi', 'like', 'IURAN-KASRT-%')
+            ->whereNotIn('referensi', $activeRefs)
+            ->delete();
+
+        // 3. Hitung ulang urutan saldo setelah transaksi
+        self::recalculateSaldo();
     }
 
     /**

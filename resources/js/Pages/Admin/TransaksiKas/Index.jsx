@@ -178,6 +178,28 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
             <Head title="Transaksi Arus Kas" />
 
             <div className="space-y-6">
+                {/* Banner Informasi Sinkronisasi Kas RT */}
+                <div className="bg-gradient-to-r from-teal-900 via-emerald-900 to-slate-900 rounded-2xl p-4 text-white shadow-sm border border-emerald-800/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">💡</span>
+                        <div>
+                            <p className="font-extrabold text-emerald-300 text-sm">Sinkronisasi Otomatis Kas RT</p>
+                            <p className="text-gray-300 font-medium mt-0.5">
+                                <strong>Saldo Kas Saat Ini</strong> bersumber murni dari akumulasi <strong>Iuran komponen Kas RT (Approved)</strong> + Pemasukan/Pengeluaran Kas RT.
+                                Komponen <em>Kebersihan</em> disalurkan ke Pengelola Sampah dan <em>Duka Cita</em> disalurkan ke DKM Masjid (tidak digabung ke Saldo Kas RT).
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 whitespace-nowrap self-end sm:self-center">
+                        <span className="px-3 py-1.5 rounded-xl bg-white/10 text-emerald-200 font-bold border border-white/15">
+                            🧹 Kebersihan: {fmt(summary.total_kebersihan || 0)}
+                        </span>
+                        <span className="px-3 py-1.5 rounded-xl bg-white/10 text-emerald-200 font-bold border border-white/15">
+                            🕌 Duka Cita: {fmt(summary.total_duka_cita || 0)}
+                        </span>
+                    </div>
+                </div>
+
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <div className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">

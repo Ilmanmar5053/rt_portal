@@ -11,6 +11,9 @@ class TransaksiKasController extends Controller
 {
     public function index(Request $request)
     {
+        // Sinkronkan iuran Kas RT yang Approved secara otomatis
+        TransaksiKas::syncApprovedIuran();
+
         $query = TransaksiKas::with('creator')->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
 
         // Filter by search
@@ -50,6 +53,20 @@ class TransaksiKasController extends Controller
         $totalPemasukan = (clone $filteredQuery)->where('jenis', 'Pemasukan')->sum('jumlah');
         $totalPengeluaran = (clone $filteredQuery)->where('jenis', 'Pengeluaran')->sum('jumlah');
         $saldoAkhir = TransaksiKas::getSaldo();
+
+        // Hitung total akumulasi iuran bertipe non-Kas RT (Kebersihan & Duka Cita) yang disalurkan ke Pihak Ke-3
+        $totalIuranKebersihan = \App\Models\IuranKas::where('status_pembayaran', 'Approved')
+            ->where(function($q) {
+                $q->where('jenis_iuran', 'Kebersihan (Sampah)')
+                  ->orWhere('jenis_iuran', 'like', '%Kebersihan%')
+                  ->orWhere('jenis_iuran', 'like', '%Sampah%');
+            })->sum('jumlah_bayar');
+
+        $totalIuranDukaCita = \App\Models\IuranKas::where('status_pembayaran', 'Approved')
+            ->where(function($q) {
+                $q->where('jenis_iuran', 'Duka Cita')
+                  ->orWhere('jenis_iuran', 'like', '%Duka%');
+            })->sum('jumlah_bayar');
 
         // 2. Grafik Perbandingan Arus Kas per Bulan (Pemasukan vs Pengeluaran)
         $chartYear = $request->query('chart_year', ($request->filled('tahun') && $request->tahun !== 'Semua') ? $request->tahun : (TransaksiKas::selectRaw('MAX(YEAR(tanggal)) as max_year')->value('max_year') ?? date('Y')));
@@ -118,6 +135,8 @@ class TransaksiKasController extends Controller
                 'total_pengeluaran' => (float) $totalPengeluaran,
                 'saldo_bersih' => (float) ($totalPemasukan - $totalPengeluaran),
                 'saldo_akhir' => $saldoAkhir,
+                'total_kebersihan' => (float) $totalIuranKebersihan,
+                'total_duka_cita' => (float) $totalIuranDukaCita,
             ],
             'chartData' => $chartData,
             'rekapPemasukan' => $rekapPemasukan,

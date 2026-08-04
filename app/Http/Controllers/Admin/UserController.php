@@ -22,26 +22,26 @@ class UserController extends Controller
         $role = $request->query('role', 'Semua');
         $registered = $request->query('registered');
 
-        if ($search) {
+        if (!empty($search)) {
             $query->where(function ($query) use ($search) {
                 $query->where('name', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
-        if ($name) {
+        if (!empty($name)) {
             $query->where('name', 'like', "%{$name}%");
         }
 
-        if ($email) {
+        if (!empty($email)) {
             $query->where('email', 'like', "%{$email}%");
         }
 
-        if ($role !== 'Semua') {
+        if (!empty($role) && $role !== 'Semua') {
             $query->where('role', $role);
         }
 
-        if ($registered) {
+        if (!empty($registered)) {
             $query->whereDate('created_at', $registered);
         }
 

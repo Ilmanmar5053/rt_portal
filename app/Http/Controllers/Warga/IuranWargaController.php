@@ -37,7 +37,7 @@ class IuranWargaController extends Controller
             $query->where('status_pembayaran', $request->status);
         }
 
-        $iurans = $query->paginate(10)->withQueryString();
+        $iurans = $query->paginate(36)->withQueryString();
 
         return Inertia::render('Warga/Iuran/Index', [
             'iurans' => $iurans,

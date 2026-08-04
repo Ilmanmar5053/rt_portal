@@ -16,6 +16,7 @@ export default function Edit({ auth, profil }) {
         ttd_ketua: null,
         ttd_sekretaris: null,
         pengurus: profil.pengurus || [],
+        rekening_bank: profil.rekening_bank || [],
     });
 
     const [previewLogo, setPreviewLogo] = useState(
@@ -70,6 +71,22 @@ export default function Edit({ auth, profil }) {
         setData('pengurus', newPengurus);
     };
 
+    const addRekening = () => {
+        setData('rekening_bank', [...(data.rekening_bank || []), { bank: 'BCA', nomor_rekening: '', atas_nama: '', catatan: '' }]);
+    };
+
+    const removeRekening = (index) => {
+        const newRek = [...(data.rekening_bank || [])];
+        newRek.splice(index, 1);
+        setData('rekening_bank', newRek);
+    };
+
+    const updateRekening = (index, field, value) => {
+        const newRek = [...(data.rekening_bank || [])];
+        newRek[index][field] = value;
+        setData('rekening_bank', newRek);
+    };
+
     const submit = (e) => {
         e.preventDefault();
         // Inertia uses post to upload files, even when updating
@@ -82,225 +99,366 @@ export default function Edit({ auth, profil }) {
     return (
         <AdminLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Pengaturan Profil Lingkungan RT</h2>}
+            header={
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white flex items-center justify-center text-lg shadow-sm">
+                            🏛️
+                        </span>
+                        <div>
+                            <h2 className="font-black text-lg text-gray-900 leading-tight">Pengaturan Profil Lingkungan RT</h2>
+                            <p className="text-xs text-gray-500 font-medium">Kelola identitas, tanda tangan digital, kepengurusan, dan rekening kas</p>
+                        </div>
+                    </div>
+                </div>
+            }
         >
             <Head title="Pengaturan Profil" />
 
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                        <div className="p-6 text-gray-900">
-                            
-                            <Transition
-                                show={recentlySuccessful}
-                                enter="transition ease-in-out"
-                                enterFrom="opacity-0"
-                                leave="transition ease-in-out"
-                                leaveTo="opacity-0"
-                            >
-                                <div className="mb-6 bg-green-50 text-green-700 p-4 rounded-xl flex items-center gap-3 border border-green-200">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path></svg>
-                                    Profil RT berhasil diperbarui.
-                                </div>
-                            </Transition>
-
-                            <form onSubmit={submit} className="space-y-8" encType="multipart/form-data">
-                                
-                                {/* Bagian Informasi Umum */}
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Informasi Umum</h3>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div>
-                                            <InputLabel htmlFor="nama_rt" value="Nama Organisasi (Misal: RT 05 / RW 08)" />
-                                            <TextInput
-                                                id="nama_rt"
-                                                type="text"
-                                                className="mt-1 block w-full"
-                                                value={data.nama_rt}
-                                                onChange={(e) => setData('nama_rt', e.target.value)}
-                                                required
-                                            />
-                                            <InputError className="mt-2" message={errors.nama_rt} />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel htmlFor="nomor_wa" value="Nomor WhatsApp (Layanan Warga)" />
-                                            <TextInput
-                                                id="nomor_wa"
-                                                type="text"
-                                                className="mt-1 block w-full"
-                                                value={data.nomor_wa}
-                                                onChange={(e) => setData('nomor_wa', e.target.value)}
-                                                placeholder="Contoh: 0812-3456-7890"
-                                            />
-                                            <InputError className="mt-2" message={errors.nomor_wa} />
-                                        </div>
-
-                                        <div className="md:col-span-2">
-                                            <InputLabel htmlFor="alamat" value="Alamat Lengkap Lingkungan" />
-                                            <textarea
-                                                id="alamat"
-                                                className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
-                                                value={data.alamat}
-                                                onChange={(e) => setData('alamat', e.target.value)}
-                                                rows="3"
-                                            ></textarea>
-                                            <InputError className="mt-2" message={errors.alamat} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Bagian Logo */}
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Logo Organisasi</h3>
-                                    <div className="flex items-center gap-6">
-                                        <div className="w-32 h-32 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
-                                            {previewLogo ? (
-                                                <img src={previewLogo} alt="Logo Preview" className="w-full h-full object-contain p-2" />
-                                            ) : (
-                                                <span className="text-gray-400 text-sm">Belum ada logo</span>
-                                            )}
-                                        </div>
-                                        <div>
-                                            <input 
-                                                type="file" 
-                                                id="logo" 
-                                                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                                                accept="image/*"
-                                                onChange={handleLogoChange}
-                                            />
-                                            <p className="mt-2 text-sm text-gray-500">Gunakan format PNG, JPG, atau SVG transparan agar terlihat rapi.</p>
-                                            <InputError className="mt-2" message={errors.logo} />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Bagian Tanda Tangan Digital */}
-                                <div>
-                                    <h3 className="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Tanda Tangan Digital (E-Surat)</h3>
-                                    <p className="text-sm text-gray-600 mb-6">Upload tanda tangan dalam format PNG dengan background transparan untuk digunakan di surat resmi.</p>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        {/* TTD Ketua */}
-                                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                                            <h4 className="font-semibold text-gray-800 mb-4">Tanda Tangan Ketua RT</h4>
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="w-full h-32 bg-white rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
-                                                    {previewTtdKetua ? (
-                                                        <img src={previewTtdKetua} alt="TTD Ketua Preview" className="max-w-full max-h-full object-contain p-2" />
-                                                    ) : (
-                                                        <span className="text-gray-400 text-sm text-center px-4">Belum ada tanda tangan</span>
-                                                    )}
-                                                </div>
-                                                <div className="w-full">
-                                                    <input 
-                                                        type="file" 
-                                                        id="ttd_ketua" 
-                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-                                                        accept="image/png"
-                                                        onChange={handleTtdKetuaChange}
-                                                    />
-                                                    <p className="mt-2 text-xs text-gray-500">Format: PNG transparan saja</p>
-                                                    <InputError className="mt-2" message={errors.ttd_ketua} />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* TTD Sekretaris */}
-                                        <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
-                                            <h4 className="font-semibold text-gray-800 mb-4">Tanda Tangan Sekretaris</h4>
-                                            <div className="flex flex-col items-center gap-4">
-                                                <div className="w-full h-32 bg-white rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden">
-                                                    {previewTtdSekretaris ? (
-                                                        <img src={previewTtdSekretaris} alt="TTD Sekretaris Preview" className="max-w-full max-h-full object-contain p-2" />
-                                                    ) : (
-                                                        <span className="text-gray-400 text-sm text-center px-4">Belum ada tanda tangan</span>
-                                                    )}
-                                                </div>
-                                                <div className="w-full">
-                                                    <input 
-                                                        type="file" 
-                                                        id="ttd_sekretaris" 
-                                                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-                                                        accept="image/png"
-                                                        onChange={handleTtdSekretarisChange}
-                                                    />
-                                                    <p className="mt-2 text-xs text-gray-500">Format: PNG transparan saja</p>
-                                                    <InputError className="mt-2" message={errors.ttd_sekretaris} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Bagian Kepengurusan */}
-                                <div>
-                                    <div className="flex justify-between items-end border-b pb-2 mb-4">
-                                        <h3 className="text-lg font-bold text-gray-900">Struktur Kepengurusan</h3>
-                                        <button 
-                                            type="button" 
-                                            onClick={addPengurus}
-                                            className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full flex items-center gap-1 shadow-sm transition"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                                            Tambah Pengurus
-                                        </button>
-                                    </div>
-
-                                    {data.pengurus.length === 0 ? (
-                                        <p className="text-gray-500 italic text-sm py-4">Belum ada data kepengurusan. Silakan tambah data.</p>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {data.pengurus.map((item, index) => (
-                                                <div key={index} className="flex flex-col sm:flex-row items-center gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                                    <div className="flex-1 w-full">
-                                                        <InputLabel value="Jabatan (Misal: Ketua RT)" />
-                                                        <TextInput
-                                                            type="text"
-                                                            className="mt-1 block w-full"
-                                                            value={item.jabatan}
-                                                            onChange={(e) => updatePengurus(index, 'jabatan', e.target.value)}
-                                                            required
-                                                        />
-                                                        {errors[`pengurus.${index}.jabatan`] && <InputError className="mt-1" message={errors[`pengurus.${index}.jabatan`]} />}
-                                                    </div>
-                                                    <div className="flex-1 w-full">
-                                                        <InputLabel value="Nama Lengkap" />
-                                                        <TextInput
-                                                            type="text"
-                                                            className="mt-1 block w-full"
-                                                            value={item.nama}
-                                                            onChange={(e) => updatePengurus(index, 'nama', e.target.value)}
-                                                            required
-                                                        />
-                                                        {errors[`pengurus.${index}.nama`] && <InputError className="mt-1" message={errors[`pengurus.${index}.nama`]} />}
-                                                    </div>
-                                                    <div className="sm:mt-6 w-full sm:w-auto">
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => removePengurus(index)}
-                                                            className="w-full sm:w-auto text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1"
-                                                        >
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                                            Hapus
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center justify-end pt-6 border-t">
-                                    <PrimaryButton disabled={processing} className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-sm rounded-xl">
-                                        Simpan Perubahan
-                                    </PrimaryButton>
-                                </div>
-
-                            </form>
+            <div className="py-6">
+                <div className="max-w-5xl mx-auto px-4 sm:px-6">
+                    <Transition
+                        show={recentlySuccessful}
+                        enter="transition ease-in-out duration-300"
+                        enterFrom="opacity-0 -translate-y-2"
+                        enterTo="opacity-100 translate-y-0"
+                        leave="transition ease-in-out duration-300"
+                        leaveFrom="opacity-100 translate-y-0"
+                        leaveTo="opacity-0 -translate-y-2"
+                    >
+                        <div className="mb-6 bg-emerald-50 text-emerald-800 p-4 rounded-2xl flex items-center gap-3 border border-emerald-200 shadow-xs">
+                            <span className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">✓</span>
+                            <div>
+                                <h4 className="font-extrabold text-sm">Berhasil Disimpan!</h4>
+                                <p className="text-xs text-emerald-700">Profil lingkungan RT telah diperbarui dan otomatis tersinkron ke dashboard warga.</p>
+                            </div>
                         </div>
-                    </div>
+                    </Transition>
+
+                    <form onSubmit={submit} className="space-y-6" encType="multipart/form-data">
+                        
+                        {/* CARD 1: INFORMASI UMUM */}
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+                            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex items-center gap-2.5">
+                                <span className="text-base">🏛️</span>
+                                <div>
+                                    <h3 className="text-sm font-black text-gray-900">Informasi Umum & Kontak</h3>
+                                    <p className="text-[11px] text-gray-500">Identitas utama lingkungan dan kontak layanan warga</p>
+                                </div>
+                            </div>
+                            
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <InputLabel htmlFor="nama_rt" value="Nama Organisasi (Misal: RT 009 / RW 006)" />
+                                    <TextInput
+                                        id="nama_rt"
+                                        type="text"
+                                        className="mt-1 block w-full text-sm rounded-xl"
+                                        value={data.nama_rt}
+                                        onChange={(e) => setData('nama_rt', e.target.value)}
+                                        required
+                                    />
+                                    <InputError className="mt-1.5 text-xs" message={errors.nama_rt} />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="nomor_wa" value="Nomor WhatsApp (Layanan Warga)" />
+                                    <TextInput
+                                        id="nomor_wa"
+                                        type="text"
+                                        className="mt-1 block w-full text-sm rounded-xl"
+                                        value={data.nomor_wa}
+                                        onChange={(e) => setData('nomor_wa', e.target.value)}
+                                        placeholder="Contoh: 0812-3456-7890"
+                                    />
+                                    <InputError className="mt-1.5 text-xs" message={errors.nomor_wa} />
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <InputLabel htmlFor="alamat" value="Alamat Lengkap Lingkungan" />
+                                    <textarea
+                                        id="alamat"
+                                        className="mt-1 block w-full border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 rounded-xl shadow-xs text-sm"
+                                        value={data.alamat}
+                                        onChange={(e) => setData('alamat', e.target.value)}
+                                        rows="2"
+                                        placeholder="Contoh: Jl. Perumahan Asri Blok C No. 1-20..."
+                                    ></textarea>
+                                    <InputError className="mt-1.5 text-xs" message={errors.alamat} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CARD 2: ASSETS GRAFIS (LOGO & TTD) */}
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+                            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-base">🖼️</span>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900">Aset Grafis (Logo & E-Surat)</h3>
+                                        <p className="text-[11px] text-gray-500">Logo RT dan tanda tangan digital untuk dokumen & surat resmi</p>
+                                    </div>
+                                </div>
+                                <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-extrabold border border-emerald-200">
+                                    Format: PNG / JPG
+                                </span>
+                            </div>
+
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
+                                {/* Logo */}
+                                <div className="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 flex flex-col items-center text-center">
+                                    <div className="text-xs font-black text-gray-800 mb-2.5">Logo Lingkungan</div>
+                                    <div className="w-20 h-20 bg-white rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden mb-3 shadow-2xs">
+                                        {previewLogo ? (
+                                            <img src={previewLogo} alt="Logo Preview" className="w-full h-full object-contain p-1.5" />
+                                        ) : (
+                                            <span className="text-gray-400 text-[10px] font-medium">Belum ada</span>
+                                        )}
+                                    </div>
+                                    <label htmlFor="logo" className="w-full cursor-pointer bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-extrabold transition text-center shadow-2xs">
+                                        Pilih Logo...
+                                        <input 
+                                            type="file" 
+                                            id="logo" 
+                                            className="hidden"
+                                            accept="image/*"
+                                            onChange={handleLogoChange}
+                                        />
+                                    </label>
+                                    <InputError className="mt-1 text-[11px]" message={errors.logo} />
+                                </div>
+
+                                {/* TTD Ketua */}
+                                <div className="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 flex flex-col items-center text-center">
+                                    <div className="text-xs font-black text-gray-800 mb-2.5">TTD Ketua RT</div>
+                                    <div className="w-24 h-20 bg-white rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden mb-3 shadow-2xs">
+                                        {previewTtdKetua ? (
+                                            <img src={previewTtdKetua} alt="TTD Ketua" className="max-w-full max-h-full object-contain p-1.5" />
+                                        ) : (
+                                            <span className="text-gray-400 text-[10px] font-medium">Belum ada</span>
+                                        )}
+                                    </div>
+                                    <label htmlFor="ttd_ketua" className="w-full cursor-pointer bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-extrabold transition text-center shadow-2xs">
+                                        Upload TTD Ketua...
+                                        <input 
+                                            type="file" 
+                                            id="ttd_ketua" 
+                                            className="hidden"
+                                            accept="image/png"
+                                            onChange={handleTtdKetuaChange}
+                                        />
+                                    </label>
+                                    <InputError className="mt-1 text-[11px]" message={errors.ttd_ketua} />
+                                </div>
+
+                                {/* TTD Sekretaris */}
+                                <div className="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 flex flex-col items-center text-center">
+                                    <div className="text-xs font-black text-gray-800 mb-2.5">TTD Sekretaris</div>
+                                    <div className="w-24 h-20 bg-white rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 overflow-hidden mb-3 shadow-2xs">
+                                        {previewTtdSekretaris ? (
+                                            <img src={previewTtdSekretaris} alt="TTD Sekretaris" className="max-w-full max-h-full object-contain p-1.5" />
+                                        ) : (
+                                            <span className="text-gray-400 text-[10px] font-medium">Belum ada</span>
+                                        )}
+                                    </div>
+                                    <label htmlFor="ttd_sekretaris" className="w-full cursor-pointer bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-extrabold transition text-center shadow-2xs">
+                                        Upload TTD Sekretaris...
+                                        <input 
+                                            type="file" 
+                                            id="ttd_sekretaris" 
+                                            className="hidden"
+                                            accept="image/png"
+                                            onChange={handleTtdSekretarisChange}
+                                        />
+                                    </label>
+                                    <InputError className="mt-1 text-[11px]" message={errors.ttd_sekretaris} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* CARD 3: STRUKTUR KEPENGURUSAN */}
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+                            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-base">👥</span>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900">Struktur Kepengurusan RT</h3>
+                                        <p className="text-[11px] text-gray-500">Daftar nama dan jabatan pengurus lingkungan</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={addPengurus}
+                                    className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl font-extrabold flex items-center gap-1 shadow-2xs transition"
+                                >
+                                    <span>+</span>
+                                    <span>Tambah Pengurus</span>
+                                </button>
+                            </div>
+
+                            <div className="p-6">
+                                {data.pengurus.length === 0 ? (
+                                    <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                        <p className="text-gray-500 italic text-xs">Belum ada data kepengurusan. Klik tombol "Tambah Pengurus" di atas.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {data.pengurus.map((item, index) => (
+                                            <div key={index} className="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-gray-50/70 p-3 rounded-xl border border-gray-200/80 items-center">
+                                                <div className="sm:col-span-5">
+                                                    <InputLabel value="Jabatan" className="text-[11px] text-gray-500 mb-1" />
+                                                    <TextInput
+                                                        type="text"
+                                                        className="block w-full text-xs rounded-xl"
+                                                        placeholder="Misal: Ketua RT / Bendahara"
+                                                        value={item.jabatan}
+                                                        onChange={(e) => updatePengurus(index, 'jabatan', e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="sm:col-span-6">
+                                                    <InputLabel value="Nama Lengkap" className="text-[11px] text-gray-500 mb-1" />
+                                                    <TextInput
+                                                        type="text"
+                                                        className="block w-full text-xs rounded-xl"
+                                                        placeholder="Misal: H. Achmad S..."
+                                                        value={item.nama}
+                                                        onChange={(e) => updatePengurus(index, 'nama', e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="sm:col-span-1 flex justify-end sm:mt-5">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => removePengurus(index)}
+                                                        className="w-full sm:w-auto text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 p-2.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center"
+                                                        title="Hapus Pengurus"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* CARD 4: REKENING & INFO PEMBAYARAN IURAN */}
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-xs overflow-hidden">
+                            <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <span className="text-base">💳</span>
+                                    <div>
+                                        <h3 className="text-sm font-black text-gray-900">Rekening Bank & Kas Iuran</h3>
+                                        <p className="text-[11px] text-gray-500">Tampil otomatis pada pop-up pembayaran di dashboard warga</p>
+                                    </div>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    onClick={addRekening}
+                                    className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl font-extrabold flex items-center gap-1 shadow-2xs transition"
+                                >
+                                    <span>+</span>
+                                    <span>Tambah Rekening</span>
+                                </button>
+                            </div>
+
+                            <div className="p-6">
+                                {!data.rekening_bank || data.rekening_bank.length === 0 ? (
+                                    <div className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                        <p className="text-gray-500 italic text-xs">Belum ada data rekening. Klik tombol "Tambah Rekening" di atas.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {data.rekening_bank.map((item, index) => (
+                                            <div key={index} className="grid grid-cols-1 sm:grid-cols-12 gap-3 bg-gray-50/70 p-3 rounded-xl border border-gray-200/80 items-center">
+                                                <div className="sm:col-span-3">
+                                                    <InputLabel value="Bank / E-Wallet" className="text-[11px] text-gray-500 mb-1" />
+                                                    <select
+                                                        className="block w-full border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 rounded-xl shadow-xs text-xs"
+                                                        value={item.bank || 'BCA'}
+                                                        onChange={(e) => updateRekening(index, 'bank', e.target.value)}
+                                                    >
+                                                        <option value="BCA">BCA (Bank Central Asia)</option>
+                                                        <option value="Mandiri">Bank Mandiri</option>
+                                                        <option value="BNI">BNI</option>
+                                                        <option value="BRI">BRI</option>
+                                                        <option value="BSI">BSI (Syariah)</option>
+                                                        <option value="Bank Jago">Bank Jago</option>
+                                                        <option value="SeaBank">SeaBank</option>
+                                                        <option value="DANA">DANA</option>
+                                                        <option value="OVO">OVO</option>
+                                                        <option value="GoPay">GoPay</option>
+                                                        <option value="Lainnya">Bank / Kas Lainnya</option>
+                                                    </select>
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                    <InputLabel value="Nomor Rekening / HP" className="text-[11px] text-gray-500 mb-1" />
+                                                    <TextInput
+                                                        type="text"
+                                                        className="block w-full text-xs rounded-xl font-mono"
+                                                        placeholder="Contoh: 5480012345"
+                                                        value={item.nomor_rekening || ''}
+                                                        onChange={(e) => updateRekening(index, 'nomor_rekening', e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="sm:col-span-3">
+                                                    <InputLabel value="Atas Nama (A/N)" className="text-[11px] text-gray-500 mb-1" />
+                                                    <TextInput
+                                                        type="text"
+                                                        className="block w-full text-xs rounded-xl"
+                                                        placeholder="Contoh: Pengurus RT 009"
+                                                        value={item.atas_nama || ''}
+                                                        onChange={(e) => updateRekening(index, 'atas_nama', e.target.value)}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="sm:col-span-2">
+                                                    <InputLabel value="Catatan (Opsional)" className="text-[11px] text-gray-500 mb-1" />
+                                                    <TextInput
+                                                        type="text"
+                                                        className="block w-full text-xs rounded-xl"
+                                                        placeholder="Kas RT / Kebersihan"
+                                                        value={item.catatan || ''}
+                                                        onChange={(e) => updateRekening(index, 'catatan', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="sm:col-span-1 flex justify-end sm:mt-5">
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => removeRekening(index)}
+                                                        className="w-full sm:w-auto text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 p-2.5 rounded-xl text-xs font-extrabold transition flex items-center justify-center"
+                                                        title="Hapus Rekening"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* STICKY FOOTER ACTION BAR */}
+                        <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md px-6 py-4 rounded-2xl border border-gray-200/80 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 text-xs text-gray-500 font-medium">
+                                <span className="text-emerald-600 font-bold">⚡ Info:</span>
+                                <span>Perubahan ini langsung berlaku di dashboard utama maupun portal warga.</span>
+                            </div>
+                            <button 
+                                type="submit" 
+                                disabled={processing} 
+                                className="w-full sm:w-auto px-7 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-extrabold rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                <span>💾</span>
+                                <span>{processing ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                            </button>
+                        </div>
+
+                    </form>
                 </div>
             </div>
         </AdminLayout>

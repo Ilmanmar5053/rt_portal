@@ -1,7 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { getNamaPerumahan, getNamaRt } from '@/Utils/profilHelper';
+import FloatingProgramBanner from '@/Components/FloatingProgramBanner';
 
-export default function Welcome({ auth, profil }) {
+export default function Welcome({ auth, profil, activePrograms }) {
     const namaPerumahan = getNamaPerumahan(profil);
     const namaRt = getNamaRt(profil);
     const features = [
@@ -53,6 +54,7 @@ export default function Welcome({ auth, profil }) {
     return (
         <>
             <Head title={`Portal ${namaPerumahan} - ${namaRt}`} />
+            <FloatingProgramBanner activePrograms={activePrograms} />
             <div className="min-h-screen bg-slate-50 selection:bg-emerald-600 selection:text-white font-sans overflow-x-hidden w-full max-w-full relative text-gray-800">
                 
                 {/* Fixed Clean Header / Navbar */}

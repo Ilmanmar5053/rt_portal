@@ -7,9 +7,9 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import FormSection from '@/Components/FormSection';
 
-export default function Create({ keluargas }) {
+export default function Create({ keluargas, default_keluarga_id }) {
     const { data, setData, post, processing, errors } = useForm({
-        keluarga_id: '',
+        keluarga_id: default_keluarga_id || '',
         nik: '',
         nama_lengkap: '',
         tempat_lahir: '',
@@ -107,7 +107,7 @@ export default function Create({ keluargas }) {
                                         <option value="">-- Pilih Kartu Keluarga --</option>
                                         {keluargas.map(kk => (
                                             <option key={kk.id} value={kk.id}>
-                                                {kk.no_kk} - {kk.kepala_keluarga ? `Kepala: ${kk.kepala_keluarga.nama_lengkap}` : 'Belum ada Kepala Keluarga'}
+                                                {kk.no_kk} - {kk.kepala_keluarga ? `Kepala: ${kk.kepala_keluarga.nama_lengkap}` : kk.kepala_keluarga_nama ? `Kepala: ${kk.kepala_keluarga_nama}` : 'Belum ada Kepala Keluarga'}
                                             </option>
                                         ))}
                                     </select>

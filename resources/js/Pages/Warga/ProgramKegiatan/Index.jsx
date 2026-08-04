@@ -1,16 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import WargaLayout from '@/Layouts/WargaLayout';
+import { getNamaRt } from '@/Utils/profilHelper';
 
 // ─── Countdown Hook
-function useCountdown(tanggalSelesai) {
+function useCountdown(tanggalSelesai, tanggalMulai) {
     const [timeLeft, setTimeLeft] = useState(null);
+
     useEffect(() => {
-        if (!tanggalSelesai) return;
-        const end = new Date(tanggalSelesai).getTime();
+        const targetDate = tanggalSelesai || tanggalMulai;
+        if (!targetDate) return;
+
+        const d = new Date(targetDate);
+        if (!isNaN(d.getTime())) {
+            d.setHours(23, 59, 59, 999);
+        }
+        const end = d.getTime();
+
         const tick = () => {
-            const diff = end - Date.now();
-            if (diff <= 0) { setTimeLeft({ d: 0, h: 0, m: 0, s: 0, expired: true }); return; }
+            const now = Date.now();
+            const diff = end - now;
+            if (diff <= 0) {
+                setTimeLeft({ d: 0, h: 0, m: 0, s: 0, expired: true });
+                return;
+            }
             setTimeLeft({
                 d: Math.floor(diff / 86400000),
                 h: Math.floor((diff % 86400000) / 3600000),
@@ -19,17 +32,25 @@ function useCountdown(tanggalSelesai) {
                 expired: false,
             });
         };
+
         tick();
         const id = setInterval(tick, 1000);
         return () => clearInterval(id);
-    }, [tanggalSelesai]);
+    }, [tanggalSelesai, tanggalMulai]);
+
     return timeLeft;
 }
 
-function CountdownBadge({ tanggalSelesai }) {
-    const t = useCountdown(tanggalSelesai);
+function CountdownBadge({ tanggalSelesai, tanggalMulai, status }) {
+    const t = useCountdown(tanggalSelesai, tanggalMulai);
     if (!t) return null;
-    if (t.expired) return <div className="mt-1.5 px-2 py-1 rounded-lg bg-gray-100 text-gray-500 text-[10px] font-bold text-center">⏱ Berakhir</div>;
+    if (t.expired || status === 'Selesai') {
+        return (
+            <div className="mt-1.5 px-2 py-1 rounded-lg bg-gray-100 text-gray-500 text-[10px] font-bold text-center">
+                ⏱ Berakhir / Selesai
+            </div>
+        );
+    }
     return (
         <div className="mt-1.5 rounded-lg bg-emerald-950/90 border border-emerald-600/40 px-2 py-1.5">
             <div className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider text-center mb-1">⏱ Sisa Waktu</div>
@@ -46,6 +67,8 @@ function CountdownBadge({ tanggalSelesai }) {
 }
 
 export default function Index({ programs, filters, kategoriList, statusList }) {
+    const { profil } = usePage().props;
+    const namaRt = getNamaRt(profil);
     const [search, setSearch] = useState(filters.search || '');
     const [kategori, setKategori] = useState(filters.kategori || 'Semua');
     const [status, setStatus] = useState(filters.status || 'Semua');
@@ -157,7 +180,7 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
             header={
                 <div>
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight">
-                        Program & Kegiatan Warga RT 05 / RW 08
+                        Program & Kegiatan Warga {namaRt}
                     </h2>
                     <p className="text-sm text-gray-600 mt-1">
                         Informasi lengkap agenda, acara lingkungan, serta program kerja pengurus RT untuk seluruh warga.
@@ -168,17 +191,22 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
             <Head title="Program & Kegiatan - Warga" />
 
             {/* Welcome atmospheric banner */}
-            <div className="card-residential overflow-hidden bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 p-6 sm:p-8 text-white mb-8 shadow-lg">
-                <div className="max-w-2xl">
-                    <span className="inline-block px-3 py-1 rounded-full bg-white/10 text-emerald-200 text-xs font-bold uppercase tracking-widest mb-3 border border-white/10">
-                        ✨ Transparansi & Publikasi RT
+            <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-rose-900 rounded-3xl p-6 sm:p-7 shadow-lg shadow-emerald-900/10 text-white relative overflow-hidden mb-8">
+                <div className="relative z-10 max-w-3xl">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-100 text-xs font-bold mb-3 border border-white/20">
+                        <span>✨ Transparansi & Publikasi RT</span>
                     </span>
-                    <h3 className="text-xl sm:text-2xl font-black">
+                    <h3 className="text-xl sm:text-2xl font-black tracking-tight mb-2">
                         Mari Bergotong Royong & Ikuti Kegiatan Lingkungan Kita
                     </h3>
-                    <p className="text-sm text-emerald-100 mt-2 leading-relaxed">
+                    <p className="text-sm text-emerald-100/90 leading-relaxed font-medium">
                         Pengurus RT senantiasa berupaya merencanakan kegiatan sosial, keamanan, dan kebersihan yang bermanfaat. Pantau jadwal dan hubungi penanggung jawab (PIC) jika Anda ingin berkontribusi!
                     </p>
+                </div>
+                <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+                    <svg className="w-56 h-56" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                    </svg>
                 </div>
             </div>
 
@@ -266,7 +294,7 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
                                                 🎪
                                             </div>
                                             <span className="text-xs font-semibold uppercase tracking-widest text-emerald-200">
-                                                RT 05 / RW 08
+                                                {namaRt}
                                             </span>
                                             <h4 className="text-base font-black leading-snug mt-1 text-white line-clamp-2">
                                                 {program.nama_program}
@@ -290,6 +318,11 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
                                     <h3 className="text-lg font-black text-gray-900 group-hover:text-emerald-700 transition-colors line-clamp-1">
                                         {program.nama_program}
                                     </h3>
+
+                                    {/* Countdown for all active/planned events */}
+                                    {program.status !== 'Dibatalkan' && (
+                                        <CountdownBadge tanggalSelesai={program.tanggal_selesai} tanggalMulai={program.tanggal_mulai} status={program.status} />
+                                    )}
 
                                     {/* Date & Time */}
                                     <div className="mt-3 space-y-1.5 text-xs text-gray-600">

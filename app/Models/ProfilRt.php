@@ -17,9 +17,12 @@ class ProfilRt extends Model
         'ttd_ketua_path',
         'ttd_sekretaris_path',
         'pengurus',
+        'rekening_bank',
+        'map_image_path',
     ];
 
     protected $casts = [
         'pengurus' => 'array',
+        'rekening_bank' => 'array',
     ];
 }

@@ -19,6 +19,7 @@ class RolePermissionController extends Controller
         'program_kegiatan'  => ['name' => 'Program & Kegiatan',  'icon' => 'calendar'],
         'pengaduan'         => ['name' => 'Pengaduan',           'icon' => 'chat'],
         'surat_pengantar'   => ['name' => 'Surat Pengantar',     'icon' => 'document'],
+        'bansos'            => ['name' => 'Bantuan Sosial',      'icon' => 'gift'],
     ];
 
     const ACTIONS = [

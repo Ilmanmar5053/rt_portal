@@ -180,7 +180,7 @@ export default function Create({ kategoriList, statusList }) {
                                 required
                                 value={data.lokasi}
                                 onChange={(e) => setData('lokasi', e.target.value)}
-                                placeholder="Contoh: Balai Warga RT 05 / Taman Perumahan"
+                                placeholder="Contoh: Balai Warga / Taman Perumahan"
                                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             />
                             {errors.lokasi && (

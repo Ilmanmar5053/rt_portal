@@ -1,15 +1,28 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Create({ wargas }) {
+export default function Create({ wargas, jenisIurans = [] }) {
+    const defaultJenis = (jenisIurans && jenisIurans.length > 0) ? jenisIurans[0].nama_iuran : 'Kebersihan (Sampah)';
+    const defaultNominal = (jenisIurans && jenisIurans.length > 0) ? jenisIurans[0].nominal_default : 35000;
+
     const { data, setData, post, processing, errors } = useForm({
         warga_id: '',
-        jenis_iuran: 'Wajib',
+        jenis_iuran: defaultJenis,
         periode_bulan: new Date().getMonth() + 1,
         periode_tahun: new Date().getFullYear(),
-        jumlah_bayar: '',
+        jumlah_bayar: defaultNominal,
         status_pembayaran: 'Pending',
     });
+
+    const handleJenisChange = (e) => {
+        const val = e.target.value;
+        const found = (jenisIurans || []).find(j => j.nama_iuran === val);
+        setData(data => ({
+            ...data,
+            jenis_iuran: val,
+            jumlah_bayar: found ? found.nominal_default : data.jumlah_bayar,
+        }));
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -37,11 +50,15 @@ export default function Create({ wargas }) {
                                     required
                                 >
                                     <option value="">-- Pilih KK / Kepala Keluarga --</option>
-                                    {wargas.map(w => (
-                                        <option key={w.id} value={w.id}>
-                                            {w.nama_lengkap} (KK: {w.keluarga?.no_kk || '—'}){w.keluarga?.rumah_blok ? ` • Blok ${w.keluarga.rumah_blok.blok}-${w.keluarga.rumah_blok.nomor_rumah}` : ''}
-                                        </option>
-                                    ))}
+                                    {wargas.map(w => {
+                                        const rumah = w.keluarga?.rumah_blok;
+                                        const blokLabel = rumah ? ` (Blok ${rumah.blok}-${rumah.nomor_rumah})` : (w.keluarga?.no_kk ? ` (KK: ${w.keluarga.no_kk})` : '');
+                                        return (
+                                            <option key={w.id} value={w.id}>
+                                                {w.nama_lengkap}{blokLabel}
+                                            </option>
+                                        );
+                                    })}
                                 </select>
                                 {errors.warga_id && <p className="mt-1 text-sm text-red-600">{errors.warga_id}</p>}
                             </div>
@@ -51,15 +68,27 @@ export default function Create({ wargas }) {
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Jenis Iuran *</label>
                                     <select
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 font-bold text-sm"
                                         value={data.jenis_iuran}
-                                        onChange={e => setData('jenis_iuran', e.target.value)}
+                                        onChange={handleJenisChange}
                                         required
                                     >
-                                        <option value="Wajib">Wajib (Bulanan)</option>
-                                        <option value="Sukarela">Sukarela</option>
-                                        <option value="Keamanan">Keamanan</option>
-                                        <option value="Sampah">Kebersihan/Sampah</option>
+                                        {(jenisIurans && jenisIurans.length > 0) ? (
+                                            jenisIurans.map(j => (
+                                                <option key={j.id} value={j.nama_iuran}>
+                                                    {j.nama_iuran} (Rp {Number(j.nominal_default).toLocaleString('id-ID')})
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <>
+                                                <option value="Kebersihan (Sampah)">Kebersihan (Sampah)</option>
+                                                <option value="Duka Cita">Duka Cita</option>
+                                                <option value="Kas RT">Kas RT</option>
+                                                <option value="Wajib">Wajib (Bulanan)</option>
+                                                <option value="Sukarela">Sukarela</option>
+                                                <option value="Keamanan">Keamanan</option>
+                                            </>
+                                        )}
                                     </select>
                                     {errors.jenis_iuran && <p className="mt-1 text-sm text-red-600">{errors.jenis_iuran}</p>}
                                 </div>

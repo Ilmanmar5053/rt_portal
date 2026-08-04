@@ -34,8 +34,16 @@ class PengaduanController extends Controller
 
         $pengaduans = $query->paginate(10)->withQueryString();
 
+        $stats = [
+            'total' => Pengaduan::count(),
+            'baru' => Pengaduan::where('status_progres', 'Diajukan')->count(),
+            'diproses' => Pengaduan::where('status_progres', 'Diproses')->count(),
+            'selesai' => Pengaduan::where('status_progres', 'Selesai')->count(),
+        ];
+
         return Inertia::render('Admin/Pengaduan/Index', [
             'pengaduans' => $pengaduans,
+            'stats' => $stats,
             'filters' => [
                 'search' => $request->search,
                 'status' => $request->status ?? 'Semua',
