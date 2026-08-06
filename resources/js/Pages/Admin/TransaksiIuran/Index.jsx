@@ -187,6 +187,53 @@ export default function Index({ transaksis, filters, summary, profilRt }) {
         window.print();
     };
 
+    const handleDownloadPdf = async () => {
+        try {
+            const element = document.getElementById('kwitansi-printable-area');
+            if (!element) {
+                alert('Elemen kwitansi tidak ditemukan!');
+                return;
+            }
+            
+            // Dynamic import to avoid SSR/Vite build issues
+            const html2canvasModule = await import('html2canvas');
+            const jsPDFModule = await import('jspdf');
+            
+            const html2canvas = html2canvasModule.default || html2canvasModule;
+            const jsPDF = jsPDFModule.default || jsPDFModule.jsPDF;
+
+            // Render element to canvas
+            const canvas = await html2canvas(element, { 
+                scale: 2, 
+                useCORS: true,
+                backgroundColor: '#ffffff'
+            });
+            
+            const imgData = canvas.toDataURL('image/jpeg', 0.98);
+            
+            // Buat PDF A5 Landscape (210mm x 148.5mm)
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: 'a5'
+            });
+            
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            // Posisikan di tengah vertikal jika canvas lebih pendek dari kertas A5
+            const pageHeight = pdf.internal.pageSize.getHeight();
+            const yPos = pdfHeight < pageHeight ? (pageHeight - pdfHeight) / 2 : 0;
+            
+            pdf.addImage(imgData, 'JPEG', 0, yPos, pdfWidth, pdfHeight);
+            pdf.save(`Kwitansi_${selectedKwitansi?.nomor_kwitansi || 'Terima'}.pdf`);
+            
+        } catch (error) {
+            console.error('Error saat membuat PDF:', error);
+            alert('Gagal membuat PDF. Coba kembali beberapa saat. (Lihat console untuk detail error)');
+        }
+    };
+
     const getKategoriBadge = (kat) => {
         switch (kat) {
             case 'pengelolaan_sampah':
@@ -205,6 +252,18 @@ export default function Index({ transaksis, filters, summary, profilRt }) {
             {/* CSS Print Rules khusus Kwitansi Digital */}
             <style>{`
                 @media print {
+                    @page {
+                        size: landscape;
+                        margin: 0;
+                    }
+                    html, body {
+                        width: 100vw !important;
+                        height: 100vh !important;
+                        overflow: hidden !important;
+                        margin: 0 !important;
+                        padding: 0 !important;
+                        background: #fff !important;
+                    }
                     body * {
                         visibility: hidden !important;
                     }
@@ -212,12 +271,17 @@ export default function Index({ transaksis, filters, summary, profilRt }) {
                         visibility: visible !important;
                     }
                     #kwitansi-printable-area {
-                        position: absolute !important;
+                        position: fixed !important;
                         left: 0 !important;
                         top: 0 !important;
-                        width: 100% !important;
-                        padding: 20px !important;
+                        width: 100vw !important;
+                        height: 100vh !important;
+                        padding: 10mm !important;
+                        margin: 0 !important;
                         background: #ffffff !important;
+                        box-sizing: border-box !important;
+                        page-break-after: avoid !important;
+                        page-break-before: avoid !important;
                     }
                     .no-print {
                         display: none !important;
@@ -668,16 +732,23 @@ export default function Index({ transaksis, filters, summary, profilRt }) {
             {/* MODAL KWITANSI DIGITAL FORMAL (VIEW & PRINT READY) */}
             {/* ════════════════════════════════════════════════════════════════════════════════════ */}
             {isKwitansiModalOpen && selectedKwitansi && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md overflow-y-auto">
-                    <div className="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-gray-100 space-y-4 my-6 relative">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm overflow-y-auto sm:p-4 print:bg-white print:p-0">
+                    <div className="bg-white shadow-2xl relative flex flex-col mx-auto print:shadow-none print:w-full print:max-w-none" style={{ width: '28cm', maxWidth: '100vw' }}>
                         
                         {/* Header Action Buttons (Hidden when printing) */}
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-3 no-print">
+                        <div className="flex items-center justify-between border-b border-gray-200 p-3 bg-gray-50 no-print">
                             <div className="flex items-center gap-2">
                                 <span className="text-xl">🧾</span>
                                 <h3 className="text-base font-black text-gray-900">Kwitansi Digital Formal</h3>
                             </div>
                             <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleDownloadPdf}
+                                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 transition cursor-pointer flex items-center gap-1.5"
+                                >
+                                    <span>💾</span>
+                                    <span>Save to PDF</span>
+                                </button>
                                 <button
                                     onClick={handlePrintKwitansi}
                                     className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-md shadow-emerald-500/20 transition cursor-pointer flex items-center gap-1.5"
@@ -695,134 +766,102 @@ export default function Index({ transaksis, filters, summary, profilRt }) {
                         </div>
 
                         {/* ─── PRINTABLE DOCUMENT BODY ─── */}
-                        <div id="kwitansi-printable-area" ref={printRef} className="p-6 bg-white border-2 border-emerald-900 rounded-2xl space-y-5 text-gray-900 relative overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <div id="kwitansi-printable-area" ref={printRef} className="p-8 bg-white text-gray-900 relative font-sans flex-shrink-0" style={{ width: '100%', minHeight: '15cm' }}>
                             
-                            {/* Watermark LUNAS / DISERAHKAN */}
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none opacity-10 font-black text-7xl text-emerald-800 rotate-[-25deg] select-none tracking-widest">
-                                DISERAHKAN
-                            </div>
-
                             {/* Header Kop Kwitansi */}
-                            <div className="flex justify-between items-start border-b-2 border-emerald-900 pb-4">
-                                <div className="flex items-center gap-3">
-                                    {profilRt?.logo_path ? (
-                                        <img src={`/storage/${profilRt.logo_path}`} alt="Logo RT" className="h-14 w-14 object-contain" />
-                                    ) : (
-                                        <div className="w-14 h-14 rounded-2xl bg-emerald-900 text-white font-black text-xl flex items-center justify-center border border-emerald-700">
-                                            RT
-                                        </div>
-                                    )}
-                                    <div>
-                                        <h2 className="text-lg font-black tracking-tight text-emerald-950 uppercase">
-                                            {profilRt?.nama_rt || 'PORTAL RT 05 / RW 012'}
-                                        </h2>
-                                        <p className="text-xs font-bold text-gray-600">
-                                            {profilRt?.alamat_lengkap || 'Puri Delta Residence, Kelurahan Delta, Kab. Bekasi'}
-                                        </p>
-                                        <p className="text-[11px] text-gray-500 font-medium">
-                                            Telepon/WA: {profilRt?.kontak_rt || '0812-3456-7890'} | Email: admin@rt05.id
-                                        </p>
+                            <div className="flex items-center gap-5 mb-4">
+                                {profilRt?.logo_path ? (
+                                    <img src={`/storage/${profilRt.logo_path}`} alt="Logo RT" className="h-20 w-20 object-contain" />
+                                ) : (
+                                    <div className="w-20 h-20 rounded-full bg-emerald-900 text-white font-black text-2xl flex items-center justify-center border-2 border-emerald-700 flex-shrink-0">
+                                        RT
                                     </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="inline-block px-3 py-1 bg-emerald-900 text-white font-black text-sm rounded-lg uppercase tracking-wider shadow-sm">
-                                        KWITANSI DIGITAL
-                                    </div>
-                                    <p className="mt-1 text-xs font-mono font-bold text-gray-700">
-                                        No. {selectedKwitansi.nomor_kwitansi}
+                                )}
+                                <div>
+                                    <h2 className="text-xl font-black text-red-700 uppercase tracking-wide">
+                                        {profilRt?.nama_rt || 'PORTAL LINGKUNGAN RT 09 / RW 06'}
+                                    </h2>
+                                    <p className="text-[13px] font-medium text-gray-800 mt-1 leading-tight max-w-[90%]">
+                                        {profilRt?.alamat || 'Puri Delta Residence, Kelurahan Delta, Kab. Bekasi'}
                                     </p>
-                                    <p className="text-[11px] text-gray-500 font-semibold">
-                                        Tanggal: {new Date(selectedKwitansi.tanggal_penyerahan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                    <p className="text-[12px] text-gray-600 font-bold mt-0.5">
+                                        Telp/WA: {profilRt?.nomor_wa || '0812-3456-7890'}
                                     </p>
                                 </div>
+                            </div>
+                            
+                            {/* Thick Red Line */}
+                            <div className="w-full border-t-[3px] border-red-700 mb-5"></div>
+
+                            {/* Title */}
+                            <div className="text-center mb-6">
+                                <h3 className="text-xl font-black uppercase tracking-widest inline-block border-b-[2px] border-gray-900 pb-1">
+                                    KWITANSI / TANDA TERIMA
+                                </h3>
                             </div>
 
                             {/* Content Rincian Kwitansi */}
-                            <div className="space-y-3 text-xs font-medium pt-1">
+                            <div className="space-y-4 text-sm font-semibold text-gray-800 px-2">
                                 
-                                <div className="flex items-start gap-4">
-                                    <span className="w-36 font-bold text-gray-600 flex-shrink-0">Telah Diterima Dari</span>
-                                    <span className="font-extrabold text-gray-900 text-sm">
-                                        : {selectedKwitansi.penyerah_nama} ({selectedKwitansi.penyerah_jabatan || 'Pengurus RT'})
+                                <div className="flex items-end">
+                                    <span className="w-48 italic flex-shrink-0 text-[13px]">No. Transaksi</span>
+                                    <span className="mr-3 mb-0.5">:</span>
+                                    <span className="flex-1 border-b border-dotted border-gray-400 pb-0.5 font-extrabold text-[13px]">
+                                        {selectedKwitansi.nomor_kwitansi}
                                     </span>
                                 </div>
 
-                                <div className="flex items-start gap-4">
-                                    <span className="w-36 font-bold text-gray-600 flex-shrink-0">Diserahkan Kepada</span>
-                                    <span className="font-extrabold text-gray-900 text-sm">
-                                        : {selectedKwitansi.penerima_nama} — {selectedKwitansi.penerima_instansi}
+                                <div className="flex items-end">
+                                    <span className="w-48 italic flex-shrink-0 text-[13px]">Telah diterima dari</span>
+                                    <span className="mr-3 mb-0.5">:</span>
+                                    <span className="flex-1 border-b border-dotted border-gray-400 pb-0.5 font-extrabold uppercase text-[13px]">
+                                        {selectedKwitansi.penyerah_nama} ({selectedKwitansi.penyerah_jabatan || 'Pengurus RT'})
                                     </span>
                                 </div>
 
-                                <div className="flex items-start gap-4">
-                                    <span className="w-36 font-bold text-gray-600 flex-shrink-0">Uang Sejumlah</span>
-                                    <div className="flex-1 bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200 font-black italic text-emerald-950 text-xs">
-                                        # {getTerbilangRupiah(selectedKwitansi.jumlah_dana)} #
-                                    </div>
+                                <div className="flex items-end">
+                                    <span className="w-48 italic flex-shrink-0 text-[13px]">Banyaknya uang</span>
+                                    <span className="mr-3 mb-0.5">:</span>
+                                    <span className="flex-1 border-b border-dotted border-gray-400 pb-0.5">
+                                        <span className="bg-gray-100 px-3 py-1 font-extrabold italic text-[13px]">
+                                            # {getTerbilangRupiah(selectedKwitansi.jumlah_dana)} #
+                                        </span>
+                                    </span>
                                 </div>
 
-                                <div className="flex items-start gap-4">
-                                    <span className="w-36 font-bold text-gray-600 flex-shrink-0">Untuk Peruntukan</span>
-                                    <div className="flex-1 space-y-1">
-                                        <p className="font-extrabold text-gray-900 text-sm">
-                                            : {getKategoriBadge(selectedKwitansi.kategori_penyerahan).label}
-                                        </p>
-                                        {selectedKwitansi.periode && (
-                                            <p className="text-gray-600 font-semibold">: Periode: {selectedKwitansi.periode}</p>
-                                        )}
-                                        {selectedKwitansi.catatan && (
-                                            <p className="text-gray-600 font-normal italic">: Catatan: "{selectedKwitansi.catatan}"</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-4">
-                                    <span className="w-36 font-bold text-gray-600 flex-shrink-0">Metode Penyerahan</span>
-                                    <span className="font-bold text-gray-900">
-                                        : {selectedKwitansi.metode_pembayaran} (Status: <strong className="text-emerald-700">✓ {selectedKwitansi.status}</strong>)
+                                <div className="flex items-end">
+                                    <span className="w-48 italic flex-shrink-0 text-[13px]">Untuk Pembayaran</span>
+                                    <span className="mr-3 mb-0.5">:</span>
+                                    <span className="flex-1 border-b border-dotted border-gray-400 pb-0.5 font-extrabold leading-tight text-[13px]">
+                                        {selectedKwitansi.catatan || '-'}
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Kotak Total Rp & Tanda Tangan */}
-                            <div className="pt-4 flex flex-col sm:flex-row items-center justify-between gap-6 border-t border-gray-200">
-                                
+                            {/* Bottom Section */}
+                            <div className="mt-8 flex items-end justify-between px-2 pb-2">
                                 {/* Big Amount Box */}
-                                <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white px-6 py-3.5 rounded-2xl border-2 border-emerald-950 shadow-md">
-                                    <span className="text-[10px] uppercase font-bold text-emerald-200 block">Total Diserahkan:</span>
-                                    <span className="text-2xl font-black tracking-tight">{formatRupiah(selectedKwitansi.jumlah_dana)}</span>
+                                <div className="bg-gray-100 text-gray-900 px-8 py-2 rounded-lg font-black text-xl border border-gray-200">
+                                    {formatRupiah(selectedKwitansi.jumlah_dana)}
                                 </div>
 
-                                {/* Dual Signature Box */}
-                                <div className="flex items-center gap-10 text-center text-xs">
-                                    {/* Ttd Penyerah */}
-                                    <div className="space-y-12">
-                                        <p className="font-extrabold text-gray-700">Yang Menyerahkan,</p>
-                                        <div className="border-b border-gray-400 font-black text-gray-900 px-2 pb-0.5 min-w-[130px]">
-                                            {selectedKwitansi.penyerah_nama}
-                                        </div>
-                                        <p className="text-[10px] font-bold text-gray-500">{selectedKwitansi.penyerah_jabatan || 'Bendahara RT'}</p>
-                                    </div>
-
-                                    {/* Ttd Penerima */}
-                                    <div className="space-y-12">
-                                        <p className="font-extrabold text-gray-700">Yang Menerima,</p>
-                                        <div className="border-b border-gray-400 font-black text-gray-900 px-2 pb-0.5 min-w-[130px]">
-                                            {selectedKwitansi.penerima_nama}
-                                        </div>
-                                        <p className="text-[10px] font-bold text-gray-500">{selectedKwitansi.penerima_instansi}</p>
+                                {/* Signature Box */}
+                                <div className="text-center text-[12px] font-medium mr-4">
+                                    <p className="mb-0.5 text-gray-800">
+                                        {profilRt?.alamat ? profilRt.alamat.split(',').pop().trim() : 'Bekasi'}, {new Date(selectedKwitansi.tanggal_penyerahan).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}
+                                    </p>
+                                    <p className="mb-12 text-gray-800">Yang Menerima,</p>
+                                    
+                                    <div className="inline-block border-b border-gray-900 font-extrabold text-gray-900 px-4 pb-0.5 min-w-[160px] text-sm">
+                                        {selectedKwitansi.penerima_nama}
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Footer Document info */}
-                            <div className="pt-2 text-[10px] text-gray-400 font-mono text-center border-t border-dashed border-gray-200">
-                                Document ini merupakan Kwitansi Sah yang diterbitkan secara digital oleh Sistem Portal RT. Simpan kwitansi ini sebagai bukti transaksi penyerahan dana yang valid.
                             </div>
                         </div>
-
                     </div>
                 </div>
+            </div>
             )}
 
         </AdminLayout>

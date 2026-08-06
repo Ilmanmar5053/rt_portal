@@ -4,27 +4,59 @@ import { useState, useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
 
 const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID');
+const bulanNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
-export default function Index({ transaksis, summary, chartData, rekapPemasukan, rekapPengeluaran, filters, tahunList, kategoriPemasukan, kategoriPengeluaran }) {
+export default function Index({ transaksis = { data: [] }, summary = {}, chartData = {}, rekapPemasukan = [], rekapPengeluaran = [], filters = {}, tahunList = [], kategoriPemasukan = [], kategoriPengeluaran = [] }) {
     const { auth } = usePage().props;
-    const [search, setSearch] = useState(filters.search || '');
-    const [jenis, setJenis] = useState(filters.jenis || 'Semua');
-    const [bulan, setBulan] = useState(filters.bulan || 'Semua');
-    const [tahun, setTahun] = useState(filters.tahun || 'Semua');
-    const [chartMode, setChartMode] = useState('nominal'); // 'nominal' | 'count'
-    const [rekapTab, setRekapTab] = useState('pemasukan'); // 'pemasukan' | 'pengeluaran'
-
+    const [search, setSearch] = useState(filters?.search || '');
+    const [jenis, setJenis] = useState(filters?.jenis || 'Semua');
+    const [bulan, setBulan] = useState(filters?.bulan || 'Semua');
+    const [tahun, setTahun] = useState(filters?.tahun || 'Semua');
+    const [sortColumn, setSortColumn] = useState('tanggal'); // 'tanggal' | 'keterangan' | 'kategori' | 'debet' | 'kredit' | 'saldo'
+    const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
+    const [chartMode, setChartMode] = useState('nominal');
+    const [rekapTab, setRekapTab] = useState('pemasukan');
     const chartRef = useRef(null);
     const chartInstanceRef = useRef(null);
 
-    const formatCurrency = (amount) => {
-        return new Intl.NumberFormat('id-ID', {
-            style: 'currency',
-            currency: 'IDR',
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 0,
-        }).format(amount || 0);
+    const handleSort = (col) => {
+        if (sortColumn === col) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(col);
+            setSortOrder('asc');
+        }
     };
+
+    const sortedTransaksis = (transaksis?.data || []).slice().sort((a, b) => {
+        let valA, valB;
+        if (sortColumn === 'tanggal') {
+            valA = new Date(a.tanggal || 0).getTime();
+            valB = new Date(b.tanggal || 0).getTime();
+        } else if (sortColumn === 'keterangan') {
+            valA = (a.keterangan || '').toLowerCase();
+            valB = (b.keterangan || '').toLowerCase();
+        } else if (sortColumn === 'kategori') {
+            valA = (a.kategori || '').toLowerCase();
+            valB = (b.kategori || '').toLowerCase();
+        } else if (sortColumn === 'debet') {
+            valA = a.jenis === 'Pemasukan' ? Number(a.jumlah || 0) : 0;
+            valB = b.jenis === 'Pemasukan' ? Number(b.jumlah || 0) : 0;
+        } else if (sortColumn === 'kredit') {
+            valA = a.jenis === 'Pengeluaran' ? Number(a.jumlah || 0) : 0;
+            valB = b.jenis === 'Pengeluaran' ? Number(b.jumlah || 0) : 0;
+        } else if (sortColumn === 'saldo') {
+            valA = Number(a.saldo_setelah || 0);
+            valB = Number(b.saldo_setelah || 0);
+        } else {
+            valA = a.id;
+            valB = b.id;
+        }
+
+        if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+        if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+    });
 
     const handleFilter = (overrides = {}) => {
         router.get(route('admin.transaksi-kas.index'), {
@@ -171,8 +203,6 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
         };
     }, [chartData, chartMode]);
 
-    const bulanNames = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
     return (
         <AdminLayout header={<h2 className="text-2xl font-bold text-gray-800">Arus Kas</h2>}>
             <Head title="Transaksi Arus Kas" />
@@ -208,7 +238,7 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
                         </div>
                         <div>
                             <p className="text-xs text-gray-500 font-bold uppercase tracking-wider">Total Pemasukan</p>
-                            <p className="text-xl font-black text-emerald-900">{fmt(summary.total_pemasukan)}</p>
+                            <p className="text-xl font-black text-emerald-900">{fmt(summary?.total_pemasukan || 0)}</p>
                         </div>
                     </div>
                     <div className="bg-white rounded-2xl p-5 border border-rose-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
@@ -217,16 +247,16 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
                         </div>
                         <div>
                             <p className="text-xs text-rose-800 font-bold uppercase tracking-wider">Total Pengeluaran</p>
-                            <p className="text-xl font-black text-rose-900">{fmt(summary.total_pengeluaran)}</p>
+                            <p className="text-xl font-black text-rose-900">{fmt(summary?.total_pengeluaran || 0)}</p>
                         </div>
                     </div>
                     <div className="bg-white rounded-2xl p-5 border border-teal-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-bold ${summary.saldo_bersih >= 0 ? 'bg-teal-100 text-teal-800' : 'bg-orange-100 text-orange-600'}`}>
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 font-bold ${(summary?.saldo_bersih || 0) >= 0 ? 'bg-teal-100 text-teal-800' : 'bg-orange-100 text-orange-600'}`}>
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
                         </div>
                         <div>
                             <p className="text-xs text-teal-800 font-bold uppercase tracking-wider">Saldo Bersih (Filter)</p>
-                            <p className={`text-xl font-black ${summary.saldo_bersih >= 0 ? 'text-teal-900' : 'text-orange-600'}`}>{fmt(summary.saldo_bersih)}</p>
+                            <p className={`text-xl font-black ${(summary?.saldo_bersih || 0) >= 0 ? 'text-teal-900' : 'text-orange-600'}`}>{fmt(summary?.saldo_bersih || 0)}</p>
                         </div>
                     </div>
                     <div className="bg-gradient-to-br from-emerald-800 via-teal-800 to-rose-900 rounded-2xl p-5 shadow-sm flex items-center gap-4 hover:shadow-md transition-all">
@@ -235,7 +265,7 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
                         </div>
                         <div>
                             <p className="text-xs text-white/80 font-bold uppercase tracking-wider">Saldo Kas Saat Ini</p>
-                            <p className="text-xl font-black text-white">{fmt(summary.saldo_akhir)}</p>
+                            <p className="text-xl font-black text-white">{fmt(summary?.saldo_akhir || 0)}</p>
                         </div>
                     </div>
                 </div>
@@ -343,7 +373,7 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-xs font-extrabold text-emerald-700">{formatCurrency(item.total_nominal)}</div>
+                                                    <div className="text-xs font-extrabold text-emerald-700">{fmt(item.total_nominal)}</div>
                                                 </div>
                                             </div>
                                         ))
@@ -363,7 +393,7 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <div className="text-xs font-extrabold text-rose-700">{formatCurrency(item.total_nominal)}</div>
+                                                    <div className="text-xs font-extrabold text-rose-700">{fmt(item.total_nominal)}</div>
                                                 </div>
                                             </div>
                                         ))
@@ -376,49 +406,49 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
 
                         <div className="mt-6 pt-3 border-t border-gray-100 text-[11px] text-gray-500 flex justify-between items-center">
                             <span>Total Surplus/Defisit</span>
-                            <span className={`font-bold ${summary.saldo_bersih >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-                                {formatCurrency(summary.saldo_bersih)}
+                            <span className={`font-bold ${(summary?.saldo_bersih || 0) >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+                                {fmt(summary?.saldo_bersih || 0)}
                             </span>
                         </div>
                     </div>
                 </div>
 
                 {/* Filters + Actions */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-end justify-between">
-                        <div className="flex flex-wrap gap-3 flex-1">
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                    <div className="flex flex-col xl:flex-row gap-3 items-center justify-between">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full flex-1">
                             <input
                                 type="text"
                                 placeholder="Cari keterangan..."
-                                className="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none"
+                                className="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-indigo-400 outline-none w-full sm:flex-1 sm:min-w-[200px]"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleFilter()}
                             />
-                            <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none bg-white" value={jenis}
+                            <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none bg-white w-full sm:w-auto cursor-pointer" value={jenis}
                                 onChange={(e) => { setJenis(e.target.value); handleFilter({ jenis: e.target.value }); }}>
                                 <option value="Semua">Semua Jenis</option>
                                 <option value="Pemasukan">Pemasukan</option>
                                 <option value="Pengeluaran">Pengeluaran</option>
                             </select>
-                            <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none bg-white" value={bulan}
+                            <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none bg-white w-full sm:w-auto cursor-pointer" value={bulan}
                                 onChange={(e) => { setBulan(e.target.value); handleFilter({ bulan: e.target.value }); }}>
                                 <option value="Semua">Semua Bulan</option>
                                 {bulanNames.slice(1).map((b, i) => (
                                     <option key={i + 1} value={i + 1}>{b}</option>
                                 ))}
                             </select>
-                            <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none bg-white" value={tahun}
+                            <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-300 outline-none bg-white w-full sm:w-auto cursor-pointer" value={tahun}
                                 onChange={(e) => { setTahun(e.target.value); handleFilter({ tahun: e.target.value }); }}>
                                 <option value="Semua">Semua Tahun</option>
-                                {tahunList.map((t) => (
+                                {(tahunList || []).map((t) => (
                                     <option key={t} value={t}>{t}</option>
                                 ))}
                             </select>
                         </div>
                         <Link
                             href={route('admin.transaksi-kas.create')}
-                            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow-md flex-shrink-0"
+                            className="inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm hover:shadow-md flex-shrink-0 w-full xl:w-auto"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                             Catat Transaksi
@@ -439,19 +469,61 @@ export default function Index({ transaksis, summary, chartData, rekapPemasukan, 
                     <div className="overflow-x-auto">
                         <table className="min-w-full">
                             <thead>
-                                <tr className="bg-gray-50 border-b border-gray-100">
-                                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Tanggal</th>
-                                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Keterangan</th>
-                                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">Kategori</th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold text-emerald-600 uppercase tracking-wide">Debet (Masuk)</th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold text-red-600 uppercase tracking-wide">Kredit (Keluar)</th>
-                                    <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide">Saldo</th>
+                                <tr className="bg-gray-50 border-b border-gray-100 select-none">
+                                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('tanggal')}>
+                                        <div className="flex items-center gap-1">
+                                            <span>Tanggal</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                                                {sortColumn === 'tanggal' ? (sortOrder === 'asc' ? 'Baru ↑' : 'Lama ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('keterangan')}>
+                                        <div className="flex items-center gap-1">
+                                            <span>Keterangan</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                                                {sortColumn === 'keterangan' ? (sortOrder === 'asc' ? 'A-Z ↑' : 'Z-A ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('kategori')}>
+                                        <div className="flex items-center gap-1">
+                                            <span>Kategori</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                                                {sortColumn === 'kategori' ? (sortOrder === 'asc' ? 'A-Z ↑' : 'Z-A ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-5 py-3 text-right text-xs font-semibold text-emerald-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('debet')}>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <span>Debet (Masuk)</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700">
+                                                {sortColumn === 'debet' ? (sortOrder === 'asc' ? 'Kecil-Besar ↑' : 'Besar-Kecil ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-5 py-3 text-right text-xs font-semibold text-red-600 uppercase tracking-wide cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('kredit')}>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <span>Kredit (Keluar)</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-red-50 text-red-700">
+                                                {sortColumn === 'kredit' ? (sortOrder === 'asc' ? 'Kecil-Besar ↑' : 'Besar-Kecil ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => handleSort('saldo')}>
+                                        <div className="flex items-center justify-end gap-1">
+                                            <span>Saldo</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">
+                                                {sortColumn === 'saldo' ? (sortOrder === 'asc' ? 'Kecil-Besar ↑' : 'Besar-Kecil ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
                                     <th className="px-5 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
-                                {transaksis.data && transaksis.data.length > 0 ? (
-                                    transaksis.data.map((item) => (
+                                {sortedTransaksis.length > 0 ? (
+                                    sortedTransaksis.map((item) => (
                                         <tr key={item.id} className={`hover:bg-gray-50/60 transition-colors ${item.jenis === 'Pemasukan' ? 'border-l-4 border-l-emerald-300' : 'border-l-4 border-l-red-300'}`}>
                                             <td className="px-5 py-4 text-sm text-gray-600 whitespace-nowrap">
                                                 {new Date(item.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}

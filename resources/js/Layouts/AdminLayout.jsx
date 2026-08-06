@@ -1,6 +1,7 @@
 import Dropdown from '@/Components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
+import { Transition } from '@headlessui/react';
 
 const menuIconStyle = `
     @keyframes zoomIn {
@@ -409,65 +410,82 @@ export default function AdminLayout({ header, children }) {
                 </div>
             </aside>
 
-            {/* Mobile Sidebar overlay */}
-            {isMobileSidebarOpen && (
-                <div 
-                    className="md:hidden fixed inset-0 z-40 bg-gray-900/50 backdrop-blur-sm transition-opacity" 
-                    onClick={() => setIsMobileSidebarOpen(false)}
-                ></div>
-            )}
-
-            {/* Mobile Sidebar */}
-            <aside
-                className={`fixed inset-y-0 left-0 z-50 w-72 relative overflow-hidden shadow-2xl transform transition-transform duration-300 ease-in-out md:hidden flex flex-col ${
-                    isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-                }`}
-            >
-                {/* Background Leafy Blur for Mobile */}
-                <div className="absolute inset-0 z-0">
-                    <img 
-                        src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
-                        alt="Background Leaf" 
-                        className="w-full h-full object-cover opacity-20 filter blur-[2px]"
+            {/* Mobile Sidebar overlay with Transition */}
+            <Transition show={isMobileSidebarOpen}>
+                <Transition.Child
+                    enter="transition-opacity ease-linear duration-300"
+                    enterFrom="opacity-0"
+                    enterTo="opacity-100"
+                    leave="transition-opacity ease-linear duration-300"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                >
+                    <div 
+                        className="md:hidden fixed inset-0 z-40 bg-gray-900/50 backdrop-blur-sm" 
+                        onClick={() => setIsMobileSidebarOpen(false)}
+                        aria-hidden="true"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/95 via-green-50/90 to-teal-100/95"></div>
-                </div>
+                </Transition.Child>
 
-                <div className="h-16 flex items-center justify-between px-5 border-b border-emerald-200/50 flex-shrink-0 relative z-10">
-                    <Link href="/" className="flex items-center gap-3">
-                        {profil?.logo_path ? (
-                            <img src={`/storage/${profil.logo_path}`} alt="Logo RT" className="h-8 w-8 object-contain" />
-                        ) : (
-                            <img src="/images/puridelta.png" alt="Logo RT" className="h-8 w-8 object-contain" />
-                        )}
-                        <span className="font-bold text-emerald-900 text-lg">Portal RT</span>
-                    </Link>
-                    <button onClick={() => setIsMobileSidebarOpen(false)} className="p-2 rounded-lg text-emerald-700 hover:text-emerald-900 hover:bg-white/30 focus:outline-none transition-colors">
-                        <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                </div>
+                {/* Mobile Sidebar */}
+                <Transition.Child
+                    enter="transition ease-in-out duration-300 transform"
+                    enterFrom="-translate-x-full"
+                    enterTo="translate-x-0"
+                    leave="transition ease-in-out duration-300 transform"
+                    leaveFrom="translate-x-0"
+                    leaveTo="-translate-x-full"
+                    className="fixed inset-y-0 left-0 z-50 w-72 max-w-[80vw] bg-white shadow-2xl md:hidden flex flex-col"
+                >
+                    <div className="flex flex-col h-full relative overflow-hidden">
+                        {/* Background Leafy Blur for Mobile */}
+                        <div className="absolute inset-0 z-0 pointer-events-none">
+                            <img 
+                                src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
+                                alt="Background Leaf" 
+                                className="w-full h-full object-cover opacity-20 filter blur-[2px]"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/95 via-green-50/90 to-teal-100/95"></div>
+                        </div>
 
-                <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2 relative z-10">
-                    {menuGroups.filter(item => canAccess(item.name)).map((item) => renderMenuItem(item, true))}
-                </div>
+                        <div className="h-16 flex items-center justify-between px-5 border-b border-emerald-200/50 flex-shrink-0 relative z-10 bg-white/40 backdrop-blur-md">
+                            <Link href="/" className="flex items-center gap-3">
+                                {profil?.logo_path ? (
+                                    <img src={`/storage/${profil.logo_path}`} alt="Logo RT" className="h-8 w-8 object-contain" />
+                                ) : (
+                                    <img src="/images/puridelta.png" alt="Logo RT" className="h-8 w-8 object-contain" />
+                                )}
+                                <span className="font-bold text-emerald-900 text-lg">Portal RT</span>
+                            </Link>
+                            <button onClick={() => setIsMobileSidebarOpen(false)} className="p-3 -mr-3 rounded-lg text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100 focus:outline-none transition-colors">
+                                <span className="sr-only">Close sidebar</span>
+                                <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
 
-                <div className="p-4 border-t border-emerald-200/50 flex-shrink-0 relative z-10 bg-white/80 backdrop-blur-md sticky bottom-0">
-                    <div className="flex items-center justify-between bg-white/90 backdrop-blur-md p-2.5 rounded-xl border border-emerald-200/60 shadow-xs gap-2">
-                        <Link href={route('profile.edit')} onClick={() => setIsMobileSidebarOpen(false)} className="flex items-center gap-2.5 min-w-0 flex-1 group">
-                            <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center border border-emerald-200 flex-shrink-0">
-                                {user.name.charAt(0)}
+                        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2 relative z-10 custom-scrollbar">
+                            {menuGroups.filter(item => canAccess(item.name)).map((item) => renderMenuItem(item, true))}
+                        </div>
+
+                        <div className="p-4 border-t border-emerald-200/50 flex-shrink-0 relative z-10 bg-white/80 backdrop-blur-md pb-[calc(1rem+env(safe-area-inset-bottom))]">
+                            <div className="flex items-center justify-between bg-white/90 backdrop-blur-md p-2.5 rounded-xl border border-emerald-200/60 shadow-xs gap-2">
+                                <Link href={route('profile.edit')} onClick={() => setIsMobileSidebarOpen(false)} className="flex items-center gap-2.5 min-w-0 flex-1 group">
+                                    <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center border border-emerald-200 flex-shrink-0">
+                                        {user.name.charAt(0)}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-black text-emerald-950 truncate leading-tight">{user.name}</p>
+                                        <p className="text-[10px] font-bold text-emerald-700">👤 Profil Akun</p>
+                                    </div>
+                                </Link>
+                                <Link href={route('logout')} method="post" as="button" className="p-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition-colors flex-shrink-0 flex items-center justify-center min-h-[44px] min-w-[44px]">
+                                    🚪 <span className="sr-only">Keluar</span>
+                                </Link>
                             </div>
-                            <div className="min-w-0 flex-1">
-                                <p className="text-xs font-black text-emerald-950 truncate leading-tight">{user.name}</p>
-                                <p className="text-[10px] font-bold text-emerald-700">👤 Profil Akun</p>
-                            </div>
-                        </Link>
-                        <Link href={route('logout')} method="post" as="button" className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition-colors flex-shrink-0">
-                            🚪 Keluar
-                        </Link>
+                        </div>
                     </div>
-                </div>
-            </aside>
+                </Transition.Child>
+            </Transition>
 
             {/* Main content */}
             <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden bg-gray-100/50 w-full max-w-full transition-all duration-300 ease-in-out">

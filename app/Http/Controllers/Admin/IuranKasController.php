@@ -8,6 +8,7 @@ use App\Models\JenisIuran;
 use App\Models\Warga;
 use App\Models\Keluarga;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class IuranKasController extends Controller
@@ -21,11 +22,10 @@ class IuranKasController extends Controller
 
         $query = IuranKas::with('warga.keluarga.rumahBlok')->orderBy($sortField, $sortDirection);
 
-        if ($request->has('search')) {
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('warga', function($q) use ($search) {
-                $q->where('nama_lengkap', 'like', "%{$search}%");
-            });
+            $matchingWargaIds = Warga::where('nama_lengkap', 'like', "%{$search}%")->pluck('id');
+            $query->whereIn('warga_id', $matchingWargaIds);
         }
 
         if ($request->has('status') && $request->status != 'Semua') {
@@ -115,7 +115,7 @@ class IuranKasController extends Controller
         usort($rekapBlok, fn($a, $b) => $b['total_nominal'] <=> $a['total_nominal']);
         $rekapBlok = array_slice($rekapBlok, 0, 5);
 
-        $iurans = $query->paginate(30)->withQueryString();
+        $iurans = $query->paginate(150)->withQueryString();
 
         return Inertia::render('Admin/IuranKas/Index', [
             'iurans' => $iurans,
@@ -136,11 +136,16 @@ class IuranKasController extends Controller
 
     public function create()
     {
+        $kepalaIds = Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id')->toArray();
         $wargas = Warga::with(['keluarga.rumahBlok'])
-            ->where('status_hubungan_keluarga', 'Kepala Keluarga')
-            ->orWhereIn('id', Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id'))
+            ->where(function ($query) use ($kepalaIds) {
+                $query->where('status_hubungan_keluarga', 'Kepala Keluarga')
+                    ->orWhereIn('id', $kepalaIds);
+            })
             ->orderBy('nama_lengkap')
-            ->get(['id', 'nama_lengkap', 'keluarga_id']);
+            ->get(['id', 'nama_lengkap', 'keluarga_id'])
+            ->unique('id')
+            ->values();
 
         $jenisIurans = JenisIuran::where('is_active', true)->orderBy('urutan')->get();
 
@@ -154,11 +159,22 @@ class IuranKasController extends Controller
     {
         $validated = $request->validate([
             'warga_id' => 'required|exists:wargas,id',
-            'jenis_iuran' => 'required|string|max:100',
+            'jenis_iuran' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('iuran_kas')->where(function ($query) use ($request) {
+                    return $query->where('warga_id', $request->warga_id)
+                        ->where('periode_bulan', $request->periode_bulan)
+                        ->where('periode_tahun', $request->periode_tahun);
+                }),
+            ],
             'periode_bulan' => 'required|integer|min:1|max:12',
             'periode_tahun' => 'required|integer|min:2000',
             'jumlah_bayar' => 'required|numeric|min:0',
             'status_pembayaran' => 'required|string|in:Pending,Approved,Rejected',
+        ], [
+            'jenis_iuran.unique' => 'Data iuran untuk warga, jenis iuran, dan periode (bulan/tahun) tersebut sudah ada.',
         ]);
 
         IuranKas::create($validated);
@@ -177,11 +193,16 @@ class IuranKasController extends Controller
     public function edit($id)
     {
         $iuran = IuranKas::findOrFail($id);
+        $kepalaIds = Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id')->toArray();
         $wargas = Warga::with(['keluarga.rumahBlok'])
-            ->where('status_hubungan_keluarga', 'Kepala Keluarga')
-            ->orWhereIn('id', Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id'))
+            ->where(function ($query) use ($kepalaIds) {
+                $query->where('status_hubungan_keluarga', 'Kepala Keluarga')
+                    ->orWhereIn('id', $kepalaIds);
+            })
             ->orderBy('nama_lengkap')
-            ->get(['id', 'nama_lengkap', 'keluarga_id']);
+            ->get(['id', 'nama_lengkap', 'keluarga_id'])
+            ->unique('id')
+            ->values();
         
         $jenisIurans = JenisIuran::where('is_active', true)->orderBy('urutan')->get();
 
@@ -198,11 +219,22 @@ class IuranKasController extends Controller
 
         $validated = $request->validate([
             'warga_id' => 'required|exists:wargas,id',
-            'jenis_iuran' => 'required|string|max:100',
+            'jenis_iuran' => [
+                'required',
+                'string',
+                'max:100',
+                Rule::unique('iuran_kas')->where(function ($query) use ($request) {
+                    return $query->where('warga_id', $request->warga_id)
+                        ->where('periode_bulan', $request->periode_bulan)
+                        ->where('periode_tahun', $request->periode_tahun);
+                })->ignore($iuran->id),
+            ],
             'periode_bulan' => 'required|integer|min:1|max:12',
             'periode_tahun' => 'required|integer|min:2000',
             'jumlah_bayar' => 'required|numeric|min:0',
             'status_pembayaran' => 'required|string|in:Pending,Approved,Rejected',
+        ], [
+            'jenis_iuran.unique' => 'Data iuran untuk warga, jenis iuran, dan periode (bulan/tahun) tersebut sudah ada.',
         ]);
 
         $iuran->update($validated);
@@ -245,9 +277,14 @@ class IuranKasController extends Controller
         }
 
         // 1 KK = Semua Tagihan Komponen (Hanya untuk Kepala Keluarga dari masing-masing KK / Rumah)
-        $wargas = Warga::where('status_hubungan_keluarga', 'Kepala Keluarga')
-            ->orWhereIn('id', Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id'))
-            ->get();
+        $kepalaIds = Keluarga::whereNotNull('kepala_keluarga_id')->pluck('kepala_keluarga_id')->toArray();
+        $wargas = Warga::where(function ($query) use ($kepalaIds) {
+            $query->where('status_hubungan_keluarga', 'Kepala Keluarga')
+                ->orWhereIn('id', $kepalaIds);
+        })
+        ->get()
+        ->unique('id')
+        ->values();
 
         $generatedCount = 0;
         $kkCount = 0;

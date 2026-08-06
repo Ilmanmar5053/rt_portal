@@ -14,6 +14,17 @@ export default function Index({ iurans = { data: [] }, summary = {}, chartData =
     const [chartMode, setChartMode] = useState('nominal'); // 'nominal' | 'count'
     const [rekapTab, setRekapTab] = useState('jenis'); // 'jenis' | 'blok'
     const [expandedGroupKeys, setExpandedGroupKeys] = useState([]);
+    const [sortColumn, setSortColumn] = useState('created_at'); // 'warga' | 'blok' | 'periode' | 'totalNominal' | 'overallStatus' | 'created_at'
+    const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
+
+    const handleSort = (col) => {
+        if (sortColumn === col) {
+            setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortColumn(col);
+            setSortOrder('asc');
+        }
+    };
 
     const chartRef = useRef(null);
     const chartInstanceRef = useRef(null);
@@ -48,7 +59,7 @@ export default function Index({ iurans = { data: [] }, summary = {}, chartData =
             map.get(key).items.push(item);
         });
 
-        return Array.from(map.values()).map((group) => {
+        const groups = Array.from(map.values()).map((group) => {
             const totalNominal = group.items.reduce((acc, curr) => acc + Number(curr.jumlah_bayar || 0), 0);
             const approvedCount = group.items.filter((i) => i.status_pembayaran === 'Approved').length;
             const pendingCount = group.items.filter((i) => i.status_pembayaran === 'Pending').length;
@@ -64,6 +75,9 @@ export default function Index({ iurans = { data: [] }, summary = {}, chartData =
                 overallStatus = 'Rejected';
             }
 
+            const rumah = group.warga?.keluarga?.rumah_blok;
+            const blokString = rumah ? `${rumah.blok}-${rumah.nomor_rumah}` : '';
+
             return {
                 ...group,
                 totalNominal,
@@ -72,9 +86,38 @@ export default function Index({ iurans = { data: [] }, summary = {}, chartData =
                 rejectedCount,
                 totalItems,
                 overallStatus,
+                blokString,
             };
         });
-    }, [iurans]);
+
+        // Sorting logic
+        return groups.sort((a, b) => {
+            let valA, valB;
+            if (sortColumn === 'warga') {
+                valA = (a.warga?.nama_lengkap || '').toLowerCase();
+                valB = (b.warga?.nama_lengkap || '').toLowerCase();
+            } else if (sortColumn === 'blok') {
+                valA = a.blokString.toLowerCase();
+                valB = b.blokString.toLowerCase();
+            } else if (sortColumn === 'periode') {
+                valA = a.periode_tahun * 100 + a.periode_bulan;
+                valB = b.periode_tahun * 100 + b.periode_bulan;
+            } else if (sortColumn === 'totalNominal') {
+                valA = a.totalNominal;
+                valB = b.totalNominal;
+            } else if (sortColumn === 'overallStatus') {
+                valA = a.overallStatus;
+                valB = b.overallStatus;
+            } else {
+                valA = new Date(a.created_at || 0).getTime();
+                valB = new Date(b.created_at || 0).getTime();
+            }
+
+            if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+            if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [iurans, sortColumn, sortOrder]);
 
     const toggleExpandGroup = (key) => {
         setExpandedGroupKeys((prev) =>
@@ -280,11 +323,6 @@ export default function Index({ iurans = { data: [] }, summary = {}, chartData =
         setSelectedIds((prev) =>
             prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
         );
-    };
-
-    const handleSort = (field) => {
-        const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
-        router.get(route('admin.iuran.index'), { search, status, sort_field: field, sort_direction: newDirection }, { preserveState: true, replace: true });
     };
 
     const handleFilter = (e) => {
@@ -833,11 +871,46 @@ export default function Index({ iurans = { data: [] }, summary = {}, chartData =
                                     </th>
                                     {/* No urut */}
                                     <th className="px-3 py-4 text-center w-12">No</th>
-                                    <th className="px-4 py-4">KK / Kepala Keluarga</th>
-                                    <th className="px-4 py-4">Blok Rumah</th>
-                                    <th className="px-4 py-4">Periode</th>
-                                    <th className="px-4 py-4">Total Tagihan</th>
-                                    <th className="px-4 py-4 text-center">Status Lunas</th>
+                                    <th className="px-4 py-4 cursor-pointer select-none hover:bg-slate-900 transition-colors" onClick={() => handleSort('warga')}>
+                                        <div className="flex items-center gap-1.5">
+                                            <span>KK / Kepala Keluarga</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">
+                                                {sortColumn === 'warga' ? (sortOrder === 'asc' ? 'A-Z ↑' : 'Z-A ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-4 cursor-pointer select-none hover:bg-slate-900 transition-colors" onClick={() => handleSort('blok')}>
+                                        <div className="flex items-center gap-1.5">
+                                            <span>Blok Rumah</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">
+                                                {sortColumn === 'blok' ? (sortOrder === 'asc' ? 'A-Z ↑' : 'Z-A ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-4 cursor-pointer select-none hover:bg-slate-900 transition-colors" onClick={() => handleSort('periode')}>
+                                        <div className="flex items-center gap-1.5">
+                                            <span>Periode</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">
+                                                {sortColumn === 'periode' ? (sortOrder === 'asc' ? 'Lama-Baru ↑' : 'Baru-Lama ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-4 cursor-pointer select-none hover:bg-slate-900 transition-colors" onClick={() => handleSort('totalNominal')}>
+                                        <div className="flex items-center gap-1.5">
+                                            <span>Total Tagihan</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">
+                                                {sortColumn === 'totalNominal' ? (sortOrder === 'asc' ? 'Kecil-Besar ↑' : 'Besar-Kecil ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
+                                    <th className="px-4 py-4 text-center cursor-pointer select-none hover:bg-slate-900 transition-colors" onClick={() => handleSort('overallStatus')}>
+                                        <div className="flex items-center justify-center gap-1.5">
+                                            <span>Status Lunas</span>
+                                            <span className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-cyan-300">
+                                                {sortColumn === 'overallStatus' ? (sortOrder === 'asc' ? 'A-Z ↑' : 'Z-A ↓') : '↕'}
+                                            </span>
+                                        </div>
+                                    </th>
                                     <th className="px-4 py-4 text-right">Rincian & Aksi</th>
                                 </tr>
                             </thead>

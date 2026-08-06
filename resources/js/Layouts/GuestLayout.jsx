@@ -23,22 +23,22 @@ export default function GuestLayout({ children }) {
             {/* Premium Residential Glassmorphism Card */}
             <div className="w-full max-w-sm sm:max-w-md mx-auto glass-card rounded-3xl border border-white/80 shadow-[0_25px_70px_-15px_rgba(5,150,105,0.12)] p-6 sm:p-8 relative z-10">
                 {/* Clean Residential Logo Banner */}
-                <div className="mb-6 text-center">
-                    <Link href="/" className="inline-block group">
+                <div className="mb-6 text-center flex flex-col items-center justify-center">
+                    <Link href="/" className="inline-block group mb-3">
                         {profil?.logo_path ? (
                             <img 
                                 src={`/storage/${profil.logo_path}`} 
                                 alt="Logo Portal RT" 
-                                className="w-16 h-16 object-contain bg-slate-50 p-2 rounded-2xl border border-emerald-100 shadow-sm mx-auto group-hover:scale-105 transition-transform" 
+                                className="w-28 h-28 object-contain rounded-2xl mx-auto group-hover:scale-105 transition-transform drop-shadow-md" 
                             />
                         ) : (
-                            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-700 to-rose-800 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-emerald-600/25 mx-auto group-hover:scale-105 transition-transform">
+                            <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-emerald-600 via-teal-700 to-rose-800 flex items-center justify-center text-white font-black text-4xl shadow-lg shadow-emerald-600/25 mx-auto group-hover:scale-105 transition-transform">
                                 RT
                             </div>
                         )}
                     </Link>
-                    <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-emerald-800 text-[11px] font-bold">
-                        <span>🏡 Perumahan {namaPerumahan}</span>
+                    <div className="text-gray-700 text-sm font-bold tracking-wide">
+                        🏡 Perumahan {namaPerumahan}
                     </div>
                 </div>
 
@@ -46,9 +46,11 @@ export default function GuestLayout({ children }) {
             </div>
 
             {/* Minimal Footer Info */}
-            <p className="text-xs font-semibold text-gray-500 text-center mt-6 z-10">
-                &copy; {new Date().getFullYear()} {namaRt} • Perumahan {namaPerumahan}
-            </p>
+            <div className="absolute bottom-6 left-0 right-0 w-full z-10">
+                <p className="text-xs font-semibold text-gray-500 text-center">
+                    &copy; {new Date().getFullYear()} {namaRt} • Perumahan {namaPerumahan}
+                </p>
+            </div>
         </div>
     );
 }
