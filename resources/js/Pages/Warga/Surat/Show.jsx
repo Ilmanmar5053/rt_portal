@@ -45,11 +45,18 @@ export default function Show({ surat }) {
     const status = statusConfig(surat.status);
     
     const suratIcons = {
+        'Surat Pengantar Pembuatan KTP & KK': '💳',
+        'Surat Pengantar Pindah Datang / Pindah Keluar': '🚚',
         'Surat Keterangan Domisili': '🏠',
-        'Surat Pengantar KTP': '🆔',
-        'Surat Pengantar SKCK': '👮',
-        'Surat Keterangan Usaha': '💼',
-        'Surat Keterangan Tidak Mampu': '📄',
+        'Surat Keterangan Tidak Mampu (SKTM)': '🤝',
+        'Surat Pengantar Kematian': '🕊️',
+        'Surat Pengantar Kelahiran': '🍼',
+        'Surat Keterangan Usaha (SKU)': '🏪',
+        'Surat Izin Keramaian': '🎪',
+        'Surat Pengantar Nikah (NA)': '💍',
+        'Surat Keterangan Belum Menikah / Status Janda/Duda': '👤',
+        'Surat Pengantar Kelakuan Baik': '⚖️',
+        'Surat Pengantar Kehilangan': '🔍',
         'Lainnya': '📝'
     };
 

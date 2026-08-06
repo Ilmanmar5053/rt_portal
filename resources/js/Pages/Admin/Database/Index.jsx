@@ -8,7 +8,7 @@ export default function Index({ stats, dbInfo }) {
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         password: '',
-        targets: ['warga', 'keuangan', 'program', 'layanan'],
+        targets: ['warga', 'keuangan', 'program', 'layanan', 'bansos'],
     });
 
     // Handle Checkbox Toggle
@@ -22,10 +22,10 @@ export default function Index({ stats, dbInfo }) {
 
     // Quick toggle all
     const handleSelectAll = () => {
-        if (data.targets.length === 4) {
+        if (data.targets.length === 5) {
             setData('targets', []);
         } else {
-            setData('targets', ['warga', 'keuangan', 'program', 'layanan']);
+            setData('targets', ['warga', 'keuangan', 'program', 'layanan', 'bansos']);
         }
     };
 
@@ -45,18 +45,20 @@ export default function Index({ stats, dbInfo }) {
 
     const targetLabels = {
         'warga': { label: 'Data Warga & Kartu Keluarga (KK)', tables: 'wargas, keluargas' },
-        'keuangan': { label: 'Data Keuangan RT (Iuran & Arus Kas)', tables: 'iuran_kas, transaksi_kas' },
+        'keuangan': { label: 'Data Keuangan RT (Iuran & Arus Kas)', tables: 'iuran_kas, transaksi_iurans, transaksi_kas' },
         'program': { label: 'Data Program & Kegiatan RT', tables: 'program_kegiatans' },
         'layanan': { label: 'Data Layanan (Pengaduan & Surat Pengantar)', tables: 'pengaduans, pengaduan_logs, surat_pengantars' },
+        'bansos': { label: 'Data Bantuan Sosial (Bansos)', tables: 'bantuan_sosials' },
     };
 
     const totalSelectedRows = Object.keys(stats.operasional).reduce((acc, key) => {
         const item = stats.operasional[key];
         let include = false;
         if (data.targets.includes('warga') && (key === 'wargas' || key === 'keluargas')) include = true;
-        if (data.targets.includes('keuangan') && (key === 'iuran_kas' || key === 'transaksi_kas')) include = true;
+        if (data.targets.includes('keuangan') && (key === 'iuran_kas' || key === 'transaksi_iurans' || key === 'transaksi_kas')) include = true;
         if (data.targets.includes('program') && key === 'program_kegiatans') include = true;
         if (data.targets.includes('layanan') && (key === 'pengaduans' || key === 'surat_pengantars' || key === 'pengaduan_logs')) include = true;
+        if (data.targets.includes('bansos') && key === 'bantuan_sosials') include = true;
         return include ? acc + item.count : acc;
     }, 0);
 

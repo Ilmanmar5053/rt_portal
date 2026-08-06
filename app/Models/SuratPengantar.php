@@ -11,7 +11,7 @@ class SuratPengantar extends Model
     use HasFactory;
 
     protected $fillable = [
-        'warga_id', 'jenis_surat', 'keperluan', 'status', 
+        'warga_id', 'jenis_surat', 'keperluan', 'keterangan_tambahan', 'status', 
         'nomor_surat', 'qr_code_uuid', 'pdf_path'
     ];
 

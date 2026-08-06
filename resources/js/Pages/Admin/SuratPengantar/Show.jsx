@@ -14,25 +14,55 @@ export default function Show({ surat, profil }) {
         const identitasPemohon = `
 Nama Lengkap      : ${warga?.nama_lengkap || '-'}
 Nomor KK          : ${warga?.keluarga?.no_kk || '-'}
+Jenis Kelamin     : ${warga?.jenis_kelamin === 'L' ? 'Laki-Laki' : warga?.jenis_kelamin === 'P' ? 'Perempuan' : '-'}
 Nomor HP          : ${warga?.no_hp || '-'}
 Alamat / Blok     : Perumahan RT/RW Portal, Blok ${warga?.keluarga?.rumah_blok?.blok || '-'} Nomor ${warga?.keluarga?.rumah_blok?.nomor_rumah || '-'}
         `;
 
-        let paragrafPembuka = '';
+        let paragrafPembuka = `Yang bertanda tangan di bawah ini, Pengurus ${profil?.nama_rt || 'RT/RW'}, menerangkan dengan sebenarnya bahwa:`;
         let isiKeterangan = '';
 
-        if (surat.jenis_surat.includes('Domisili')) {
-            paragrafPembuka = `Yang bertanda tangan di bawah ini, Pengurus ${profil?.nama_rt || 'RT/RW'}, menerangkan dengan sebenarnya bahwa:`;
-            isiKeterangan = `Orang tersebut di atas adalah benar-benar warga yang berdomisili dan menetap di lingkungan ${profil?.nama_rt || 'RT/RW'}. Surat ini diberikan sebagai pengantar untuk keperluan: ${surat.keperluan}.`;
-        } else if (surat.jenis_surat.includes('Pindah')) {
-            paragrafPembuka = `Yang bertanda tangan di bawah ini, Pengurus ${profil?.nama_rt || 'RT/RW'}, menerangkan dengan sebenarnya bahwa warga kami:`;
-            isiKeterangan = `Berkenaan dengan permohonan yang bersangkutan, kami menyatakan tidak keberatan dan memberikan pengantar pindah alamat. Adapun keperluan pindah ini adalah: ${surat.keperluan}. Kami mengucapkan terima kasih atas kerjasamanya selama menjadi warga di lingkungan kami.`;
-        } else if (surat.jenis_surat.includes('Tidak Mampu')) {
+        const type = surat.jenis_surat || '';
+
+        // Kependudukan & Identitas
+        if (type.includes('KTP & KK')) {
+            isiKeterangan = `Orang tersebut di atas adalah benar-benar warga kami. Surat pengantar ini dibuat sebagai syarat pengurusan / pembuatan KTP dan Kartu Keluarga (KK) baru dengan alasan: ${surat.keperluan}.`;
+        } else if (type.includes('Pindah Datang / Pindah Keluar')) {
+            isiKeterangan = `Berkenaan dengan permohonan yang bersangkutan, kami menyatakan mengetahui dan tidak keberatan memberikan pengantar perpindahan domisili. Adapun rincian kepindahannya adalah: ${surat.keperluan}. Kami mengucapkan terima kasih atas partisipasinya selama ini.`;
+        } else if (type.includes('Domisili')) {
+            isiKeterangan = `Orang tersebut di atas adalah benar-benar warga yang berdomisili dan menetap di lingkungan ${profil?.nama_rt || 'RT/RW'}. Surat keterangan domisili ini diberikan untuk keperluan: ${surat.keperluan}.`;
+        
+        // Sosial & Kesejahteraan
+        } else if (type.includes('Tidak Mampu (SKTM)')) {
             paragrafPembuka = `Bersama surat ini, kami selaku Pengurus Lingkungan ${profil?.nama_rt || 'RT/RW'}, memberikan keterangan bahwa:`;
-            isiKeterangan = `Berdasarkan pengamatan dan data administrasi kami, yang bersangkutan saat ini termasuk ke dalam keluarga dengan kondisi ekonomi prasejahtera (Tidak Mampu). Surat ini diterbitkan sebagai pengantar untuk keperluan: ${surat.keperluan}.`;
-        } else if (surat.jenis_surat.includes('Usaha')) {
+            isiKeterangan = `Berdasarkan pengamatan dan data administrasi kami, yang bersangkutan saat ini termasuk ke dalam keluarga dengan kondisi ekonomi prasejahtera (Tidak Mampu). Surat keterangan ini diterbitkan sebagai pengantar untuk keperluan: ${surat.keperluan}.`;
+        } else if (type.includes('Kematian')) {
+            paragrafPembuka = `Kami Pengurus ${profil?.nama_rt || 'RT/RW'} dengan ini menerangkan bahwa telah meninggal dunia keluarga / kerabat dari warga kami tersebut di atas, dengan rincian:`;
+            isiKeterangan = `${surat.keperluan}\n\nDemikian surat pengantar kematian ini dibuat agar dapat digunakan untuk pengurusan administrasi terkait (Akta Kematian, Pemakaman, Asuransi, dll). Kami turut berbelasungkawa sedalam-dalamnya.`;
+        } else if (type.includes('Kelahiran')) {
+            paragrafPembuka = `Kami Pengurus ${profil?.nama_rt || 'RT/RW'} dengan ini menerangkan bahwa telah lahir seorang anak dari warga kami tersebut di atas, dengan rincian kelahiran:`;
+            isiKeterangan = `${surat.keperluan}\n\nSurat pengantar kelahiran ini dibuat agar dapat digunakan sebagai syarat pengurusan Akta Kelahiran dan penambahan anggota keluarga pada Kartu Keluarga (KK).`;
+
+        // Ekonomi & Perizinan
+        } else if (type.includes('Usaha (SKU)')) {
             paragrafPembuka = `Yang bertanda tangan di bawah ini menerangkan bahwa:`;
-            isiKeterangan = `Warga tersebut di atas benar memiliki usaha / kegiatan ekonomi produktif di lingkungan tempat tinggalnya. Surat pengantar keterangan usaha ini diberikan khusus untuk keperluan: ${surat.keperluan}.`;
+            isiKeterangan = `Warga tersebut di atas benar memiliki usaha / kegiatan ekonomi produktif di lingkungan tempat tinggalnya. Adapun rincian usahanya adalah: ${surat.keperluan}.\nSurat pengantar ini diberikan sebagai syarat mengurus legalitas usaha lebih lanjut.`;
+        } else if (type.includes('Izin Keramaian')) {
+            isiKeterangan = `Warga tersebut di atas bermaksud mengadakan kegiatan/acara yang akan mengumpulkan orang banyak di lingkungan kami. Adapun rincian kegiatan adalah: ${surat.keperluan}.\n\nKami selaku pengurus RT/RW pada prinsipnya tidak keberatan, dengan catatan penyelenggara wajib menjaga ketertiban, keamanan, dan kebersihan lingkungan.`;
+
+        // Pernikahan & Keluarga
+        } else if (type.includes('Pengantar Nikah (NA)')) {
+            isiKeterangan = `Berdasarkan data kami, orang tersebut di atas adalah warga kami yang berstatus belum menikah/janda/duda, dan bermaksud melangsungkan pernikahan. Surat pengantar ini diterbitkan sebagai syarat administrasi (pengurusan form N1-N4) di Kelurahan dan KUA setempat. Detail: ${surat.keperluan}.`;
+        } else if (type.includes('Belum Menikah / Status')) {
+            isiKeterangan = `Warga tersebut di atas adalah benar warga kami. Berdasarkan sepengetahuan kami dan data kependudukan yang ada, yang bersangkutan saat ini berstatus: ${surat.keperluan}.`;
+
+        // Kepolisian & Hukum
+        } else if (type.includes('Kelakuan Baik')) {
+            isiKeterangan = `Sepanjang data dan pantauan kami selama berdomisili di lingkungan ini, yang bersangkutan berkelakuan baik, tidak pernah terlibat tindak pidana, serta aktif bersosialisasi dengan warga. Surat ini dibuat sebagai pengantar pembuatan SKCK di Kepolisian untuk keperluan: ${surat.keperluan}.`;
+        } else if (type.includes('Kehilangan')) {
+            isiKeterangan = `Telah melaporkan kehilangan barang/dokumen di sekitar lingkungan kami. Adapun rincian kejadian dan barang yang hilang adalah: ${surat.keperluan}.\nSurat pengantar ini diterbitkan agar yang bersangkutan dapat membuat Laporan Kehilangan resmi di Kantor Kepolisian setempat.`;
+            
+        // Fallback
         } else {
             paragrafPembuka = `Yang bertanda tangan di bawah ini, Ketua ${profil?.nama_rt || 'RT/RW'}, menerangkan bahwa:`;
             isiKeterangan = `Surat pengantar ini diberikan kepada yang bersangkutan sehubungan dengan permohonannya untuk: ${surat.keperluan}.`;

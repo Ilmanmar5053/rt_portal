@@ -408,15 +408,15 @@ export default function Index({ bansos, stats = {}, chartData = [], wargas = [],
             <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-sm p-6 mb-8">
                 {/* Toolbar: Search, Filters & Show/Hide Columns */}
                 <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6">
-                    <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-row xl:items-center gap-3 w-full">
                         {/* Search Input */}
-                        <div className="relative w-full sm:w-64">
+                        <div className="relative w-full xl:w-72 shrink-0">
                             <input
                                 type="text"
                                 defaultValue={filterData.search}
                                 onChange={(e) => handleSearch(e.target.value)}
                                 placeholder="Cari NIK, Nama, No KK..."
-                                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-gray-50/60 font-medium"
+                                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-medium transition-all hover:border-emerald-300"
                             />
                             <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
                         </div>
@@ -425,7 +425,7 @@ export default function Index({ bansos, stats = {}, chartData = [], wargas = [],
                         <select
                             value={filterData.sumber_dana}
                             onChange={(e) => handleFilterChange('sumber_dana', e.target.value)}
-                            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-gray-50/60 font-semibold text-gray-700"
+                            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-semibold text-gray-700 transition-all cursor-pointer hover:border-emerald-300 xl:w-auto shrink-0"
                         >
                             <option value="Semua">Semua Sumber Dana</option>
                             <option value="Dana Desa">1. Dana Desa</option>
@@ -437,7 +437,7 @@ export default function Index({ bansos, stats = {}, chartData = [], wargas = [],
                         <select
                             value={filterData.status}
                             onChange={(e) => handleFilterChange('status', e.target.value)}
-                            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-gray-50/60 font-semibold text-gray-700"
+                            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-semibold text-gray-700 transition-all cursor-pointer hover:border-emerald-300 xl:w-auto shrink-0"
                         >
                             <option value="Semua">Semua Status</option>
                             <option value="Usulan / Pendataan">Usulan / Pendataan</option>
@@ -451,7 +451,7 @@ export default function Index({ bansos, stats = {}, chartData = [], wargas = [],
                         <select
                             value={filterData.tahun}
                             onChange={(e) => handleFilterChange('tahun', e.target.value)}
-                            className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-gray-50/60 font-semibold text-gray-700"
+                            className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-semibold text-gray-700 transition-all cursor-pointer hover:border-emerald-300 xl:w-auto shrink-0"
                         >
                             <option value="Semua">Semua Tahun</option>
                             <option value="2026">2026</option>

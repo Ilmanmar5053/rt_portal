@@ -66,13 +66,6 @@ export default function Index({ surats, filters }) {
 
                     <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                         <form onSubmit={handleFilter} className="flex gap-2 w-full sm:w-auto">
-                            <input
-                                type="text"
-                                placeholder="Cari nama pemohon..."
-                                className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 flex-1"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
                             <select
                                 className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 value={jenisSurat}
@@ -82,12 +75,29 @@ export default function Index({ surats, filters }) {
                                     setTimeout(() => document.getElementById('filter-btn').click(), 10);
                                 }}
                             >
-                                <option value="Semua">Semua Jenis Surat</option>
-                                <option value="Surat Keterangan Domisili">Domisili</option>
-                                <option value="Surat Pindah">Pindah</option>
-                                <option value="Surat Keterangan Tidak Mampu">SKTM</option>
-                                <option value="Surat Keterangan Usaha">SKU</option>
-                                <option value="Lainnya">Lainnya</option>
+                                <option value="Semua">-- Semua Jenis Surat --</option>
+                                <optgroup label="Kependudukan & Identitas">
+                                    <option value="Surat Pengantar Pembuatan KTP & KK">KTP & KK</option>
+                                    <option value="Surat Pengantar Pindah Datang / Pindah Keluar">Pindah Domisili</option>
+                                    <option value="Surat Keterangan Domisili">Domisili</option>
+                                </optgroup>
+                                <optgroup label="Sosial & Kesejahteraan">
+                                    <option value="Surat Keterangan Tidak Mampu (SKTM)">SKTM</option>
+                                    <option value="Surat Pengantar Kematian">Kematian</option>
+                                    <option value="Surat Pengantar Kelahiran">Kelahiran</option>
+                                </optgroup>
+                                <optgroup label="Ekonomi & Perizinan">
+                                    <option value="Surat Keterangan Usaha (SKU)">Usaha (SKU)</option>
+                                    <option value="Surat Izin Keramaian">Izin Keramaian</option>
+                                </optgroup>
+                                <optgroup label="Pernikahan & Keluarga">
+                                    <option value="Surat Pengantar Nikah (NA)">Pengantar Nikah</option>
+                                    <option value="Surat Keterangan Belum Menikah / Status Janda/Duda">Status Pernikahan</option>
+                                </optgroup>
+                                <optgroup label="Kepolisian & Hukum">
+                                    <option value="Surat Pengantar Kelakuan Baik">Kelakuan Baik</option>
+                                    <option value="Surat Pengantar Kehilangan">Kehilangan</option>
+                                </optgroup>
                             </select>
                             <select
                                 className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500"
@@ -119,6 +129,7 @@ export default function Index({ surats, filters }) {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-gray-50 border-b border-gray-200 text-sm font-semibold text-gray-600 uppercase tracking-wider">
+                                        <th className="px-6 py-4 w-16 text-center">No</th>
                                         <th className="px-6 py-4">Warga</th>
                                         <th className="px-6 py-4 cursor-pointer hover:bg-gray-200 transition-colors group" onClick={() => handleSort('jenis_surat')}>
                                             Jenis Surat <SortIndicator field="jenis_surat" />
@@ -136,12 +147,25 @@ export default function Index({ surats, filters }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100 text-sm">
-                                    {surats.data.map((item) => (
+                                    {surats.data.map((item, index) => {
+                                        const d = new Date(item.created_at);
+                                        const day = String(d.getDate()).padStart(2, '0');
+                                        const month = d.toLocaleString('id-ID', { month: 'short' });
+                                        const year = d.getFullYear();
+                                        const hour = String(d.getHours()).padStart(2, '0');
+                                        const min = String(d.getMinutes()).padStart(2, '0');
+                                        const sec = String(d.getSeconds()).padStart(2, '0');
+                                        const formattedDate = `${day}/${month}/${year} ${hour}:${min}:${sec}`;
+
+                                        return (
                                         <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="px-6 py-4 text-center font-medium text-gray-500">
+                                                {(surats.current_page - 1) * surats.per_page + index + 1}
+                                            </td>
                                             <td className="px-6 py-4 font-medium text-gray-900">{item.warga?.nama_lengkap}</td>
                                             <td className="px-6 py-4 text-gray-900 font-medium">{item.jenis_surat}</td>
                                             <td className="px-6 py-4 text-gray-600 truncate max-w-xs">{item.keperluan}</td>
-                                            <td className="px-6 py-4 text-gray-600">{new Date(item.created_at).toLocaleDateString('id-ID')}</td>
+                                            <td className="px-6 py-4 text-gray-600">{formattedDate}</td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
                                                     {item.status}
@@ -159,10 +183,11 @@ export default function Index({ surats, filters }) {
                                                 </button>
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                     {surats.data.length === 0 && (
                                         <tr>
-                                            <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                                            <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                                                 Tidak ada permohonan surat ditemukan.
                                             </td>
                                         </tr>

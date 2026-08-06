@@ -413,15 +413,15 @@ export default function Index({ bansos, stats = {}, chartData = [], filters = {}
 
                     {/* FILTER & TABEL DAFTAR KPM */}
                     <div className="bg-white/95 backdrop-blur-xl rounded-2xl border border-gray-100 shadow-sm p-6">
-                        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-                            <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                                <div className="relative w-full sm:w-64">
+                        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:flex xl:flex-row xl:items-center gap-3 w-full">
+                                <div className="relative w-full xl:w-72 shrink-0">
                                     <input
                                         type="text"
                                         defaultValue={search}
                                         onChange={(e) => handleSearch(e.target.value)}
                                         placeholder="Cari Nama / Jenis Bantuan..."
-                                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 bg-gray-50 font-medium"
+                                        className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-medium transition-all hover:border-emerald-300"
                                     />
                                     <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
                                 </div>
@@ -429,7 +429,7 @@ export default function Index({ bansos, stats = {}, chartData = [], filters = {}
                                 <select
                                     value={sumberDana}
                                     onChange={(e) => handleFilterChange('sumber_dana', e.target.value)}
-                                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-gray-50 font-semibold text-gray-700"
+                                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-semibold text-gray-700 transition-all cursor-pointer hover:border-emerald-300 xl:w-auto shrink-0"
                                 >
                                     <option value="Semua">Semua Sumber Dana</option>
                                     <option value="Dana Desa">Dana Desa</option>
@@ -440,7 +440,7 @@ export default function Index({ bansos, stats = {}, chartData = [], filters = {}
                                 <select
                                     value={status}
                                     onChange={(e) => handleFilterChange('status', e.target.value)}
-                                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-gray-50 font-semibold text-gray-700"
+                                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-semibold text-gray-700 transition-all cursor-pointer hover:border-emerald-300 xl:w-auto shrink-0"
                                 >
                                     <option value="Semua">Semua Status</option>
                                     <option value="Usulan / Pendataan">Usulan / Pendataan</option>
@@ -452,7 +452,7 @@ export default function Index({ bansos, stats = {}, chartData = [], filters = {}
                                 <select
                                     value={tahun}
                                     onChange={(e) => handleFilterChange('tahun', e.target.value)}
-                                    className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-gray-50 font-semibold text-gray-700"
+                                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-emerald-500 bg-white shadow-sm font-semibold text-gray-700 transition-all cursor-pointer hover:border-emerald-300 xl:w-auto shrink-0"
                                 >
                                     <option value="Semua">Semua Tahun</option>
                                     <option value="2026">2026</option>
@@ -461,9 +461,11 @@ export default function Index({ bansos, stats = {}, chartData = [], filters = {}
                                 </select>
                             </div>
 
-                            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
-                                🔒 Informasi Publik Read-Only
-                            </span>
+                            <div className="hidden lg:flex shrink-0">
+                                <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                                    🔒 Informasi Publik Read-Only
+                                </span>
+                            </div>
                         </div>
 
                         <div className="overflow-x-auto">

@@ -174,6 +174,13 @@ class TransaksiKasController extends Controller
             'referensi' => 'nullable|string|max:100',
         ]);
 
+        if ($validated['jenis'] === 'Pengeluaran') {
+            $saldoSaatIni = TransaksiKas::getSaldo();
+            if ($validated['jumlah'] > $saldoSaatIni) {
+                return back()->withInput()->with('error', 'Saldo Tidak Cukup, Jumlah Transaksi Keluar Tidak Lebih Besar dari Saldo');
+            }
+        }
+
         $validated['created_by'] = auth()->id();
 
         // Calculate saldo - recalculate after insert to handle out-of-order dates
@@ -215,6 +222,21 @@ class TransaksiKasController extends Controller
             'jumlah' => 'required|numeric|min:1',
             'referensi' => 'nullable|string|max:100',
         ]);
+
+        if ($validated['jenis'] === 'Pengeluaran') {
+            $saldoSaatIni = TransaksiKas::getSaldo();
+            // Kembalikan dana dari transaksi ini sementara untuk mendapatkan saldo murni tanpa transaksi ini
+            $saldoTersedia = $saldoSaatIni;
+            if ($transaksi->jenis === 'Pengeluaran') {
+                $saldoTersedia += $transaksi->jumlah;
+            } else {
+                $saldoTersedia -= $transaksi->jumlah;
+            }
+
+            if ($validated['jumlah'] > $saldoTersedia) {
+                return back()->withInput()->with('error', 'Saldo Tidak Cukup, Jumlah Transaksi Keluar Tidak Lebih Besar dari Saldo');
+            }
+        }
 
         $transaksi->update($validated);
 

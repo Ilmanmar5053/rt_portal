@@ -92,6 +92,45 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
             $activePrograms = \App\Models\ProgramKegiatan::where('status', '!=', 'Dibatalkan')->latest()->take(5)->get();
         }
 
+        $wargaPerRtData = \App\Models\Warga::select('keluargas.rt', \DB::raw('count(wargas.id) as total'))
+            ->join('keluargas', 'wargas.keluarga_id', '=', 'keluargas.id')
+            ->groupBy('keluargas.rt')
+            ->get()
+            ->pluck('total', 'rt')
+            ->toArray();
+
+        $wargaPerRt = [];
+        for ($i = 1; $i <= 11; $i++) {
+            $rtStr = str_pad($i, 3, '0', STR_PAD_LEFT);
+            $wargaPerRt[] = [
+                'rt' => 'RT ' . $rtStr,
+                'total' => $wargaPerRtData[$rtStr] ?? 0
+            ];
+        }
+
+        // Grafik Perbandingan Iuran per Bulan
+        $chartYear = \App\Models\IuranKas::max('periode_tahun') ?? date('Y');
+        $monthlyRaw = \App\Models\IuranKas::where('periode_tahun', $chartYear)
+            ->selectRaw('periode_bulan, status_pembayaran, SUM(jumlah_bayar) as total_nominal, COUNT(*) as total_count')
+            ->groupBy('periode_bulan', 'status_pembayaran')
+            ->get();
+
+        $months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        $iuranChartData = [
+            'year' => (int) $chartYear,
+            'labels' => $months,
+            'lunas_nominal' => [],
+            'belum_lunas_nominal' => [],
+        ];
+
+        for ($m = 1; $m <= 12; $m++) {
+            $lunas = $monthlyRaw->where('periode_bulan', $m)->where('status_pembayaran', 'Approved');
+            $belum = $monthlyRaw->where('periode_bulan', $m)->where('status_pembayaran', '!=', 'Approved');
+
+            $iuranChartData['lunas_nominal'][] = (float) $lunas->sum('total_nominal');
+            $iuranChartData['belum_lunas_nominal'][] = (float) $belum->sum('total_nominal');
+        }
+
         return Inertia::render('Dashboard', [
             'adminStats' => [
                 'total_warga' => number_format($totalWarga, 0, ',', '.'),
@@ -102,7 +141,9 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
                 'saldo_kas_saat_ini' => 'Rp ' . number_format($saldoKasSaatIni, 0, ',', '.'),
             ],
             'adminPengaduans' => $adminPengaduans,
-            'activePrograms' => $activePrograms
+            'activePrograms' => $activePrograms,
+            'wargaPerRt' => $wargaPerRt,
+            'iuranChartData' => $iuranChartData
         ]);
     })->name('dashboard');
 
@@ -157,6 +198,12 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     // Profil RT routes
     Route::get('profil', [ProfilRtController::class, 'edit'])->name('profil.edit');
     Route::post('profil', [ProfilRtController::class, 'update'])->name('profil.update');
+
+    // Struktur RT & Wilayah
+    Route::resource('struktur-rt', \App\Http\Controllers\Admin\StrukturRtController::class)->middleware('role:superadmin,rw');
+
+    // Monitoring API
+    Route::get('/api/active-users', [\App\Http\Controllers\Admin\MonitoringController::class, 'getActiveUsers'])->name('monitoring.active-users');
 });
 
 Route::middleware(['auth', 'verified', 'role:warga_kk,warga_anggota'])->group(function () {
@@ -191,12 +238,18 @@ Route::middleware(['auth', 'verified', 'role:warga_kk,warga_anggota'])->group(fu
             $activePrograms = \App\Models\ProgramKegiatan::where('status', '!=', 'Dibatalkan')->latest()->take(5)->get();
         }
 
+        // Fetch Data Kas RT
+        $transaksiKas = \App\Models\TransaksiKas::orderBy('tanggal', 'desc')->orderBy('id', 'desc')->paginate(5);
+        $saldoKasSaatIni = \App\Models\TransaksiKas::getSaldo();
+
         return Inertia::render('Dashboard', [
             'iurans' => $iurans,
             'surats' => $surats,
             'pengaduans' => $pengaduans,
             'warga' => $warga,
-            'activePrograms' => $activePrograms
+            'activePrograms' => $activePrograms,
+            'transaksiKas' => $transaksiKas,
+            'saldoKasSaatIni' => $saldoKasSaatIni
         ]);
     })->name('warga.dashboard');
 

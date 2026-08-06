@@ -29,11 +29,7 @@ class SuratPengantarController extends Controller
         }
 
         if ($request->has('jenis_surat') && $request->jenis_surat != 'Semua') {
-            if ($request->jenis_surat === 'Lainnya') {
-                $query->whereNotIn('jenis_surat', ['Surat Keterangan Domisili', 'Surat Pindah', 'Surat Keterangan Tidak Mampu', 'Surat Keterangan Usaha']);
-            } else {
-                $query->where('jenis_surat', $request->jenis_surat);
-            }
+            $query->where('jenis_surat', $request->jenis_surat);
         }
 
         if ($request->has('status') && $request->status != 'Semua') {

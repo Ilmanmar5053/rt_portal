@@ -1,9 +1,10 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import WargaLayout from '@/Layouts/WargaLayout';
 import { Head, Link, usePage } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { getNamaPerumahan, getNamaRt } from '@/Utils/profilHelper';
 import PaymentModal from '@/Components/PaymentModal';
+import Chart from 'chart.js/auto';
 
 const bulanNamesShort = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 const bulanNamesFull = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -29,7 +30,7 @@ const getGroupStatus = (items) => {
     return { label: 'Belum Bayar', color: 'bg-amber-100 text-amber-800' };
 };
 
-export default function Dashboard({ iurans, surats, pengaduans, warga, adminStats, adminPengaduans, activePrograms }) {
+export default function Dashboard({ iurans, surats, pengaduans, warga, adminStats, adminPengaduans, activePrograms, wargaPerRt, iuranChartData, transaksiKas, saldoKasSaatIni }) {
     const { auth, profil } = usePage().props;
     const [selectedPreview, setSelectedPreview] = useState(null);
     const [wargaPreview, setWargaPreview] = useState(null);
@@ -38,6 +39,226 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
     const namaRt = getNamaRt(profil);
     const isAdmin = ['superadmin', 'rw', 'rt', 'bendahara', 'sekretaris'].includes(auth.user.role);
     const isWarga = ['warga_kk', 'warga_anggota'].includes(auth.user.role);
+
+    const chartRef = useRef(null);
+    const chartInstance = useRef(null);
+    
+    const iuranChartRef = useRef(null);
+    const iuranChartInstance = useRef(null);
+
+    // Monitoring Active Users State & Polling
+    const [activeUsers, setActiveUsers] = useState({ count: 0, users: [] });
+    useEffect(() => {
+        if (!isAdmin) return;
+        
+        const fetchActiveUsers = async () => {
+            try {
+                // Add timestamp to prevent browser caching (especially Safari)
+                const ts = new Date().getTime();
+                const response = await fetch(`/api/active-users?_t=${ts}`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Pragma': 'no-cache',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    setActiveUsers(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch active users", error);
+            }
+        };
+
+        // Initial fetch
+        fetchActiveUsers();
+
+        // Poll every 10 seconds
+        const interval = setInterval(fetchActiveUsers, 10000);
+        return () => clearInterval(interval);
+    }, [isAdmin]);
+
+    useEffect(() => {
+        // --- Grafik Warga per RT ---
+        if (isAdmin && wargaPerRt && wargaPerRt.length > 0 && chartRef.current) {
+            if (chartInstance.current) {
+                chartInstance.current.destroy();
+            }
+
+            const ctx = chartRef.current.getContext('2d');
+            
+            // Create gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, 'rgba(79, 70, 229, 0.4)'); // Indigo 600
+            gradient.addColorStop(1, 'rgba(79, 70, 229, 0)');
+
+            chartInstance.current = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: wargaPerRt.map(item => item.rt),
+                    datasets: [{
+                        label: 'Total Warga',
+                        data: wargaPerRt.map(item => item.total),
+                        borderColor: '#4f46e5',
+                        backgroundColor: gradient,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#4f46e5',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            padding: 12,
+                            titleFont: { size: 13 },
+                            bodyFont: { size: 14, weight: 'bold' },
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + ' Warga';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f3f4f6',
+                                drawBorder: false,
+                            },
+                            ticks: {
+                                stepSize: 5,
+                                font: { size: 11 },
+                                color: '#6b7280'
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 11, weight: 'bold' },
+                                color: '#4b5563'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                }
+            });
+        }
+        
+        // --- Grafik Iuran Kas (Lunas vs Belum) ---
+        if (isAdmin && iuranChartRef.current && iuranChartData) {
+            if (iuranChartInstance.current) {
+                iuranChartInstance.current.destroy();
+            }
+
+            const ctx2 = iuranChartRef.current.getContext('2d');
+            
+            iuranChartInstance.current = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: iuranChartData.labels,
+                    datasets: [
+                        {
+                            label: 'Lunas',
+                            data: iuranChartData.lunas_nominal,
+                            borderColor: '#059669', // emerald 600
+                            backgroundColor: 'rgba(5, 150, 105, 0.15)',
+                            borderWidth: 3,
+                            pointStyle: 'circle',
+                            pointRadius: 6,
+                            pointHoverRadius: 9,
+                            pointBackgroundColor: '#059669',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            tension: 0.35,
+                            fill: true,
+                        },
+                        {
+                            label: 'Belum Lunas',
+                            data: iuranChartData.belum_lunas_nominal,
+                            borderColor: '#e11d48', // rose 600
+                            backgroundColor: 'rgba(225, 29, 72, 0.15)',
+                            borderWidth: 3,
+                            pointStyle: 'circle',
+                            pointRadius: 6,
+                            pointHoverRadius: 9,
+                            pointBackgroundColor: '#e11d48',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 2,
+                            tension: 0.35,
+                            fill: true,
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { usePointStyle: true, padding: 20, font: { size: 12, weight: 'bold' } }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                            padding: 12,
+                            titleFont: { size: 13 },
+                            bodyFont: { size: 14, weight: 'bold' },
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) {
+                                        label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f3f4f6', drawBorder: false },
+                            ticks: {
+                                font: { size: 11 }, color: '#6b7280',
+                                callback: function(value) {
+                                    if (value >= 1000000) return 'Rp ' + (value / 1000000) + 'jt';
+                                    if (value >= 1000) return 'Rp ' + (value / 1000) + 'k';
+                                    return 'Rp ' + value;
+                                }
+                            }
+                        },
+                        x: { grid: { display: false }, ticks: { font: { size: 11, weight: 'bold' }, color: '#4b5563' } }
+                    }
+                }
+            });
+        }
+        
+        return () => {
+            if (chartInstance.current) {
+                chartInstance.current.destroy();
+            }
+            if (iuranChartInstance.current) {
+                iuranChartInstance.current.destroy();
+            }
+        }
+    }, [wargaPerRt, iuranChartData, isAdmin]);
 
     // 5 Kartu Statistik Ringkas & Rapat (Fresh, Iconic, Modern & Minimalis)
     const stats = [
@@ -80,6 +301,8 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
                     setWargaPreview={setWargaPreview}
                     namaPerumahan={namaPerumahan}
                     namaRt={namaRt}
+                    transaksiKas={transaksiKas}
+                    saldoKasSaatIni={saldoKasSaatIni}
                 />
             </WargaLayout>
         );
@@ -114,6 +337,88 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
                     </div>
                 </div>
 
+                {/* Live Monitoring Active Users */}
+                <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-emerald-100 overflow-hidden relative">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+                        <div className="flex items-center gap-3">
+                            {/* Sonar Indicator */}
+                            <div className="relative flex items-center justify-center w-8 h-8">
+                                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+                                <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-gray-800 tracking-tight flex items-center gap-2">
+                                    Monitoring Pengunjung Aktif
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold border border-emerald-200">Live</span>
+                                </h3>
+                                <p className="text-xs text-gray-500 mt-0.5">Pemantauan aktivitas {activeUsers.count} pengguna secara real-time</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-inner bg-gray-50/50">
+                        <table className="w-full text-left border-collapse whitespace-nowrap">
+                            <thead>
+                                <tr className="bg-gray-100/80 border-b border-gray-200">
+                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Pengguna</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Lokasi / Keterangan</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">IP Address</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Modul Diakses</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Browser</th>
+                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {activeUsers.users.length > 0 ? (
+                                    activeUsers.users.map((user, idx) => (
+                                        <tr key={user.id || idx} className="hover:bg-white transition-colors">
+                                            <td className="px-4 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs shrink-0">
+                                                        {user.name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-bold text-gray-800">{user.name}</div>
+                                                        <div className="text-[10px] text-gray-500 uppercase">{user.role.replace('_', ' ')}</div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-xs font-semibold text-gray-700">
+                                                {user.lokasi}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="font-mono text-[11px] text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{user.ip_address}</span>
+                                            </td>
+                                            <td className="px-4 py-3 text-xs text-gray-600">
+                                                {user.module}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="text-[11px] text-gray-500 max-w-[150px] truncate" title={user.browser}>
+                                                    {user.browser}
+                                                </div>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                <div className="flex flex-col items-end">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${user.is_idle ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                                        {user.is_idle ? '🟡' : '🟢'} {user.idle_text}
+                                                    </span>
+                                                    <span className="text-[9px] text-gray-400 mt-1 font-semibold">Login: {user.login_time}</span>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500 text-sm font-medium">
+                                            Tidak ada pengguna aktif saat ini.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
                 {/* 5 Stats Cards — Rapat, Minimalis & Compact (Kotak Tidak Lebar) */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-3.5">
                     {stats.map((stat, index) => (
@@ -130,6 +435,39 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
                             </div>
                         </div>
                     ))}
+                </div>
+
+                {/* Baris Grafik Kanan Kiri (Warga per RT & Iuran Kas) */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Populasi Warga per RT (Smooth Line Chart) */}
+                    {isAdmin && wargaPerRt && wargaPerRt.length > 0 && (
+                        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xs border border-gray-100 p-4 sm:p-5 flex flex-col">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-extrabold text-gray-800 text-sm flex items-center gap-2">
+                                    <span className="bg-indigo-100 text-indigo-700 p-1.5 rounded-lg text-lg">📈</span>
+                                    <span>Distribusi Warga per RT (RW 009)</span>
+                                </h3>
+                            </div>
+                            <div className="w-full h-[250px] relative">
+                                <canvas id="rtChartCanvas" ref={chartRef}></canvas>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Grafik Perbandingan Iuran Kas */}
+                    {isAdmin && iuranChartData && (
+                        <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xs border border-gray-100 p-4 sm:p-5 flex flex-col">
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className="font-extrabold text-gray-800 text-sm flex items-center gap-2">
+                                    <span className="bg-emerald-100 text-emerald-700 p-1.5 rounded-lg text-lg">💰</span>
+                                    <span>Perbandingan Iuran Kas ({iuranChartData.year})</span>
+                                </h3>
+                            </div>
+                            <div className="w-full h-[250px] relative">
+                                <canvas id="iuranChartCanvas" ref={iuranChartRef}></canvas>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* Grid Konten Bawah: Quick Action Cards + Tabel Pengaduan Terbaru dengan No & Aksi */}
@@ -334,7 +672,7 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
     );
 }
 
-function WargaDashboardContent({ auth, warga, quickLinks, iurans, surats, pengaduans, wargaPreview, setWargaPreview, namaPerumahan, namaRt }) {
+function WargaDashboardContent({ auth, warga, quickLinks, iurans, surats, pengaduans, wargaPreview, setWargaPreview, namaPerumahan, namaRt, transaksiKas, saldoKasSaatIni }) {
     const { profil } = usePage().props;
     const [paymentModal, setPaymentModal] = useState({ isOpen: false, tagihanInfo: null });
     const groupedIurans = useMemo(() => {
@@ -486,6 +824,81 @@ function WargaDashboardContent({ auth, warga, quickLinks, iurans, surats, pengad
                             </tbody>
                         </table>
                     </div>
+                </div>
+            )}
+
+            {/* Riwayat Arus Kas RT - Transparansi Warga */}
+            {transaksiKas && transaksiKas.data && transaksiKas.data.length > 0 && (
+                <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-xs border border-gray-100 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-emerald-50 to-teal-50">
+                        <div>
+                            <h3 className="font-extrabold text-gray-800 text-sm flex items-center gap-2">
+                                <span className="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg">🏛️</span>
+                                <span>Buku Kas & Riwayat Transaksi RT</span>
+                            </h3>
+                            <p className="text-xs text-gray-500 font-medium mt-1">Transparansi arus kas lingkungan perumahan.</p>
+                        </div>
+                        <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-emerald-100/50 flex flex-col items-end">
+                            <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider mb-0.5 animate-pulse">Saldo Akhir Kas RT</span>
+                            <span className="text-base font-black text-emerald-600">Rp {Number(saldoKasSaatIni || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-white text-gray-400 text-[10px] uppercase tracking-wider border-b border-gray-100">
+                                    <th className="px-4 py-3 font-extrabold">Tanggal</th>
+                                    <th className="px-4 py-3 font-extrabold">Kategori</th>
+                                    <th className="px-4 py-3 font-extrabold">Keterangan</th>
+                                    <th className="px-4 py-3 font-extrabold text-right">Debet (Masuk)</th>
+                                    <th className="px-4 py-3 font-extrabold text-right">Kredit (Keluar)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-xs">
+                                {transaksiKas.data.map((trx, idx) => (
+                                    <tr key={trx.id} className="hover:bg-gray-50/50 transition-colors group">
+                                        <td className="px-4 py-3 whitespace-nowrap text-gray-600 font-bold">
+                                            {new Date(trx.tanggal).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap">
+                                            <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${
+                                                trx.jenis === 'Pemasukan' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100'
+                                            }`}>
+                                                {trx.jenis === 'Pemasukan' ? '↙️' : '↗️'} {trx.kategori}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-700 font-medium">
+                                            {trx.keterangan}
+                                            {trx.referensi && <div className="text-[10px] text-gray-400 mt-0.5 font-bold">Ref: {trx.referensi}</div>}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-right font-black text-emerald-600">
+                                            {trx.jenis === 'Pemasukan' ? `+ Rp ${Number(trx.jumlah).toLocaleString('id-ID')}` : '-'}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap text-right font-black text-rose-600">
+                                            {trx.jenis === 'Pengeluaran' ? `- Rp ${Number(trx.jumlah).toLocaleString('id-ID')}` : '-'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                    {/* Pagination Links (Basic Support for Inertia) */}
+                    {transaksiKas.links && transaksiKas.links.length > 3 && (
+                        <div className="p-3 border-t border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-center gap-1">
+                            {transaksiKas.links.map((link, i) => (
+                                <Link
+                                    key={i}
+                                    href={link.url || '#'}
+                                    preserveScroll
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                        link.active ? 'bg-emerald-600 text-white shadow-sm' : 
+                                        !link.url ? 'text-gray-300 cursor-not-allowed' : 'bg-white text-gray-600 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-200'
+                                    }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

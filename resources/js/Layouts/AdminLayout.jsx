@@ -58,6 +58,14 @@ export default function AdminLayout({ header, children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default autohide (collapsed to mini icons w-20)
     const [isHoveringSidebar, setIsHoveringSidebar] = useState(false); // Temporarily expand on hover
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // Mobile sidebar
+    
+    // Dynamic Clock State
+    const [currentTime, setCurrentTime] = useState(new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
     const [openMenus, setOpenMenus] = useState({}); // Track which parent menus are open
 
     // Whether the desktop sidebar should be rendered expanded (explicit open or hover)
@@ -106,12 +114,6 @@ export default function AdminLayout({ header, children }) {
                     icon: { emoji: '🏠', bg: 'bg-emerald-100', color: 'text-emerald-700' },
                 },
                 {
-                    name: 'Mapping Blok Rumah',
-                    href: route('admin.mapping-blok.index'),
-                    active: route().current('admin.mapping-blok.*'),
-                    icon: { emoji: '🛰️', bg: 'bg-cyan-100', color: 'text-cyan-700' },
-                },
-                {
                     name: 'Data KK (Keluarga)',
                     href: route('admin.keluarga.index'),
                     active: route().current('admin.keluarga.*'),
@@ -122,6 +124,25 @@ export default function AdminLayout({ header, children }) {
                     href: route('admin.warga.index'),
                     active: route().current('admin.warga.*'),
                     icon: { emoji: '👤', bg: 'bg-teal-100', color: 'text-teal-700' },
+                },
+            ]
+        },
+        {
+            type: 'group',
+            name: 'Struktur & Wilayah',
+            icon: { emoji: '🗺️', bg: 'bg-indigo-100', color: 'text-indigo-700' },
+            children: [
+                {
+                    name: 'Mapping Blok Rumah',
+                    href: route('admin.mapping-blok.index'),
+                    active: route().current('admin.mapping-blok.*'),
+                    icon: { emoji: '🛰️', bg: 'bg-cyan-100', color: 'text-cyan-700' },
+                },
+                {
+                    name: 'Struktur RT',
+                    href: route('admin.struktur-rt.index'),
+                    active: route().current('admin.struktur-rt.*'),
+                    icon: { emoji: '🏢', bg: 'bg-indigo-100', color: 'text-indigo-700' },
                 },
             ]
         },
@@ -236,6 +257,8 @@ export default function AdminLayout({ header, children }) {
         if (menuName === 'Data Rumah' || menuName === 'Mapping Blok Rumah') return permissions['data_rumah']?.access !== false;
         if (menuName === 'Data KK (Keluarga)') return permissions['data_keluarga']?.access !== false;
         if (menuName === 'Data Anggota Warga') return permissions['data_warga']?.access !== false;
+        if (menuName === 'Struktur RT') return user?.role === 'superadmin' || user?.role === 'rw';
+        
         if (menuName === 'Laporan') return true;
         if (menuName === 'Iuran Kas') return permissions['iuran_kas']?.access !== false;
         if (menuName === 'Arus Kas') return true; // always visible for admin roles
@@ -243,7 +266,7 @@ export default function AdminLayout({ header, children }) {
         if (menuName === 'Surat Pengantar') return permissions['surat_pengantar']?.access !== false;
         if (menuName === 'Program & Kegiatan') return permissions['program_kegiatan']?.access !== false;
         if (menuName === 'Bantuan Sosial') return permissions['bansos']?.access !== false;
-        if (menuName === 'Data Master' || menuName === 'Keuangan' || menuName === 'Layanan') return true;
+        if (menuName === 'Data Master' || menuName === 'Struktur & Wilayah' || menuName === 'Keuangan' || menuName === 'Layanan') return true;
         
         return true;
     };
@@ -524,7 +547,17 @@ export default function AdminLayout({ header, children }) {
                         )}
                     </div>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-5">
+                        {/* Dynamic Clock and Date */}
+                        <div className="hidden sm:flex flex-col items-end text-right">
+                            <span className="text-xl font-black text-gray-800 tracking-wider tabular-nums leading-none mb-1 shadow-xs px-2 py-1 bg-gray-50 rounded-md border border-gray-100">
+                                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </span>
+                            <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest px-1">
+                                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                            </span>
+                        </div>
+                        
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center space-x-2 text-sm focus:outline-none p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
@@ -546,8 +579,8 @@ export default function AdminLayout({ header, children }) {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-y-auto overflow-x-hidden w-full max-w-full">
-                    <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden w-full max-w-full flex flex-col">
+                    <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8 flex-1 w-full">
                         {/* Header for mobile since top bar space might be constrained */}
                         {header && (
                             <div className="sm:hidden mb-6 text-xl font-bold text-gray-800 tracking-tight">
@@ -558,6 +591,13 @@ export default function AdminLayout({ header, children }) {
                             {children}
                         </div>
                     </div>
+                    
+                    {/* Footer */}
+                    <footer className="w-full mt-auto py-6 px-4 text-center text-xs text-gray-500 border-t border-gray-200/50 bg-gray-50/50">
+                        <p className="font-semibold">&copy; 2026 Portal RT 009 / RW 006.</p>
+                        <p>Develop by Ilman Nafian</p>
+                        <p>Hak Cipta Dilindungi Undang-Undang.</p>
+                    </footer>
                 </main>
             </div>
         </div>

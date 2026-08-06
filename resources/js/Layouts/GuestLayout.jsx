@@ -46,10 +46,10 @@ export default function GuestLayout({ children }) {
             </div>
 
             {/* Minimal Footer Info */}
-            <div className="absolute bottom-6 left-0 right-0 w-full z-10">
-                <p className="text-xs font-semibold text-gray-500 text-center">
-                    &copy; {new Date().getFullYear()} {namaRt} • Perumahan {namaPerumahan}
-                </p>
+            <div className="absolute bottom-6 left-0 right-0 w-full z-10 text-center text-xs text-gray-500">
+                <p className="font-semibold">&copy; 2026 Portal RT 009 / RW 006.</p>
+                <p>Develop by Ilman Nafian</p>
+                <p>Hak Cipta Dilindungi Undang-Undang.</p>
             </div>
         </div>
     );

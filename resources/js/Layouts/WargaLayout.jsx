@@ -1,6 +1,6 @@
 import Dropdown from '@/Components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
 
 const menuIconStyle = `
@@ -66,6 +66,13 @@ export default function WargaLayout({ header, children }) {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default autohide (collapsed to mini icons w-20)
     const [isHoveringSidebar, setIsHoveringSidebar] = useState(false); // Temporarily expand on hover
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false); // Mobile sidebar
+
+    // Dynamic Clock State
+    const [currentTime, setCurrentTime] = useState(new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        return () => clearInterval(timer);
+    }, []);
 
     const isExpanded = isSidebarOpen || isHoveringSidebar;
 
@@ -348,7 +355,17 @@ export default function WargaLayout({ header, children }) {
                         )}
                     </div>
 
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-5">
+                        {/* Dynamic Clock and Date */}
+                        <div className="hidden sm:flex flex-col items-end text-right">
+                            <span className="text-xl font-black text-gray-800 tracking-wider tabular-nums leading-none mb-1 shadow-xs px-2 py-1 bg-gray-50 rounded-md border border-gray-100">
+                                {currentTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </span>
+                            <span className="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest px-1">
+                                {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                            </span>
+                        </div>
+                        
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center space-x-2 text-sm focus:outline-none p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
@@ -370,16 +387,23 @@ export default function WargaLayout({ header, children }) {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 w-full max-w-full">
-                    {/* Header for mobile since top bar space might be constrained */}
-                    {header && (
-                        <div className="sm:hidden mb-6 text-xl font-bold text-gray-800 tracking-tight">
-                            {header}
-                        </div>
-                    )}
-                    <div className="w-full max-w-full mx-auto warga-main-wrapper">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden w-full max-w-full flex flex-col">
+                    <div className="p-4 sm:p-6 lg:p-8 flex-1 w-full max-w-full mx-auto warga-main-wrapper">
+                        {/* Header for mobile since top bar space might be constrained */}
+                        {header && (
+                            <div className="sm:hidden mb-6 text-xl font-bold text-gray-800 tracking-tight">
+                                {header}
+                            </div>
+                        )}
                         {children}
                     </div>
+                    
+                    {/* Footer */}
+                    <footer className="w-full mt-auto py-6 px-4 text-center text-xs text-gray-500 border-t border-gray-200/50 bg-gray-50/50">
+                        <p className="font-semibold">&copy; 2026 Portal RT 009 / RW 006.</p>
+                        <p>Develop by Ilman Nafian</p>
+                        <p>Hak Cipta Dilindungi Undang-Undang.</p>
+                    </footer>
                 </main>
             </div>
         </div>

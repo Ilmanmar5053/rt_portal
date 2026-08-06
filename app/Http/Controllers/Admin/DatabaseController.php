@@ -27,13 +27,17 @@ class DatabaseController extends Controller
                 'profil_rts'       => ['label' => 'Profil Lingkungan RT (profil_rts)',       'count' => $this->getTableCount('profil_rts'),       'icon' => '🏘️', 'desc' => 'Nama RT, RW, alamat, dan tanda tangan'],
                 'rumah_bloks'      => ['label' => 'Master Rumah & Blok (rumah_bloks)',       'count' => $this->getTableCount('rumah_bloks'),      'icon' => '🏠', 'desc' => 'Data perumahan, blok, dan status hunian'],
                 'role_permissions' => ['label' => 'Matriks Hak Akses (role_permissions)',  'count' => $this->getTableCount('role_permissions'), 'icon' => '🔐', 'desc' => 'Hak akses modul per role pengurus'],
+                'jenis_iurans'     => ['label' => 'Master Jenis Iuran (jenis_iurans)',     'count' => $this->getTableCount('jenis_iurans'),     'icon' => '💵', 'desc' => 'Kategori dan nominal iuran default'],
+                'struktur_rts'     => ['label' => 'Struktur Organisasi RT (struktur_rts)', 'count' => $this->getTableCount('struktur_rts'),     'icon' => '👔', 'desc' => 'Data pengurus dan jabatan RT'],
             ],
             'operasional' => [
                 'wargas'            => ['label' => 'Data Warga / Anggota (wargas)',        'count' => $this->getTableCount('wargas'),            'icon' => '👤', 'desc' => 'Data penduduk dan anggota keluarga'],
                 'keluargas'         => ['label' => 'Data Kartu Keluarga (keluargas)',      'count' => $this->getTableCount('keluargas'),         'icon' => '📑', 'desc' => 'Data nomor KK dan kepala keluarga'],
-                'iuran_kas'         => ['label' => 'Tagihan & Iuran Kas (iuran_kas)',      'count' => $this->getTableCount('iuran_kas'),         'icon' => '💰', 'desc' => 'Riwayat pembayaran dan tagihan kas RT'],
+                'iuran_kas'         => ['label' => 'Tagihan & Iuran Kas (iuran_kas)',      'count' => $this->getTableCount('iuran_kas'),         'icon' => '💰', 'desc' => 'Riwayat tagihan iuran warga'],
+                'transaksi_iurans'  => ['label' => 'Riwayat Pembayaran (transaksi_iurans)','count' => $this->getTableCount('transaksi_iurans'),  'icon' => '💳', 'desc' => 'Transaksi pembayaran iuran per warga'],
                 'transaksi_kas'     => ['label' => 'Arus Kas Keuangan (transaksi_kas)',    'count' => $this->getTableCount('transaksi_kas'),     'icon' => '📊', 'desc' => 'Pencatatan pemasukan & pengeluaran kas'],
                 'program_kegiatans' => ['label' => 'Program & Kegiatan (program_kegiatans)','count' => $this->getTableCount('program_kegiatans'),'icon' => '🗓️', 'desc' => 'Agenda, jadwal, dan e-flyer RT'],
+                'bantuan_sosials'   => ['label' => 'Bantuan Sosial (bantuan_sosials)',     'count' => $this->getTableCount('bantuan_sosials'),   'icon' => '🎁', 'desc' => 'Penerima dan penyaluran bansos warga'],
                 'pengaduans'        => ['label' => 'Pengaduan Warga (pengaduans)',         'count' => $this->getTableCount('pengaduans'),        'icon' => '📢', 'desc' => 'Laporan, aduan, dan aspirasi warga'],
                 'surat_pengantars'  => ['label' => 'Surat Pengantar (surat_pengantars)',   'count' => $this->getTableCount('surat_pengantars'),  'icon' => '📄', 'desc' => 'Permohonan surat pengantar warga'],
                 'pengaduan_logs'    => ['label' => 'Log Pengaduan (pengaduan_logs)',       'count' => $this->getTableCount('pengaduan_logs'),    'icon' => '💬', 'desc' => 'Riwayat komentar dan progres aduan'],
@@ -172,7 +176,7 @@ class DatabaseController extends Controller
         $request->validate([
             'password' => 'required|string',
             'targets'  => 'required|array|min:1',
-            'targets.*'=> 'string|in:warga,keuangan,program,layanan',
+            'targets.*'=> 'string|in:warga,keuangan,program,layanan,bansos',
         ], [
             'password.required' => 'Password konfirmasi harus diisi.',
             'targets.required'  => 'Pilih minimal satu kategori data yang ingin dibersihkan.',
@@ -194,6 +198,7 @@ class DatabaseController extends Controller
         }
         if (in_array('keuangan', $request->targets)) {
             $tablesToClear[] = 'iuran_kas';
+            $tablesToClear[] = 'transaksi_iurans';
             $tablesToClear[] = 'transaksi_kas';
         }
         if (in_array('program', $request->targets)) {
@@ -204,6 +209,9 @@ class DatabaseController extends Controller
             $tablesToClear[] = 'pengaduans';
             $tablesToClear[] = 'surat_pengantars';
         }
+        if (in_array('bansos', $request->targets)) {
+            $tablesToClear[] = 'bantuan_sosials';
+        }
 
         // DOUBLE GUARD: Tabel yang TIDAK BOLEH dihapus (kecuali data profil, user, dan data profile perumahan. jangan dihapus!)
         $protectedTables = [
@@ -211,6 +219,8 @@ class DatabaseController extends Controller
             'profil_rts',
             'rumah_bloks',
             'role_permissions',
+            'jenis_iurans',
+            'struktur_rts',
             'wilayah',
             'migrations',
             'cache',
