@@ -21,7 +21,7 @@ class KKScanController extends Controller
         $apiKey = trim($request->input('api_key') ?: env('GEMINI_API_KEY', ''));
 
         $base64Image = $request->input('image');
-        $mimeType = 'image/png';
+        $mimeType = 'image/jpeg';
 
         if (preg_match('/^data:(image\/\w+);base64,/', $base64Image, $type)) {
             $base64Image = substr($base64Image, strpos($base64Image, ',') + 1);
@@ -30,9 +30,9 @@ class KKScanController extends Controller
 
         $base64Image = str_replace(' ', '+', $base64Image);
 
-        // Advanced Multimodal Prompt for Indonesian KK Document Parsing
+        // Prompt for Gemini AI Vision model
         $prompt = "Anda adalah sistem OCR AI Multimodal presisi tinggi untuk dokumen resmi Kartu Keluarga (KK) Republik Indonesia.\n\n" .
-            "Tugas Anda: Baca dan ekstrak SELURUH informasi dari gambar Kartu Keluarga ini tanpa ada yang terlewat.\n\n" .
+            "Tugas Anda: Baca dan ekstrak SELURUH informasi dari gambar Kartu Keluarga ini secara teliti tanpa ada yang terlewat.\n\n" .
             "WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa ```json atau ```). Format JSON persis seperti berikut:\n" .
             "{\n" .
             "  \"no_kk\": \"16 digit nomor KK\",\n" .
@@ -55,12 +55,12 @@ class KKScanController extends Controller
             "  ]\n" .
             "}";
 
-        if ($apiKey) {
+        if (!empty($apiKey)) {
             try {
                 // Try Gemini 1.5 Flash Vision Model API
                 $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}";
 
-                $response = Http::timeout(45)->post($url, [
+                $response = Http::timeout(30)->post($url, [
                     'contents' => [
                         [
                             'parts' => [
@@ -96,18 +96,25 @@ class KKScanController extends Controller
                         ]);
                     }
                 } else {
-                    Log::warning('Gemini API Response Warning: ' . $response->body());
+                    Log::warning('Gemini API Error: ' . $response->body());
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'API Key Gemini ditolak atau kuota habis: ' . ($response->json('error.message') ?? 'HTTP Error ' . $response->status()),
+                    ], 200);
                 }
             } catch (\Exception $e) {
-                Log::error('Gemini API Scan Error: ' . $e->getMessage());
+                Log::error('Gemini API Exception: ' . $e->getMessage());
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Terjadi kesalahan koneksi ke server Gemini API: ' . $e->getMessage(),
+                ], 200);
             }
         }
 
+        // Return HTTP 200 with guidance so fetch doesn't throw catch error
         return response()->json([
-            'status' => 'error',
-            'message' => $apiKey 
-                ? 'Gagal memproses dengan Gemini AI API. Pastikan API key aktif atau gunakan pemindaian OCR lokal.' 
-                : 'Gemini API Key belum dikonfigurasi. Masukkan Gemini API Key untuk akurasi Visi AI 100%.',
-        ], 400);
+            'status' => 'key_required',
+            'message' => 'Silakan masukkan Gemini API Key gratis di menu "🔑 API Key AI" untuk memproses gambar/PDF dengan Visi AI.',
+        ], 200);
     }
 }
