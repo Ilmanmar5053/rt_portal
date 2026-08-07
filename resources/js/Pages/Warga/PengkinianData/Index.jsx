@@ -1019,6 +1019,7 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                 isOpen={isScannerOpen}
                 onClose={() => setIsScannerOpen(false)}
                 file={data.file_kk}
+                initialNoKk={data.no_kk}
                 onApply={handleApplyOCRData}
             />
 

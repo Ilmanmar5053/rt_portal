@@ -679,6 +679,7 @@ export default function Create() {
                 isOpen={isScannerOpen}
                 onClose={() => setIsScannerOpen(false)}
                 file={data.file_kk}
+                initialNoKk={data.no_kk}
                 onApply={handleApplyOCRData}
             />
         </AdminLayout>

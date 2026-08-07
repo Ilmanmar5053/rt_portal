@@ -40,17 +40,16 @@ const formatDateToISO = (dateStr) => {
     return clean;
 };
 
-export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
+export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onApply }) {
     const [isScanning, setIsScanning] = useState(false);
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState('');
     const [scanEngine, setScanEngine] = useState('');
-    const [showPasteBox, setShowPasteBox] = useState(true);
     const [pastedText, setPastedText] = useState('');
 
     // Authentic Kartu Keluarga Header State
     const [kkHeader, setKkHeader] = useState({
-        no_kk: '',
+        no_kk: initialNoKk || '3604120803900000',
         nama_kepala_keluarga: '',
         alamat_lengkap: '',
         rt: '004',
@@ -63,10 +62,17 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
     });
 
     const [anggotaList, setAnggotaList] = useState([]);
-
-    const fileInputRef = useRef(null);
     const [selectedFile, setSelectedFile] = useState(file || null);
     const [previewUrl, setPreviewUrl] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            setKkHeader(prev => ({
+                ...prev,
+                no_kk: initialNoKk || prev.no_kk || '3604120803900000'
+            }));
+        }
+    }, [isOpen, initialNoKk]);
 
     useEffect(() => {
         if (file) {
@@ -91,14 +97,6 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                 setStatusText('File Gambar terpilih. Siap diproses!');
             };
             reader.readAsDataURL(f);
-        }
-    };
-
-    const handleFileSelect = (e) => {
-        const f = e.target.files[0];
-        if (f) {
-            setSelectedFile(f);
-            processFilePreview(f);
         }
     };
 
@@ -223,7 +221,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
 
         return {
             header: {
-                no_kk: no_kk || '',
+                no_kk: no_kk || initialNoKk || kkHeader.no_kk || '3604120803900000',
                 nama_kepala_keluarga: nama_kepala_keluarga || 'ILMAN',
                 alamat_lengkap: alamat_lengkap || 'KP. KESABILAN',
                 rt: rt || '004',
@@ -249,86 +247,10 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         if (res && res.members.length > 0) {
             setKkHeader(res.header);
             setAnggotaList(res.members);
-            setScanEngine('Extracted by Gemini / Google Lens (ISO Date Conversion)');
-            setStatusText(`✨ Sukses membaca Header KK & ${res.members.length} Anggota Keluarga (Tanggal Lahir Terformat ISO)!`);
+            setScanEngine('Extracted by Gemini / Google Lens');
+            setStatusText(`✨ Sukses membaca Header KK (${res.header.no_kk}) & ${res.members.length} Anggota Keluarga!`);
         } else {
             alert('Format teks tidak dikenali. Pastikan teks berisi tabel atau baris NIK 16 digit.');
-        }
-    };
-
-    const startScanning = async () => {
-        if (!selectedFile && !pastedText) {
-            alert('Silakan pilih file Kartu Keluarga atau tempelkan teksnya di atas!');
-            return;
-        }
-
-        setIsScanning(true);
-        setProgress(30);
-        setStatusText('Mengekstrak data Kartu Keluarga...');
-
-        try {
-            if (pastedText.trim().length > 20) {
-                handleParsePastedText();
-                setProgress(100);
-                setIsScanning(false);
-                return;
-            }
-
-            // PDF Text Layer Extractor
-            if (selectedFile && (selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf'))) {
-                const pdfjsLib = await loadPdfJs();
-                const arrayBuffer = await selectedFile.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                
-                let pdfFullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    pdfFullText += pageText + '\n';
-                }
-
-                if (pdfFullText && pdfFullText.trim().length > 30) {
-                    const parsed = parseRawKKText(pdfFullText);
-                    if (parsed && parsed.members.length > 0) {
-                        setProgress(100);
-                        setKkHeader(parsed.header);
-                        setAnggotaList(parsed.members);
-                        setScanEngine('PDF Text Layer Extractor');
-                        setStatusText(`⚡ Sukses membaca teks PDF secara langsung! (${parsed.members.length} Warga)`);
-                        setIsScanning(false);
-                        return;
-                    }
-                }
-            }
-
-            // Fallback sample data with ISO dates
-            setScanEngine('Preset KK Parser');
-            setStatusText('✨ Terapkan data ke form di bawah.');
-            setKkHeader({
-                no_kk: '',
-                nama_kepala_keluarga: 'ILMAN',
-                alamat_lengkap: 'KP. KESABILAN',
-                rt: '004',
-                rw: '002',
-                kode_pos: '42192',
-                kelurahan: 'PONTANG',
-                kecamatan: 'PONTANG',
-                kabupaten_kota: 'SERANG',
-                provinsi: 'BANTEN'
-            });
-            setAnggotaList([
-                { nik: '3604120803900004', nama: 'ILMAN', nama_lengkap: 'ILMAN', jk: 'Laki-laki', jenis_kelamin: 'Laki-laki', ttl: 'SERANG, 08-03-1990', tempat_lahir: 'SERANG', tanggal_lahir: '1990-03-08', hubungan: 'Kepala Keluarga', status_hubungan_keluarga: 'Kepala Keluarga' },
-                { nik: '3604125204920002', nama: 'BAYETI', nama_lengkap: 'BAYETI', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'SERANG, 12-04-1992', tempat_lahir: 'SERANG', tanggal_lahir: '1992-04-12', hubungan: 'Istri', status_hubungan_keluarga: 'Istri' },
-                { nik: '3604127101190001', nama: 'ZARA NAVISHA', nama_lengkap: 'ZARA NAVISHA', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'SERANG, 31-01-2019', tempat_lahir: 'SERANG', tanggal_lahir: '2019-01-31', hubungan: 'Anak', status_hubungan_keluarga: 'Anak' },
-                { nik: '3604124212210001', nama: 'ANINDIRA MAHESWARI', nama_lengkap: 'ANINDIRA MAHESWARI', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'BERANG, 02-12-2021', tempat_lahir: 'BERANG', tanggal_lahir: '2021-12-02', hubungan: 'Anak', status_hubungan_keluarga: 'Anak' }
-            ]);
-            setProgress(100);
-
-        } catch (err) {
-            console.error('Scan Error:', err);
-        } finally {
-            setIsScanning(false);
         }
     };
 
@@ -376,7 +298,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
             <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[94vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in duration-200">
                 
-                {/* Official Indonesian KK Style Top Bar */}
+                {/* Top Bar */}
                 <div className="px-6 py-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex items-center justify-between shadow-md">
                     <div className="flex items-center gap-3">
                         <span className="w-10 h-10 rounded-2xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center text-xl backdrop-blur-md shadow-inner">
@@ -405,7 +327,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                 {/* Body Modal */}
                 <div className="p-5 overflow-y-auto space-y-5 flex-1 custom-scrollbar bg-slate-50/50">
                     
-                    {/* Kotak Tempel Teks (Google Gemini / Google Lens Output Parser) */}
+                    {/* Kotak Tempel Teks */}
                     <div className="p-4 bg-blue-50/90 border border-blue-200 rounded-2xl space-y-3 shadow-xs">
                         <div className="flex items-center justify-between">
                             <label className="font-extrabold text-xs text-blue-950 flex items-center gap-2">
@@ -417,7 +339,8 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    setPastedText(`Nama Kepala Keluarga : ILMAN
+                                    setPastedText(`Nomor KK : 3604120803900000
+Nama Kepala Keluarga : ILMAN
 Alamat : KP. KESABILAN
 RT/RW : 004/002
 Kode Pos : 42192
@@ -472,7 +395,7 @@ Tabel 2: Data Status dan Orang Tua
                     {/* Format Tampilan Kartu Keluarga */}
                     <div className="bg-white p-5 rounded-2xl border-2 border-indigo-200/80 shadow-md space-y-4">
                         
-                        {/* Header Judul Dokumen & Nomor KK */}
+                        {/* Header Judul Dokumen & Nomor KK (Kuning) */}
                         <div className="text-center border-b-2 border-slate-900 pb-4 space-y-1">
                             <h2 className="text-xl font-black text-slate-900 tracking-widest uppercase">
                                 KARTU KELUARGA
@@ -484,7 +407,7 @@ Tabel 2: Data Status dan Orang Tua
                                     maxLength="16"
                                     value={kkHeader.no_kk}
                                     onChange={(e) => setKkHeader({ ...kkHeader, no_kk: e.target.value })}
-                                    className="px-3 py-1 bg-amber-50 border-2 border-amber-400 rounded-lg font-mono font-black text-sm text-slate-900 text-center focus:ring-2 focus:ring-amber-500 w-56 tracking-wider shadow-inner"
+                                    className="px-3 py-1 bg-amber-100 border-2 border-amber-400 rounded-lg font-mono font-black text-sm text-slate-900 text-center focus:ring-2 focus:ring-amber-500 w-56 tracking-wider shadow-inner"
                                     placeholder="Nomor KK (16 Digit)"
                                 />
                                 <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-black border border-amber-300">
