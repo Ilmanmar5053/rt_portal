@@ -6,6 +6,11 @@
 
         <title inertia>{{ config('app.name', 'Portal RT Digital') }}</title>
 
+        <!-- Favicon / App Icon -->
+        <link rel="icon" type="image/png" href="/images/puridelta.png">
+        <link rel="shortcut icon" type="image/png" href="/images/puridelta.png">
+        <link rel="apple-touch-icon" href="/images/puridelta.png">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

@@ -66,6 +66,18 @@ export default function AdminLayout({ header, children }) {
         return () => clearInterval(timer);
     }, []);
 
+    // Sync App Icon / Favicon dynamically from Profil
+    useEffect(() => {
+        const faviconUrl = profil?.logo_path ? `/storage/${profil.logo_path}` : '/images/puridelta.png';
+        let link = document.querySelector("link[rel*='icon']");
+        if (!link) {
+            link = document.createElement('link');
+            link.rel = 'shortcut icon';
+            document.getElementsByTagName('head')[0].appendChild(link);
+        }
+        link.href = faviconUrl;
+    }, [profil]);
+
     const [openMenus, setOpenMenus] = useState({}); // Track which parent menus are open
 
     // Whether the desktop sidebar should be rendered expanded (explicit open or hover)
@@ -513,15 +525,15 @@ export default function AdminLayout({ header, children }) {
 
             {/* Main content - Scrollable Independently */}
             <div className="flex-1 h-screen overflow-y-auto flex flex-col min-w-0 bg-gray-100/50 w-full max-w-full transition-all duration-300 ease-in-out">
-                {/* Header - STICKY TOP */}
+                {/* Header - STICKY TOP TITLE BAR */}
                 <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-200/80 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 shadow-sm w-full max-w-full">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                         {/* Desktop Toggle button */}
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                             aria-expanded={isSidebarOpen}
                             aria-label="Toggle sidebar"
-                            className="hidden md:block text-gray-500 hover:text-emerald-700 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-emerald-50"
+                            className="hidden md:block text-gray-500 hover:text-emerald-700 focus:outline-none transition-colors p-2 rounded-lg hover:bg-emerald-50"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
@@ -533,19 +545,33 @@ export default function AdminLayout({ header, children }) {
                             onClick={() => setIsMobileSidebarOpen(true)}
                             aria-expanded={isMobileSidebarOpen}
                             aria-label="Open navigation menu"
-                            className="md:hidden text-gray-500 hover:text-emerald-700 focus:outline-none mr-4 transition-colors p-2.5 rounded-md hover:bg-emerald-50"
+                            className="md:hidden text-gray-500 hover:text-emerald-700 focus:outline-none transition-colors p-2 rounded-lg hover:bg-emerald-50"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
                         </button>
 
-                        {/* Optional page header title passed via prop */}
-                        {header && (
-                            <div className="hidden sm:block text-xl font-bold text-gray-800 tracking-tight">
-                                {header}
+                        {/* Title Bar with App Logo Icon */}
+                        <div className="flex items-center gap-3 border-l border-gray-200/80 pl-3 md:pl-4">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200/80 p-1 flex items-center justify-center shadow-xs flex-shrink-0">
+                                {profil?.logo_path ? (
+                                    <img src={`/storage/${profil.logo_path}`} alt="Logo Aplikasi" className="w-full h-full object-contain" />
+                                ) : (
+                                    <img src="/images/puridelta.png" alt="Logo Aplikasi" className="w-full h-full object-contain" />
+                                )}
                             </div>
-                        )}
+                            <div>
+                                <span className="text-[10px] font-black text-emerald-800 uppercase tracking-widest bg-emerald-100/80 px-2 py-0.5 rounded-md border border-emerald-200/60 leading-none inline-block">
+                                    {profil?.nama_rt || 'PORTAL RT DIGITAL'}
+                                </span>
+                                {header && (
+                                    <h1 className="text-sm sm:text-base font-extrabold text-gray-900 tracking-tight leading-tight mt-0.5">
+                                        {header}
+                                    </h1>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="flex items-center space-x-5">
