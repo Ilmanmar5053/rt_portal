@@ -354,7 +354,7 @@ export default function AdminLayout({ header, children }) {
     };
 
     return (
-        <div className="flex min-h-screen bg-gray-50 overflow-x-hidden font-sans w-full max-w-full">
+        <div className="flex h-screen overflow-hidden bg-gray-50 font-sans w-full max-w-full">
             <style>{menuIconStyle}</style>
 
             {/* Sidebar Desktop */}
@@ -511,8 +511,8 @@ export default function AdminLayout({ header, children }) {
                 </Transition.Child>
             </Transition>
 
-            {/* Main content */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden bg-gray-100/50 w-full max-w-full transition-all duration-300 ease-in-out">
+            {/* Main content - Scrollable Independently */}
+            <div className="flex-1 h-screen overflow-y-auto flex flex-col min-w-0 bg-gray-100/50 w-full max-w-full transition-all duration-300 ease-in-out">
                 {/* Header - STICKY TOP */}
                 <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-gray-200/80 h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 flex-shrink-0 shadow-sm w-full max-w-full">
                     <div className="flex items-center">
