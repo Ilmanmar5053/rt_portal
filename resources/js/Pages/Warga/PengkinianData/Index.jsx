@@ -152,17 +152,9 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
 
     // Apply data from OCR Scanner Modal
     const handleApplyOCRData = ({ kkHeader, anggotaList }) => {
-        if (kkHeader.no_kk) setData('no_kk', kkHeader.no_kk);
-        if (kkHeader.alamat_lengkap) setData('alamat_lengkap', kkHeader.alamat_lengkap);
-        if (kkHeader.rt) setData('rt', kkHeader.rt);
-        if (kkHeader.rw) setData('rw', kkHeader.rw);
-        if (kkHeader.kelurahan) setData('kelurahan', kkHeader.kelurahan);
-        if (kkHeader.kecamatan) setData('kecamatan', kkHeader.kecamatan);
-        if (kkHeader.kabupaten_kota) setData('kabupaten_kota', kkHeader.kabupaten_kota);
-        if (kkHeader.provinsi) setData('provinsi', kkHeader.provinsi);
-
+        let mappedAnggota = [];
         if (anggotaList && anggotaList.length > 0) {
-            const mappedAnggota = anggotaList.map(a => {
+            mappedAnggota = anggotaList.map(a => {
                 let parsedTgl = a.tanggal_lahir || '';
                 const rawDateStr = a.tanggal_lahir || a.ttl || '';
                 const dmyMatch = rawDateStr.match(/(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/);
@@ -203,8 +195,21 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                     status_hidup: 'Hidup',
                 };
             });
-            setData('anggota', sortAnggotaByHubungan(mappedAnggota));
         }
+
+        setData(prev => ({
+            ...prev,
+            no_kk: kkHeader.no_kk || prev.no_kk,
+            alamat_lengkap: kkHeader.alamat_lengkap || prev.alamat_lengkap,
+            rt: kkHeader.rt || prev.rt,
+            rw: kkHeader.rw || prev.rw,
+            kode_pos: kkHeader.kode_pos || prev.kode_pos || '42192',
+            provinsi: kkHeader.provinsi || prev.provinsi || 'BANTEN',
+            kabupaten_kota: kkHeader.kabupaten_kota || prev.kabupaten_kota || 'SERANG',
+            kecamatan: kkHeader.kecamatan || prev.kecamatan || 'PONTANG',
+            kelurahan: kkHeader.kelurahan || prev.kelurahan || 'PONTANG',
+            anggota: mappedAnggota.length > 0 ? sortAnggotaByHubungan(mappedAnggota) : prev.anggota
+        }));
     };
 
     // Add new row to Anggota table

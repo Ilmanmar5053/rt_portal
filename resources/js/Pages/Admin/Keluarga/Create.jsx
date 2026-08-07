@@ -28,15 +28,55 @@ export default function Create() {
     const [scannedAnggotaList, setScannedAnggotaList] = useState([]);
 
     const handleApplyOCRData = ({ kkHeader, anggotaList }) => {
-        if (kkHeader.no_kk) setData('no_kk', kkHeader.no_kk);
-        if (kkHeader.alamat_lengkap) setData('alamat_lengkap', kkHeader.alamat_lengkap);
-        if (kkHeader.rt) setData('rt', kkHeader.rt);
-        if (kkHeader.rw) setData('rw', kkHeader.rw);
-        if (kkHeader.kelurahan) setData('kelurahan', kkHeader.kelurahan);
-        if (kkHeader.kecamatan) setData('kecamatan', kkHeader.kecamatan);
-        if (kkHeader.kabupaten_kota) setData('kabupaten_kota', kkHeader.kabupaten_kota);
-        if (kkHeader.provinsi) setData('provinsi', kkHeader.provinsi);
-        setScannedAnggotaList(anggotaList || []);
+        let mappedAnggota = (anggotaList || []).map(a => {
+            let parsedTgl = a.tanggal_lahir || '';
+            const rawDateStr = a.tanggal_lahir || a.ttl || '';
+            const dmyMatch = rawDateStr.match(/(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/);
+            if (dmyMatch) {
+                const day = dmyMatch[1].padStart(2, '0');
+                const month = dmyMatch[2].padStart(2, '0');
+                const year = dmyMatch[3];
+                parsedTgl = `${year}-${month}-${day}`;
+            }
+
+            let parsedTempat = a.tempat_lahir || '';
+            if (!parsedTempat && a.ttl && a.ttl.includes(',')) {
+                parsedTempat = a.ttl.split(',')[0].trim();
+            }
+
+            return {
+                nik: a.nik || '',
+                nama_lengkap: a.nama_lengkap || a.nama || '',
+                tempat_lahir: parsedTempat || 'SERANG',
+                tanggal_lahir: parsedTgl,
+                jenis_kelamin: a.jenis_kelamin || a.jk || 'Laki-laki',
+                agama: a.agama || 'Islam',
+                pendidikan: a.pendidikan || 'SLTA/Sederajat',
+                pekerjaan: a.pekerjaan || 'Karyawan Swasta',
+                status_perkawinan: a.status_perkawinan || 'Belum Kawin',
+                status_hubungan_keluarga: a.status_hubungan_keluarga || a.hubungan || 'Anak',
+                kewarganegaraan: a.kewarganegaraan || 'WNI',
+                nama_ayah: a.nama_ayah || '-',
+                nama_ibu: a.nama_ibu || '-',
+                no_hp: '',
+                status_hidup: 'Hidup',
+            };
+        });
+
+        setData(prev => ({
+            ...prev,
+            no_kk: kkHeader.no_kk || prev.no_kk,
+            alamat_lengkap: kkHeader.alamat_lengkap || prev.alamat_lengkap,
+            rt: kkHeader.rt || prev.rt,
+            rw: kkHeader.rw || prev.rw,
+            kode_pos: kkHeader.kode_pos || prev.kode_pos || '42192',
+            provinsi: kkHeader.provinsi || prev.provinsi || 'BANTEN',
+            kabupaten_kota: kkHeader.kabupaten_kota || prev.kabupaten_kota || 'SERANG',
+            kecamatan: kkHeader.kecamatan || prev.kecamatan || 'PONTANG',
+            kelurahan: kkHeader.kelurahan || prev.kelurahan || 'PONTANG',
+        }));
+
+        setScannedAnggotaList(mappedAnggota);
     };
 
     const [provinsiList, setProvinsiList] = useState([]);
