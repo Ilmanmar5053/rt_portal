@@ -136,25 +136,72 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
             if (parts[1]) rw = parts[1].replace(/\D/g, '').padStart(3, '0') || '002';
         }
 
-        // Extract Relationships Map from Table 2
+        // Extract Relationships, Nama Ayah, & Nama Ibu from Table 2
         const relationshipsMap = {};
+        const parentsMap = {};
         const lines = text.split('\n');
+
+        let table2Headers = [];
 
         lines.forEach(line => {
             if (line.includes('|')) {
                 const cols = line.split('|').map(c => c.trim().replace(/[*_`]/g, ''));
-                if (cols.length >= 4) {
+                const lineUpper = line.toUpperCase();
+                
+                if (lineUpper.includes('STATUS HUBUNGAN') || lineUpper.includes('NAMA AYAH') || lineUpper.includes('NAMA IBU')) {
+                    table2Headers = cols.map(c => c.toUpperCase());
+                    return;
+                }
+
+                if (cols.length >= 3) {
                     const idxNum = parseInt(cols[1]);
                     if (!isNaN(idxNum)) {
+                        let statusHub = '';
                         cols.forEach(col => {
                             const u = col.toUpperCase();
                             if (['KEPALA KELUARGA', 'ISTRI', 'ANAK', 'MENANTU', 'CUCU', 'ORANG TUA', 'MERTUA', 'FAMILI LAIN'].includes(u)) {
-                                const formattedRel = u.split(' ')
+                                statusHub = u.split(' ')
                                     .map(w => w.charAt(0) + w.slice(1).toLowerCase())
                                     .join(' ');
-                                relationshipsMap[idxNum] = formattedRel;
                             }
                         });
+                        if (statusHub) {
+                            relationshipsMap[idxNum] = statusHub;
+                        }
+
+                        let ayah = '';
+                        let ibu = '';
+
+                        if (table2Headers.length > 0) {
+                            const ayahIdx = table2Headers.findIndex(h => h.includes('NAMA AYAH') || h.includes('AYAH'));
+                            const ibuIdx = table2Headers.findIndex(h => h.includes('NAMA IBU') || h.includes('IBU'));
+                            if (ayahIdx !== -1 && cols[ayahIdx] && !cols[ayahIdx].toUpperCase().includes('NAMA AYAH')) {
+                                ayah = cols[ayahIdx];
+                            }
+                            if (ibuIdx !== -1 && cols[ibuIdx] && !cols[ibuIdx].toUpperCase().includes('NAMA IBU')) {
+                                ibu = cols[ibuIdx];
+                            }
+                        }
+
+                        if (!ayah && cols.length >= 5) {
+                            const cand = cols[cols.length - 2];
+                            if (cand && !['KEPALA KELUARGA', 'ISTRI', 'ANAK', 'KAWIN', 'BELUM KAWIN', 'WNI', 'WNA'].includes(cand.toUpperCase())) {
+                                ayah = cand;
+                            }
+                        }
+                        if (!ibu && cols.length >= 5) {
+                            const cand = cols[cols.length - 1];
+                            if (cand && !['KEPALA KELUARGA', 'ISTRI', 'ANAK', 'KAWIN', 'BELUM KAWIN', 'WNI', 'WNA'].includes(cand.toUpperCase())) {
+                                ibu = cand;
+                            }
+                        }
+
+                        if (ayah || ibu) {
+                            parentsMap[idxNum] = {
+                                nama_ayah: ayah.toUpperCase(),
+                                nama_ibu: ibu.toUpperCase()
+                            };
+                        }
                     }
                 }
             }
@@ -199,7 +246,10 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
                     const displayTtl = tempatLahir && rawTglLahir ? `${tempatLahir}, ${rawTglLahir}` : (rawTglLahir || tempatLahir || 'SERANG, 01-01-1990');
                     const statusHub = relationshipsMap[idxNum] || (idxNum === 1 ? 'Kepala Keluarga' : (idxNum === 2 ? 'Istri' : 'Anak'));
 
+                    const pData = parentsMap[idxNum] || {};
+
                     members.push({
+                        idxNum: idxNum,
                         nik: nikCol,
                         nama: name.toUpperCase(),
                         nama_lengkap: name.toUpperCase(),
@@ -209,10 +259,25 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
                         tempat_lahir: tempatLahir || 'SERANG',
                         tanggal_lahir: isoDate || '1990-01-01',
                         hubungan: statusHub,
-                        status_hubungan_keluarga: statusHub
+                        status_hubungan_keluarga: statusHub,
+                        nama_ayah: pData.nama_ayah || '',
+                        nama_ibu: pData.nama_ibu || ''
                     });
                 }
             }
+        });
+
+        // Smart parent inference for children ('Anak')
+        const kepalaObj = members.find(m => m.hubungan === 'Kepala Keluarga');
+        const istriObj = members.find(m => m.hubungan === 'Istri');
+
+        members.forEach(m => {
+            if (m.hubungan === 'Anak') {
+                if (!m.nama_ayah && kepalaObj) m.nama_ayah = kepalaObj.nama;
+                if (!m.nama_ibu && istriObj) m.nama_ibu = istriObj.nama;
+            }
+            if (!m.nama_ayah) m.nama_ayah = '-';
+            if (!m.nama_ibu) m.nama_ibu = '-';
         });
 
         if (!nama_kepala_keluarga && members.length > 0) {
@@ -248,7 +313,7 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
             setKkHeader(res.header);
             setAnggotaList(res.members);
             setScanEngine('Extracted by Gemini / Google Lens');
-            setStatusText(`✨ Sukses membaca Header KK (${res.header.no_kk}) & ${res.members.length} Anggota Keluarga!`);
+            setStatusText(`✨ Sukses membaca Header KK (${res.header.no_kk}) & ${res.members.length} Anggota Keluarga (Lengkap Nama Orang Tua)!`);
         } else {
             alert('Format teks tidak dikenali. Pastikan teks berisi tabel atau baris NIK 16 digit.');
         }
@@ -265,7 +330,9 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
             tempat_lahir: 'SERANG',
             tanggal_lahir: '',
             hubungan: 'Anak',
-            status_hubungan_keluarga: 'Anak'
+            status_hubungan_keluarga: 'Anak',
+            nama_ayah: 'ILMAN',
+            nama_ibu: 'BAYETI'
         }]);
     };
 
@@ -296,7 +363,7 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[94vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[94vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in duration-200">
                 
                 {/* Top Bar */}
                 <div className="px-6 py-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex items-center justify-between shadow-md">
@@ -313,7 +380,7 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
                                     Format Otentik Dokumen
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-300">Header Nomor KK terpisah dari NIK Anggota Keluarga. Tanggal lahir terkonversi otomatis ke input form.</p>
+                            <p className="text-xs text-slate-300">Lengkap Nama Ayah & Ibu terisi otomatis. Header Nomor KK terpisah dari NIK Anggota Keluarga.</p>
                         </div>
                     </div>
                     <button 
@@ -357,11 +424,11 @@ Tabel 1: Data Demografi
 | 4 | ANINDIRA MAHESWARI | 3604124212210001 | PEREMPUAN | BERANG | 02-12-2021 |
 
 Tabel 2: Data Status dan Orang Tua
-| No | Status Hubungan Dalam Keluarga |
-| 1 | KEPALA KELUARGA |
-| 2 | ISTRI |
-| 3 | ANAK |
-| 4 | ANAK |`);
+| No | Status Hubungan Dalam Keluarga | Nama Ayah | Nama Ibu |
+| 1 | KEPALA KELUARGA | HASAN | ASMAH |
+| 2 | ISTRI | KASMIN | RUKIAH |
+| 3 | ANAK | ILMAN | BAYETI |
+| 4 | ANAK | ILMAN | BAYETI |`);
                                 }}
                                 className="text-xs text-blue-700 hover:text-blue-900 underline font-bold cursor-pointer"
                             >
@@ -531,7 +598,7 @@ Tabel 2: Data Status dan Orang Tua
                                 <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
                                     <span>TABEL ANGGOTA KELUARGA ({anggotaList.length} ORANG)</span>
                                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-black border border-blue-200">
-                                        Tanggal Lahir Terformat ISO (YYYY-MM-DD)
+                                        Lengkap Nama Ayah & Nama Ibu
                                     </span>
                                 </h4>
                                 <button
@@ -548,11 +615,13 @@ Tabel 2: Data Status dan Orang Tua
                                     <thead className="bg-slate-900 text-white font-extrabold border-b border-slate-700">
                                         <tr>
                                             <th className="py-2.5 px-3 w-8 text-center border-r border-slate-800">No</th>
-                                            <th className="py-2.5 px-3 min-w-[170px] border-r border-slate-800">NIK (16 Digit Warga)</th>
-                                            <th className="py-2.5 px-3 min-w-[190px] border-r border-slate-800">Nama Lengkap</th>
-                                            <th className="py-2.5 px-3 min-w-[120px] border-r border-slate-800">Jenis Kelamin</th>
-                                            <th className="py-2.5 px-3 min-w-[160px] border-r border-slate-800">Tempat, Tgl Lahir</th>
-                                            <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-800">Status Hubungan</th>
+                                            <th className="py-2.5 px-3 min-w-[150px] border-r border-slate-800">NIK (16 Digit Warga)</th>
+                                            <th className="py-2.5 px-3 min-w-[170px] border-r border-slate-800">Nama Lengkap</th>
+                                            <th className="py-2.5 px-3 min-w-[110px] border-r border-slate-800">Jenis Kelamin</th>
+                                            <th className="py-2.5 px-3 min-w-[150px] border-r border-slate-800">Tempat, Tgl Lahir</th>
+                                            <th className="py-2.5 px-3 min-w-[130px] border-r border-slate-800">Status Hubungan</th>
+                                            <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-800">Nama Ayah</th>
+                                            <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-800">Nama Ibu</th>
                                             <th className="py-2.5 px-3 w-10 text-center">Aksi</th>
                                         </tr>
                                     </thead>
@@ -616,6 +685,24 @@ Tabel 2: Data Status dan Orang Tua
                                                             <option value="Lainnya">Lainnya</option>
                                                         </select>
                                                     </td>
+                                                    <td className="py-2 px-2.5 border-r border-slate-100">
+                                                        <input
+                                                            type="text"
+                                                            value={row.nama_ayah || ''}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'nama_ayah', e.target.value.toUpperCase())}
+                                                            className="w-full px-2 py-1 bg-slate-50 border border-slate-300 rounded text-slate-900 uppercase focus:bg-white"
+                                                            placeholder="NAMA AYAH"
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 px-2.5 border-r border-slate-100">
+                                                        <input
+                                                            type="text"
+                                                            value={row.nama_ibu || ''}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'nama_ibu', e.target.value.toUpperCase())}
+                                                            className="w-full px-2 py-1 bg-slate-50 border border-slate-300 rounded text-slate-900 uppercase focus:bg-white"
+                                                            placeholder="NAMA IBU"
+                                                        />
+                                                    </td>
                                                     <td className="py-2 px-2.5 text-center">
                                                         <button
                                                             type="button"
@@ -630,7 +717,7 @@ Tabel 2: Data Status dan Orang Tua
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan="7" className="py-8 text-center text-slate-400 font-medium">
+                                                <td colSpan="9" className="py-8 text-center text-slate-400 font-medium">
                                                     Belum ada anggota keluarga. Tempelkan teks di atas lalu klik "Uraikan Ke Layout KK".
                                                 </td>
                                             </tr>

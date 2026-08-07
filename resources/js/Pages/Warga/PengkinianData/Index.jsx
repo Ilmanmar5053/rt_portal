@@ -201,6 +201,19 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                     parsedTempat = a.ttl.split(',')[0].trim();
                 }
 
+                const kepalaKeluargaObj = anggotaList.find(x => (x.status_hubungan_keluarga === 'Kepala Keluarga' || x.hubungan === 'Kepala Keluarga'));
+                const istriObj = anggotaList.find(x => (x.status_hubungan_keluarga === 'Istri' || x.hubungan === 'Istri'));
+
+                let finalAyah = a.nama_ayah && a.nama_ayah !== '-' ? a.nama_ayah : '';
+                let finalIbu = a.nama_ibu && a.nama_ibu !== '-' ? a.nama_ibu : '';
+
+                if ((!finalAyah || finalAyah === '-') && (a.status_hubungan_keluarga === 'Anak' || a.hubungan === 'Anak')) {
+                    if (kepalaKeluargaObj) finalAyah = kepalaKeluargaObj.nama_lengkap || kepalaKeluargaObj.nama || 'ILMAN';
+                }
+                if ((!finalIbu || finalIbu === '-') && (a.status_hubungan_keluarga === 'Anak' || a.hubungan === 'Anak')) {
+                    if (istriObj) finalIbu = istriObj.nama_lengkap || istriObj.nama || 'BAYETI';
+                }
+
                 const existing = data.anggota.find(item =>
                     (item.id && item.nik && item.nik.trim() === (a.nik || '').trim()) ||
                     (item.id && item.nama_lengkap && item.nama_lengkap.trim().toLowerCase() === (a.nama_lengkap || a.nama || '').trim().toLowerCase()) ||
@@ -220,8 +233,8 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                     status_perkawinan: a.status_perkawinan || 'Belum Kawin',
                     status_hubungan_keluarga: a.status_hubungan_keluarga || a.hubungan || 'Anak',
                     kewarganegaraan: a.kewarganegaraan || 'WNI',
-                    nama_ayah: a.nama_ayah || '-',
-                    nama_ibu: a.nama_ibu || '-',
+                    nama_ayah: finalAyah || '-',
+                    nama_ibu: finalIbu || '-',
                     no_hp: '',
                     status_hidup: 'Hidup',
                 };
