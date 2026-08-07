@@ -265,7 +265,6 @@ export default function AdminLayout({ header, children }) {
         if (menuName === 'Pengaduan') return permissions['pengaduan']?.access !== false;
         if (menuName === 'Surat Pengantar') return permissions['surat_pengantar']?.access !== false;
         if (menuName === 'Program & Kegiatan') return permissions['program_kegiatan']?.access !== false;
-        if (menuName === 'Bantuan Sosial') return permissions['bansos']?.access !== false;
         if (menuName === 'Data Master' || menuName === 'Struktur & Wilayah' || menuName === 'Keuangan' || menuName === 'Layanan') return true;
         
         return true;
@@ -284,8 +283,8 @@ export default function AdminLayout({ header, children }) {
                     onClick={isMobile ? () => setIsMobileSidebarOpen(false) : undefined}
                     className={`menu-link flex items-center px-3 py-3 rounded-xl transition-all duration-200 group ${
                         item.active
-                            ? 'bg-emerald-600/10 text-emerald-900 font-bold shadow-sm border border-emerald-200/50 backdrop-blur-sm active'
-                            : 'text-emerald-800 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
+                            ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black shadow-lg shadow-emerald-950/50 border border-emerald-400/40 backdrop-blur-md active'
+                            : 'text-emerald-100 hover:bg-white/15 hover:text-white font-semibold hover:shadow-sm'
                     }`}
                     title={!isExpanded && !isMobile ? item.name : undefined}
                 >
@@ -310,8 +309,8 @@ export default function AdminLayout({ header, children }) {
                     aria-controls={`submenu-${slug}`}
                     className={`menu-parent ${isOpen ? 'open' : ''} w-full flex items-center justify-between px-3 py-3 rounded-xl transition-all duration-200 group ${
                         hasActiveChild
-                            ? 'bg-emerald-600/10 text-emerald-900 font-bold shadow-sm border border-emerald-200/50 backdrop-blur-sm'
-                            : 'text-emerald-800 hover:bg-white/40 hover:text-emerald-900 font-medium hover:shadow-sm'
+                            ? 'bg-white/15 text-white font-black border border-white/20 backdrop-blur-md'
+                            : 'text-emerald-100 hover:bg-white/15 hover:text-white font-semibold hover:shadow-sm'
                     }`}
                     title={!isExpanded && !isMobile ? item.name : undefined}
                 >
@@ -322,14 +321,14 @@ export default function AdminLayout({ header, children }) {
                         {(isExpanded || isMobile) && <span className="text-sm truncate menu-group-title">{item.name}</span>}
                     </div>
                     {(isExpanded || isMobile) && (
-                        <svg className="chevron-icon w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="chevron-icon w-4 h-4 text-emerald-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                         </svg>
                     )}
                 </button>
                 
                 {(isExpanded || isMobile) && (
-                    <div id={`submenu-${slug}`} role="region" aria-label={`${item.name} submenu`} className={`mt-1 ml-4 space-y-1 pl-3 border-l-2 border-emerald-200/50 ${isOpen ? '' : 'hidden'}`}>
+                    <div id={`submenu-${slug}`} role="region" aria-label={`${item.name} submenu`} className={`mt-1 ml-4 space-y-1 pl-3 border-l-2 border-emerald-400/30 ${isOpen ? '' : 'hidden'}`}>
                         {isOpen && item.children?.filter(child => canAccess(child.name)).map((child, idx) => (
                             <Link
                                 key={child.name}
@@ -337,8 +336,8 @@ export default function AdminLayout({ header, children }) {
                                 onClick={isMobile ? () => setIsMobileSidebarOpen(false) : undefined}
                                 className={`submenu-enter menu-link flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group text-sm ${
                                     child.active
-                                        ? 'bg-emerald-600/10 text-emerald-900 font-semibold shadow-sm border border-emerald-200/50 backdrop-blur-sm active'
-                                        : 'text-emerald-900/60 hover:bg-white/40 hover:text-emerald-900 font-normal hover:shadow-sm'
+                                        ? 'bg-gradient-to-r from-emerald-500/90 to-teal-600/90 text-white font-bold shadow-md border border-emerald-400/30 backdrop-blur-md active'
+                                        : 'text-emerald-200/90 hover:bg-white/15 hover:text-white font-normal hover:shadow-sm'
                                 }`}
                                 style={{ animationDelay: `${idx * 50}ms` }}
                             >
@@ -357,23 +356,25 @@ export default function AdminLayout({ header, children }) {
     return (
         <div className="flex min-h-screen bg-gray-50 overflow-x-hidden font-sans w-full max-w-full">
             <style>{menuIconStyle}</style>
+
             {/* Sidebar Desktop */}
             <aside
-                className={`sticky top-0 h-screen max-h-screen flex-shrink-0 relative overflow-hidden border-r border-emerald-100 transition-all duration-300 ease-in-out hidden md:flex md:flex-col ${
+                className={`sticky top-0 self-start h-screen max-h-screen flex-shrink-0 relative overflow-hidden transition-all duration-300 ease-in-out hidden md:flex md:flex-col ${
                     isExpanded ? 'w-64' : 'w-20'
-                } z-30 shadow-lg shadow-emerald-900/5`} onMouseEnter={() => setIsHoveringSidebar(true)} onMouseLeave={() => setIsHoveringSidebar(false)}
+                } z-30 shadow-2xl shadow-emerald-950/20`} onMouseEnter={() => setIsHoveringSidebar(true)} onMouseLeave={() => setIsHoveringSidebar(false)}
             >
-                {/* Background Leafy Blur */}
+                {/* Background Housing Estate & Deep Green Gradient with White Highlights */}
                 <div className="absolute inset-0 z-0">
                     <img 
-                        src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=60" 
-                        alt="Background Leaf" 
-                        className="w-full h-full object-cover opacity-20 filter blur-[2px]"
+                        src="/images/green_housing_estate_bg.png" 
+                        alt="Background Housing Estate" 
+                        className="w-full h-full object-cover opacity-35 filter brightness-95 contrast-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-50/95 via-green-50/90 to-teal-100/95"></div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-emerald-950/95 via-emerald-900/90 to-teal-950/95"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-emerald-400/20 mix-blend-overlay pointer-events-none"></div>
                 </div>
 
-                <div className="h-16 flex items-center justify-between px-4 border-b border-emerald-200/50 flex-shrink-0 relative z-10">
+                <div className="h-16 flex items-center justify-between px-4 border-b border-white/10 flex-shrink-0 relative z-10 bg-emerald-950/40 backdrop-blur-md">
                     {isExpanded ? (
                         <Link href="/" className="flex items-center gap-3">
                             {profil?.logo_path ? (
@@ -381,7 +382,7 @@ export default function AdminLayout({ header, children }) {
                             ) : (
                                 <img src="/images/puridelta.png" alt="Logo RT" className="h-8 w-8 object-contain" />
                             )}
-                            <span className="font-bold text-emerald-900 text-lg truncate">Portal RT</span>
+                            <span className="font-extrabold text-white text-lg truncate drop-shadow-md">Portal RT</span>
                         </Link>
                     ) : (
                         <Link href="/" className="mx-auto flex justify-center">
@@ -394,24 +395,24 @@ export default function AdminLayout({ header, children }) {
                     )}
                 </div>
 
-                <div className="flex-1 overflow-y-auto py-6 px-3 space-y-2 relative z-10 min-h-0">
+                <div className="flex-1 overflow-y-auto py-6 px-3 space-y-2 relative z-10 min-h-0 custom-scrollbar">
                     {menuGroups.filter(item => canAccess(item.name)).map((item) => renderMenuItem(item, false))}
                 </div>
 
                 {/* Profile bottom section - Sticky at bottom of sidebar */}
-                <div className="p-3 border-t border-emerald-200/50 flex-shrink-0 relative z-10 bg-white/90 backdrop-blur-md sticky bottom-0 shadow-sm">
+                <div className="p-3 border-t border-white/10 flex-shrink-0 relative z-10 bg-emerald-950/80 backdrop-blur-md sticky bottom-0 shadow-lg">
                     {isExpanded ? (
-                        <div className="flex items-center justify-between bg-white/90 backdrop-blur-md p-2.5 rounded-xl border border-emerald-200/60 shadow-xs gap-2">
+                        <div className="flex items-center justify-between bg-emerald-900/60 backdrop-blur-md p-2.5 rounded-xl border border-emerald-700/50 shadow-inner gap-2">
                             <Link href={route('profile.edit')} className="flex items-center gap-2.5 min-w-0 flex-1 group" title="Buka Profil Akun">
-                                <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-800 font-extrabold flex items-center justify-center border border-emerald-200 flex-shrink-0 group-hover:bg-emerald-200 transition-colors">
-                                    {user.name.charAt(0)}
+                                <div className="w-9 h-9 rounded-full bg-emerald-400/20 text-emerald-100 font-extrabold flex items-center justify-center border border-emerald-400/40 flex-shrink-0 group-hover:bg-emerald-400/30 transition-colors shadow-sm">
+                                    {user.name?.charAt(0) || 'U'}
                                 </div>
                                 <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-black text-emerald-950 truncate leading-tight group-hover:text-blue-600 transition-colors">{user.name}</p>
-                                    <p className="text-[10px] font-bold text-emerald-700">👤 Profil Akun</p>
+                                    <p className="text-xs font-black text-white truncate leading-tight group-hover:text-emerald-300 transition-colors">{user.name}</p>
+                                    <p className="text-[10px] font-bold text-emerald-300/80">👤 Profil Akun</p>
                                 </div>
                             </Link>
-                            <Link href={route('logout')} method="post" as="button" className="px-2 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-bold transition-colors flex-shrink-0" title="Keluar Akun">
+                            <Link href={route('logout')} method="post" as="button" className="px-2 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 rounded-lg text-xs font-bold transition-colors flex-shrink-0" title="Keluar Akun">
                                 🚪 Keluar
                             </Link>
                         </div>
@@ -419,8 +420,8 @@ export default function AdminLayout({ header, children }) {
                         <div className="flex justify-center">
                             <Dropdown>
                                 <Dropdown.Trigger>
-                                    <button className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-800 font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 border border-emerald-200 shadow-sm">
-                                        {user.name.charAt(0)}
+                                    <button className="w-10 h-10 rounded-full bg-emerald-800 text-white flex items-center justify-center font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400 border border-emerald-600 shadow-sm">
+                                        {user.name?.charAt(0) || 'U'}
                                     </button>
                                 </Dropdown.Trigger>
                                 <Dropdown.Content align="left" width="48">
