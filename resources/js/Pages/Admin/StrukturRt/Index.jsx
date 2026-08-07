@@ -329,8 +329,14 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
                                         : 'bg-white/80 text-emerald-900 border border-emerald-100 hover:bg-emerald-100/80 hover:border-emerald-300 hover:text-emerald-950'
                                     }`}
                                 >
-                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
-                                        📍
+                                    <span className={`w-6 h-6 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                                        isActive 
+                                        ? 'bg-white/25 text-white backdrop-blur-sm shadow-inner' 
+                                        : 'bg-emerald-100/70 text-emerald-700 backdrop-blur-sm border border-emerald-200/50'
+                                    }`}>
+                                        <svg className="w-3.5 h-3.5 fill-none stroke-current stroke-[2.2]" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10" />
+                                        </svg>
                                     </span>
                                     RT {rt}
                                 </button>
