@@ -33,6 +33,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        \App\Services\AuditLogService::log(
+            'LOGIN',
+            'Autentikasi Akun',
+            'User berhasil login ke sistem portal'
+        );
+
         return redirect()->intended(route('dashboard', absolute: false));
     }
 
@@ -41,6 +47,14 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        if (Auth::check()) {
+            \App\Services\AuditLogService::log(
+                'LOGOUT',
+                'Autentikasi Akun',
+                'User melakukan logout dari sistem'
+            );
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
