@@ -92,7 +92,7 @@ class KeluargaController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'no_kk' => 'required|string|max:20|unique:keluargas,no_kk',
+            'no_kk' => 'required|digits:16|unique:keluargas,no_kk',
             'blok' => 'required|string',
             'nomor_rumah' => 'required|string',
             'alamat_lengkap' => 'required|string',

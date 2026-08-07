@@ -15,7 +15,7 @@ class StoreWargaRequest extends FormRequest
     {
         return [
             'keluarga_id' => ['required', 'exists:keluargas,id'],
-            'nik' => ['required', 'string', 'max:20', 'unique:wargas,nik'],
+            'nik' => ['required', 'digits:16', 'unique:wargas,nik'],
             'nama_lengkap' => ['required', 'string', 'max:255'],
             'tempat_lahir' => ['required', 'string', 'max:100'],
             'tanggal_lahir' => ['required', 'date'],
@@ -51,6 +51,14 @@ class StoreWargaRequest extends FormRequest
             'generate_iuran' => ['nullable', 'array'],
             'generate_iuran.*.jenis' => ['required', 'string'],
             'generate_iuran.*.nominal' => ['required', 'numeric', 'min:0'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nik.digits' => 'Nomor NIK wajib terdiri dari tepat 16 digit angka (tidak boleh kurang atau lebih).',
+            'nik.required' => 'Nomor NIK wajib diisi 16 digit.',
         ];
     }
 }

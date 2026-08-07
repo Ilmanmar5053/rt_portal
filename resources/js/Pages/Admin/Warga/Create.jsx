@@ -12,12 +12,12 @@ export default function Create({ keluargas, default_keluarga_id }) {
         keluarga_id: default_keluarga_id || '',
         nik: '',
         nama_lengkap: '',
-        tempat_lahir: '',
+        tempat_lahir: 'SERANG',
         tanggal_lahir: '',
         jenis_kelamin: 'Laki-laki',
         agama: 'Islam',
-        pendidikan: '',
-        pekerjaan: '',
+        pendidikan: 'SLTA/Sederajat',
+        pekerjaan: 'Karyawan Swasta',
         status_perkawinan: 'Belum Kawin',
         status_hubungan_keluarga: 'Anak',
         kewarganegaraan: 'WNI',
@@ -38,6 +38,24 @@ export default function Create({ keluargas, default_keluarga_id }) {
         { jenis: 'Sumbangan Duka Cita', checked: false, nominal: 10000 },
     ]);
 
+    // Auto-fill parent info and place of birth from selected KK
+    useEffect(() => {
+        if (data.keluarga_id && keluargas) {
+            const selectedKk = keluargas.find(k => String(k.id) === String(data.keluarga_id));
+            if (selectedKk) {
+                const kepalaNama = selectedKk.kepala_keluarga?.nama_lengkap || selectedKk.kepala_keluarga_nama || '';
+                const istriObj = selectedKk.wargas?.find(w => w.status_hubungan_keluarga === 'Istri');
+                
+                setData(prev => ({
+                    ...prev,
+                    tempat_lahir: prev.tempat_lahir || 'SERANG',
+                    nama_ayah: (prev.status_hubungan_keluarga === 'Anak' && kepalaNama) ? kepalaNama : (prev.nama_ayah || kepalaNama || ''),
+                    nama_ibu: (prev.status_hubungan_keluarga === 'Anak' && istriObj) ? istriObj.nama_lengkap : (prev.nama_ibu || ''),
+                }));
+            }
+        }
+    }, [data.keluarga_id, data.status_hubungan_keluarga, keluargas]);
+
     useEffect(() => {
         setData('generate_iuran', iuranOptions.filter(opt => opt.checked).map(opt => ({
             jenis: opt.jenis,
@@ -53,6 +71,12 @@ export default function Create({ keluargas, default_keluarga_id }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (data.nik && data.nik.length !== 16) {
+            alert('NIK wajib terdiri dari tepat 16 digit angka!');
+            return;
+        }
+
         post(route('admin.warga.store'));
     };
 
@@ -96,7 +120,7 @@ export default function Create({ keluargas, default_keluarga_id }) {
                         >
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="md:col-span-2">
-                                    <InputLabel htmlFor="keluarga_id" value="Data Keluarga (Nomor KK)" />
+                                    <InputLabel htmlFor="keluarga_id" value="Data Keluarga (Nomor KK) *" />
                                     <select
                                         id="keluarga_id"
                                         className="mt-1 block w-full border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-medium"
@@ -115,7 +139,7 @@ export default function Create({ keluargas, default_keluarga_id }) {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="status_hubungan_keluarga" value="Status Hubungan" />
+                                    <InputLabel htmlFor="status_hubungan_keluarga" value="Status Hubungan *" />
                                     <select
                                         id="status_hubungan_keluarga"
                                         className="mt-1 block w-full border-slate-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm font-medium"
@@ -140,7 +164,7 @@ export default function Create({ keluargas, default_keluarga_id }) {
                         {/* Section 2: Identitas Pribadi & Kelahiran */}
                         <FormSection
                             title="Identitas Pribadi & Kelahiran"
-                            description="Data NIK, nama lengkap sesuai KTP, dan informasi kelahiran."
+                            description="Data NIK (Wajib 16 digit), nama lengkap sesuai KTP, dan informasi kelahiran."
                             color="emerald"
                             icon={
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -151,56 +175,61 @@ export default function Create({ keluargas, default_keluarga_id }) {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <div className="flex items-center justify-between">
-                                        <InputLabel htmlFor="nik" value="NIK (Nomor Induk Kependudukan)" />
-                                        <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                                            16 Digit Angka
+                                        <InputLabel htmlFor="nik" value="NIK (Nomor Induk Kependudukan) *" />
+                                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${data.nik && data.nik.length === 16 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                                            {data.nik.length} / 16 Digit
                                         </span>
                                     </div>
                                     <TextInput
                                         id="nik"
                                         type="text"
+                                        maxLength="16"
                                         name="nik"
                                         value={data.nik}
-                                        className="mt-1 block w-full font-mono"
-                                        placeholder="Cth: 3174012345670001"
-                                        onChange={(e) => setData('nik', e.target.value)}
+                                        className="mt-1 block w-full font-mono font-bold"
+                                        placeholder="Cth: 3604123456780001"
+                                        onChange={(e) => setData('nik', e.target.value.replace(/\D/g, ''))}
                                         required
                                     />
-                                    <p className="text-xs text-slate-500 mt-1">Pastikan NIK 16 digit sesuai e-KTP.</p>
+                                    {data.nik && data.nik.length !== 16 && (
+                                        <p className="text-xs text-rose-600 font-bold mt-1">
+                                            ⚠️ NIK wajib terdiri dari tepat 16 digit angka (tidak boleh kurang atau lebih).
+                                        </p>
+                                    )}
                                     <InputError message={errors.nik} className="mt-2" />
                                 </div>
                                 
                                 <div>
-                                    <InputLabel htmlFor="nama_lengkap" value="Nama Lengkap" />
+                                    <InputLabel htmlFor="nama_lengkap" value="Nama Lengkap *" />
                                     <TextInput
                                         id="nama_lengkap"
                                         type="text"
                                         name="nama_lengkap"
                                         value={data.nama_lengkap}
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full uppercase font-bold"
                                         placeholder="Nama sesuai KTP"
-                                        onChange={(e) => setData('nama_lengkap', e.target.value)}
+                                        onChange={(e) => setData('nama_lengkap', e.target.value.toUpperCase())}
                                         required
                                     />
                                     <InputError message={errors.nama_lengkap} className="mt-2" />
                                 </div>
                                 
                                 <div>
-                                    <InputLabel htmlFor="tempat_lahir" value="Tempat Lahir" />
+                                    <InputLabel htmlFor="tempat_lahir" value="Tempat Lahir *" />
                                     <TextInput
                                         id="tempat_lahir"
                                         type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full uppercase"
                                         value={data.tempat_lahir}
-                                        placeholder="Cth: KUPANG, JAKARTA"
-                                        onChange={(e) => setData('tempat_lahir', e.target.value)}
+                                        placeholder="Cth: SERANG, JAKARTA"
+                                        onChange={(e) => setData('tempat_lahir', e.target.value.toUpperCase())}
                                         required
                                     />
                                     <InputError message={errors.tempat_lahir} className="mt-2" />
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="tanggal_lahir" value="Tanggal Lahir" />
+                                    <InputLabel htmlFor="tanggal_lahir" value="Tanggal Lahir *" />
                                     <TextInput
                                         id="tanggal_lahir"
                                         type="date"
@@ -213,7 +242,7 @@ export default function Create({ keluargas, default_keluarga_id }) {
                                 </div>
 
                                 <div className="md:col-span-2">
-                                    <InputLabel htmlFor="jenis_kelamin" value="Jenis Kelamin" />
+                                    <InputLabel htmlFor="jenis_kelamin" value="Jenis Kelamin *" />
                                     <select
                                         id="jenis_kelamin"
                                         className="mt-1 block w-full border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 rounded-xl shadow-sm font-medium"
@@ -228,10 +257,10 @@ export default function Create({ keluargas, default_keluarga_id }) {
                             </div>
                         </FormSection>
 
-                        {/* Section 3: Agama, Pendidikan & Pekerjaan */}
+                        {/* Section 3: Agama, Pendidikan & Pekerjaan (Dropdown Uniform List) */}
                         <FormSection
                             title="Agama, Pendidikan & Pekerjaan"
-                            description="Latar belakang pendidikan, keyakinan, pekerjaan, serta status perkawinan."
+                            description="Pilih latar belakang pendidikan dan pekerjaan dari daftar pilihan historis resmi."
                             color="indigo"
                             icon={
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -241,7 +270,7 @@ export default function Create({ keluargas, default_keluarga_id }) {
                         >
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <InputLabel htmlFor="agama" value="Agama" />
+                                    <InputLabel htmlFor="agama" value="Agama *" />
                                     <select
                                         id="agama"
                                         className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
@@ -260,35 +289,55 @@ export default function Create({ keluargas, default_keluarga_id }) {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="pendidikan" value="Pendidikan Terakhir" />
-                                    <TextInput
+                                    <InputLabel htmlFor="pendidikan" value="Pendidikan Terakhir *" />
+                                    <select
                                         id="pendidikan"
-                                        type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
                                         value={data.pendidikan}
-                                        placeholder="Cth: SLTA / SEDERAJAT, S1"
-                                        onChange={(e) => setData('pendidikan', e.target.value.toUpperCase())}
+                                        onChange={(e) => setData('pendidikan', e.target.value)}
                                         required
-                                    />
+                                    >
+                                        <option value="Tidak/Belum Sekolah">Tidak/Belum Sekolah</option>
+                                        <option value="Belum Tamat SD/Sederajat">Belum Tamat SD/Sederajat</option>
+                                        <option value="Tamat SD/Sederajat">Tamat SD/Sederajat</option>
+                                        <option value="SLTP/Sederajat">SLTP/Sederajat</option>
+                                        <option value="SLTA/Sederajat">SLTA/Sederajat</option>
+                                        <option value="Diploma I/II">Diploma I/II</option>
+                                        <option value="Diploma III/Akademi">Diploma III/Akademi</option>
+                                        <option value="Diploma IV/Strata I">Diploma IV/Strata I</option>
+                                        <option value="Strata II">Strata II</option>
+                                        <option value="Strata III">Strata III</option>
+                                    </select>
                                     <InputError message={errors.pendidikan} className="mt-2" />
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="pekerjaan" value="Pekerjaan" />
-                                    <TextInput
+                                    <InputLabel htmlFor="pekerjaan" value="Pekerjaan *" />
+                                    <select
                                         id="pekerjaan"
-                                        type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
                                         value={data.pekerjaan}
-                                        placeholder="Cth: KARYAWAN SWASTA, WIRASWASTA"
-                                        onChange={(e) => setData('pekerjaan', e.target.value.toUpperCase())}
+                                        onChange={(e) => setData('pekerjaan', e.target.value)}
                                         required
-                                    />
+                                    >
+                                        <option value="Belum/Tidak Bekerja">Belum/Tidak Bekerja</option>
+                                        <option value="Mengurus Rumah Tangga">Mengurus Rumah Tangga</option>
+                                        <option value="Pelajar/Mahasiswa">Pelajar/Mahasiswa</option>
+                                        <option value="PNS">PNS</option>
+                                        <option value="TNI/Polri">TNI/Polri</option>
+                                        <option value="Karyawan Swasta">Karyawan Swasta</option>
+                                        <option value="Karyawan BUMN">Karyawan BUMN</option>
+                                        <option value="Wiraswasta">Wiraswasta</option>
+                                        <option value="Petani/Pekebun">Petani/Pekebun</option>
+                                        <option value="Nelayan">Nelayan</option>
+                                        <option value="Buruh Harian Lepas">Buruh Harian Lepas</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
                                     <InputError message={errors.pekerjaan} className="mt-2" />
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="status_perkawinan" value="Status Perkawinan" />
+                                    <InputLabel htmlFor="status_perkawinan" value="Status Perkawinan *" />
                                     <select
                                         id="status_perkawinan"
                                         className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
@@ -304,21 +353,21 @@ export default function Create({ keluargas, default_keluarga_id }) {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="kewarganegaraan" value="Kewarganegaraan" />
+                                    <InputLabel htmlFor="kewarganegaraan" value="Kewarganegaraan *" />
                                     <select
                                         id="kewarganegaraan"
                                         className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
                                         value={data.kewarganegaraan}
                                         onChange={(e) => setData('kewarganegaraan', e.target.value)}
                                     >
-                                        <option value="WNI">WNI</option>
-                                        <option value="WNA">WNA</option>
+                                        <option value="WNI">WNI (Warga Negara Indonesia)</option>
+                                        <option value="WNA">WNA (Warga Negara Asing)</option>
                                     </select>
                                     <InputError message={errors.kewarganegaraan} className="mt-2" />
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="status_hidup" value="Status Hidup" />
+                                    <InputLabel htmlFor="status_hidup" value="Status Hidup *" />
                                     <select
                                         id="status_hidup"
                                         className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
@@ -333,54 +382,54 @@ export default function Create({ keluargas, default_keluarga_id }) {
                             </div>
                         </FormSection>
 
-                        {/* Section 4: Orang Tua Kandung & Kontak */}
+                        {/* Section 4: Data Orang Tua & Kontak */}
                         <FormSection
-                            title="Orang Tua & Kontak Warga"
-                            description="Nama orang tua kandung (Ayah & Ibu) serta nomor telepon/WhatsApp yang dapat dihubungi."
-                            color="amber"
+                            title="Data Orang Tua & Kontak"
+                            description="Otomatis terisi dari nama Kepala Keluarga & Istri dalam KK."
+                            color="purple"
                             icon={
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                             }
                         >
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <InputLabel htmlFor="nama_ayah" value="Nama Ayah Kandung" />
+                                    <InputLabel htmlFor="nama_ayah" value="Nama Ayah *" />
                                     <TextInput
                                         id="nama_ayah"
                                         type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full uppercase font-bold bg-slate-50"
                                         value={data.nama_ayah}
-                                        placeholder="Nama lengkap Ayah"
-                                        onChange={(e) => setData('nama_ayah', e.target.value)}
+                                        placeholder="NAMA AYAH KANDUNG"
+                                        onChange={(e) => setData('nama_ayah', e.target.value.toUpperCase())}
                                         required
                                     />
                                     <InputError message={errors.nama_ayah} className="mt-2" />
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="nama_ibu" value="Nama Ibu Kandung" />
+                                    <InputLabel htmlFor="nama_ibu" value="Nama Ibu *" />
                                     <TextInput
                                         id="nama_ibu"
                                         type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full uppercase font-bold bg-slate-50"
                                         value={data.nama_ibu}
-                                        placeholder="Nama lengkap Ibu"
-                                        onChange={(e) => setData('nama_ibu', e.target.value)}
+                                        placeholder="NAMA IBU KANDUNG"
+                                        onChange={(e) => setData('nama_ibu', e.target.value.toUpperCase())}
                                         required
                                     />
                                     <InputError message={errors.nama_ibu} className="mt-2" />
                                 </div>
 
-                                <div>
+                                <div className="md:col-span-2">
                                     <InputLabel htmlFor="no_hp" value="Nomor HP / WhatsApp" />
                                     <TextInput
                                         id="no_hp"
                                         type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full font-mono"
                                         value={data.no_hp}
-                                        placeholder="Cth: (+62) 812 3456 7890"
+                                        placeholder="Cth: 081234567890"
                                         onChange={(e) => setData('no_hp', e.target.value)}
                                     />
                                     <InputError message={errors.no_hp} className="mt-2" />
@@ -388,120 +437,19 @@ export default function Create({ keluargas, default_keluarga_id }) {
                             </div>
                         </FormSection>
 
-                        {/* Section 5: Akun Login Warga */}
-                        <FormSection
-                            title="Akun Login Portal Warga"
-                            description="Aktifkan pembuatan akun login agar warga dapat masuk ke portal warga mandiri."
-                            color="slate"
-                            icon={
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-                                </svg>
-                            }
-                        >
-                            <div className="space-y-4">
-                                <label className="flex items-center gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 cursor-pointer hover:bg-slate-100/70 transition">
-                                    <input
-                                        id="buat_akun"
-                                        type="checkbox"
-                                        className="w-5 h-5 text-blue-600 bg-white border-slate-300 rounded-md focus:ring-blue-500"
-                                        checked={data.buat_akun}
-                                        onChange={(e) => setData('buat_akun', e.target.checked)}
-                                    />
-                                    <div>
-                                        <span className="text-sm font-bold text-slate-800">
-                                            Buat Akun Login untuk Warga Ini (Terkoneksi ke Portal Warga)
-                                        </span>
-                                        <p className="text-xs text-slate-500">
-                                            Warga dapat masuk ke portal untuk cek surat pengantar, pengaduan, dan tagihan iuran.
-                                        </p>
-                                    </div>
-                                </label>
-
-                                {data.buat_akun && (
-                                    <div className="pt-2 pl-2">
-                                        <InputLabel htmlFor="email" value="Username / Email Akun Login" />
-                                        <TextInput
-                                            id="email"
-                                            type="email"
-                                            name="email"
-                                            value={data.email}
-                                            className="mt-1 block w-full max-w-md"
-                                            placeholder="warga.nik@rt.com atau email aktif"
-                                            onChange={(e) => setData('email', e.target.value)}
-                                            required={data.buat_akun}
-                                        />
-                                        <InputError message={errors.email} className="mt-2" />
-                                        <p className="mt-1.5 text-xs text-slate-500 font-medium">
-                                            💡 Password default otomatis akan diset ke NIK warga.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </FormSection>
-
-                        {/* Section 6: Generate Tagihan Iuran Awal (Opsional) */}
-                        <FormSection
-                            title="Generate Tagihan Iuran Awal (Opsional)"
-                            description="Centang jenis iuran yang ingin langsung dibuat tagihannya untuk warga baru ini."
-                            color="purple"
-                            icon={
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                </svg>
-                            }
-                        >
-                            <div className="space-y-3">
-                                {iuranOptions.map((opt, index) => (
-                                    <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 p-3.5 rounded-xl border border-slate-200/60 hover:border-purple-200 transition">
-                                        <label className="flex items-center gap-3 cursor-pointer">
-                                            <input
-                                                id={`iuran_${index}`}
-                                                type="checkbox"
-                                                className="w-4 h-4 text-purple-600 bg-white border-slate-300 rounded focus:ring-purple-500"
-                                                checked={opt.checked}
-                                                onChange={(e) => handleIuranChange(index, 'checked', e.target.checked)}
-                                            />
-                                            <span className="text-sm font-semibold text-slate-800">
-                                                {opt.jenis}
-                                            </span>
-                                        </label>
-                                        
-                                        {opt.checked && (
-                                            <div className="flex items-center max-w-[220px]">
-                                                <span className="text-slate-500 text-sm mr-2 font-medium">Rp</span>
-                                                <TextInput
-                                                    type="number"
-                                                    value={opt.nominal}
-                                                    className="block w-full text-sm py-1.5"
-                                                    onChange={(e) => handleIuranChange(index, 'nominal', e.target.value)}
-                                                    required={opt.checked}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </FormSection>
-
-                        {/* Sticky Action Footer */}
-                        <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-lg p-4 px-6 flex items-center justify-between gap-4 mt-8">
-                            <Link 
-                                href={route('admin.warga.index')} 
-                                className="px-5 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl font-semibold text-sm transition"
+                        {/* Submit Button */}
+                        <div className="mt-8 flex justify-end gap-3">
+                            <Link
+                                href={route('admin.warga.index')}
+                                className="px-5 py-2.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold text-xs rounded-xl shadow-xs transition"
                             >
                                 Batal
                             </Link>
-                            <PrimaryButton 
-                                className="px-7 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-500/25 transition-all flex items-center gap-2 text-sm" 
-                                disabled={processing}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                                </svg>
-                                Simpan Data Warga
+                            <PrimaryButton disabled={processing} className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs rounded-xl shadow-md cursor-pointer">
+                                + Simpan Data Warga
                             </PrimaryButton>
                         </div>
+
                     </form>
                 </div>
             </div>

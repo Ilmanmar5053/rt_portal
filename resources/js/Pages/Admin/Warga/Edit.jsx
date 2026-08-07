@@ -260,30 +260,50 @@ export default function Edit({ warga, keluargas }) {
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="pendidikan" value="Pendidikan Terakhir" />
-                                    <TextInput
+                                    <InputLabel htmlFor="pendidikan" value="Pendidikan Terakhir *" />
+                                    <select
                                         id="pendidikan"
-                                        type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
                                         value={data.pendidikan}
-                                        placeholder="Cth: SLTA / SEDERAJAT, S1"
-                                        onChange={(e) => setData('pendidikan', e.target.value.toUpperCase())}
+                                        onChange={(e) => setData('pendidikan', e.target.value)}
                                         required
-                                    />
+                                    >
+                                        <option value="Tidak/Belum Sekolah">Tidak/Belum Sekolah</option>
+                                        <option value="Belum Tamat SD/Sederajat">Belum Tamat SD/Sederajat</option>
+                                        <option value="Tamat SD/Sederajat">Tamat SD/Sederajat</option>
+                                        <option value="SLTP/Sederajat">SLTP/Sederajat</option>
+                                        <option value="SLTA/Sederajat">SLTA/Sederajat</option>
+                                        <option value="Diploma I/II">Diploma I/II</option>
+                                        <option value="Diploma III/Akademi">Diploma III/Akademi</option>
+                                        <option value="Diploma IV/Strata I">Diploma IV/Strata I</option>
+                                        <option value="Strata II">Strata II</option>
+                                        <option value="Strata III">Strata III</option>
+                                    </select>
                                     <InputError message={errors.pendidikan} className="mt-2" />
                                 </div>
 
                                 <div>
-                                    <InputLabel htmlFor="pekerjaan" value="Pekerjaan" />
-                                    <TextInput
+                                    <InputLabel htmlFor="pekerjaan" value="Pekerjaan *" />
+                                    <select
                                         id="pekerjaan"
-                                        type="text"
-                                        className="mt-1 block w-full"
+                                        className="mt-1 block w-full border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-xl shadow-sm font-medium"
                                         value={data.pekerjaan}
-                                        placeholder="Cth: KARYAWAN SWASTA, WIRASWASTA"
-                                        onChange={(e) => setData('pekerjaan', e.target.value.toUpperCase())}
+                                        onChange={(e) => setData('pekerjaan', e.target.value)}
                                         required
-                                    />
+                                    >
+                                        <option value="Belum/Tidak Bekerja">Belum/Tidak Bekerja</option>
+                                        <option value="Mengurus Rumah Tangga">Mengurus Rumah Tangga</option>
+                                        <option value="Pelajar/Mahasiswa">Pelajar/Mahasiswa</option>
+                                        <option value="PNS">PNS</option>
+                                        <option value="TNI/Polri">TNI/Polri</option>
+                                        <option value="Karyawan Swasta">Karyawan Swasta</option>
+                                        <option value="Karyawan BUMN">Karyawan BUMN</option>
+                                        <option value="Wiraswasta">Wiraswasta</option>
+                                        <option value="Petani/Pekebun">Petani/Pekebun</option>
+                                        <option value="Nelayan">Nelayan</option>
+                                        <option value="Buruh Harian Lepas">Buruh Harian Lepas</option>
+                                        <option value="Lainnya">Lainnya</option>
+                                    </select>
                                     <InputError message={errors.pekerjaan} className="mt-2" />
                                 </div>
 
