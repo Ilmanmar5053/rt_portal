@@ -1,10 +1,31 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export default function Show({ keluarga }) {
     const [copied, setCopied] = useState(false);
     const [previewModal, setPreviewModal] = useState(null);
+    const [selectedWargaDetail, setSelectedWargaDetail] = useState(null);
+    const [hoverWargaDetail, setHoverWargaDetail] = useState(null);
+    const hoverTimerRef = useRef(null);
+
+    const handleMouseEnterDetail = (warga) => {
+        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+        setHoverWargaDetail(warga);
+        // Auto hide hover popup after 10 seconds
+        hoverTimerRef.current = setTimeout(() => {
+            setHoverWargaDetail(null);
+        }, 10000);
+    };
+
+    const handleMouseLeaveDetail = () => {
+        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+        hoverTimerRef.current = setTimeout(() => {
+            setHoverWargaDetail(null);
+        }, 3000);
+    };
+
+    const activeDetail = selectedWargaDetail || hoverWargaDetail;
 
     const handleDelete = (id) => {
         if (confirm('Yakin ingin menghapus data anggota keluarga ini?')) {
@@ -60,257 +81,186 @@ export default function Show({ keluarga }) {
     return (
         <AdminLayout
             header={
-                <div className="flex items-center gap-2">
-                    <span className="text-xl">📋</span>
-                    <h2 className="text-lg font-black leading-tight text-gray-800 tracking-tight">
-                        Detail Kartu Keluarga (KK)
-                    </h2>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-2xl bg-indigo-500/10 text-indigo-700 flex items-center justify-center text-xl font-bold">
+                            📜
+                        </span>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <h2 className="text-lg font-black leading-tight text-slate-900 tracking-tight">
+                                    Detail Kartu Keluarga (KK)
+                                </h2>
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-black text-[10px]">
+                                    Terverifikasi RT
+                                </span>
+                            </div>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                Informasi resmi Kartu Keluarga & Daftar Anggota Warga terdaftar
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href={route('admin.keluarga.index')}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs shadow-xs transition"
+                        >
+                            <span>←</span>
+                            <span>Kembali ke Daftar</span>
+                        </Link>
+                        <Link
+                            href={route('admin.keluarga.edit', keluarga.id)}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-extrabold text-xs shadow-md shadow-amber-500/20 transition-all hover:scale-105"
+                        >
+                            <span>✏️</span>
+                            <span>Edit KK</span>
+                        </Link>
+                    </div>
                 </div>
             }
         >
             <Head title={`Detail KK - ${keluarga.no_kk}`} />
 
-            {/* Modal Lightbox untuk Preview Dokumen Lampiran KK / KTP */}
-            {previewModal && (
-                <div
-                    onClick={() => setPreviewModal(null)}
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300 cursor-pointer"
-                >
-                    <div
-                        onClick={(e) => e.stopPropagation()}
-                        className="relative max-w-4xl max-h-[90vh] bg-white rounded-3xl overflow-hidden shadow-2xl border border-white/20 p-4 flex flex-col"
-                    >
-                        <div className="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
-                            <h3 className="font-extrabold text-sm text-gray-800 flex items-center gap-2">
-                                <span>📄</span>
-                                <span>{previewModal.title}</span>
-                            </h3>
-                            <button
-                                onClick={() => setPreviewModal(null)}
-                                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold flex items-center justify-center text-xs transition-colors"
-                            >
-                                ✕
-                            </button>
+            <div className="max-w-6xl mx-auto space-y-6 animate-in fade-in duration-300">
+
+                {/* 1. Header Banner Kartu Keluarga */}
+                <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 text-white rounded-3xl p-6 sm:p-7 shadow-xl border border-indigo-500/20 relative overflow-hidden">
+                    <div className="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 font-mono font-black text-xs border border-amber-400/30 flex items-center gap-1.5">
+                                    <span>🇮🇩</span>
+                                    <span>KARTU KELUARGA REPUBLIK INDONESIA</span>
+                                </span>
+                                <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-slate-200 text-[10px] font-bold">
+                                    {keluarga.wargas?.length || 0} Anggota Terdaftar
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                                <h1 className="text-2xl sm:text-3xl font-mono font-black tracking-wider text-white">
+                                    {keluarga.no_kk}
+                                </h1>
+                                <button
+                                    onClick={handleCopyKK}
+                                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-300 font-bold text-xs transition border border-white/10 flex items-center gap-1"
+                                    title="Salin Nomor KK"
+                                >
+                                    <span>{copied ? '✓ Tersalin!' : '📋 Salin'}</span>
+                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-2 text-xs text-slate-300 font-semibold">
+                                <span>👤 Kepala Keluarga:</span>
+                                <span className="text-amber-300 font-black text-sm uppercase">
+                                    {keluarga.kepala_keluarga?.nama_lengkap || keluarga.kepala_keluarga_nama || '-'}
+                                </span>
+                            </div>
                         </div>
-                        <div className="overflow-auto max-h-[75vh] flex items-center justify-center bg-gray-50 rounded-2xl p-2 border border-gray-100">
-                            <img
-                                src={`/storage/${previewModal.url}`}
-                                alt={previewModal.title}
-                                className="max-w-full max-h-[70vh] object-contain rounded-xl shadow-sm"
-                            />
+
+                        {/* Quick Stats Cards */}
+                        <div className="grid grid-cols-2 gap-3 shrink-0">
+                            <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 text-center min-w-[120px]">
+                                <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider block">Blok / No. Rumah</span>
+                                <span className="text-base font-black text-amber-300">
+                                    {keluarga.rumah_blok?.blok || '3B'} - {keluarga.rumah_blok?.nomor_rumah || '21'}
+                                </span>
+                            </div>
+                            <div className="bg-white/10 backdrop-blur-md p-3.5 rounded-2xl border border-white/10 text-center min-w-[120px]">
+                                <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider block">Wilayah RT / RW</span>
+                                <span className="text-base font-black text-emerald-400">
+                                    RT {keluarga.rt || '005'} / RW {keluarga.rw || '008'}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
-            )}
 
-            {/* Container Compact & Presisi (max-w-4xl agar tidak terlalu lebar & lebih fokus) */}
-            <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">
-
-                {/* 1. Hero Header Card (Gradient, Iconic & Berwarna) */}
-                <div className="bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 text-white rounded-3xl p-6 shadow-xl border border-emerald-500/30 relative overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="absolute -right-10 -bottom-10 w-48 h-48 rounded-full bg-white/10 blur-2xl pointer-events-none"></div>
-
-                    <div className="relative z-10 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-[11px] font-black uppercase tracking-wider border border-white/20">
-                                📋 DATA KARTU KELUARGA
-                            </span>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                            <h2 className="text-xl sm:text-2xl font-black font-mono tracking-wide">
-                                NO KK: {keluarga.no_kk}
-                            </h2>
-                            <button
-                                onClick={handleCopyKK}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all border border-white/20"
-                                title="Salin Nomor KK"
-                            >
-                                <span>{copied ? '✓ Tersalin!' : '📋 Salin'}</span>
-                            </button>
-                        </div>
-                        <p className="text-sm font-extrabold text-emerald-100 flex items-center gap-1.5">
-                            <span>👑 Kepala Keluarga:</span>
-                            <span className="text-white underline decoration-emerald-300 decoration-2 underline-offset-2">
-                                {keluarga.kepala_keluarga
-                                    ? keluarga.kepala_keluarga.nama_lengkap
-                                    : keluarga.kepala_keluarga_nama
-                                        ? <span>{keluarga.kepala_keluarga_nama}</span>
-                                        : 'Belum Ada / Kosong'}
-                            </span>
-                        </p>
-                    </div>
-
-                    <div className="relative z-10 flex items-center gap-2 flex-shrink-0">
-                        <Link
-                            href={route('admin.keluarga.edit', keluarga.id)}
-                            className="inline-flex items-center gap-1.5 bg-white text-emerald-900 hover:bg-emerald-50 font-black px-4 py-2.5 rounded-xl shadow-md transition-all hover:scale-105 text-xs"
-                        >
-                            <span>✏️</span>
-                            <span>Edit KK</span>
-                        </Link>
-                        <Link
-                            href={route('admin.keluarga.index')}
-                            className="inline-flex items-center gap-1.5 bg-white/15 hover:bg-white/25 text-white font-extrabold px-4 py-2.5 rounded-xl border border-white/20 transition-all text-xs"
-                        >
-                            <span>⬅️</span>
-                            <span>Kembali</span>
-                        </Link>
-                    </div>
-                </div>
-
-                {/* 2. Grid 2 Kolom: Informasi Alamat & Dokumen Lampiran */}
+                {/* 2. Grid Identitas Lengkap & Alamat Domisili */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                    {/* Kartu Informasi Alamat & Wilayah */}
-                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-2 pb-3 mb-4 border-b border-gray-100">
-                                <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-black">
-                                    📍
+                    {/* Informasi Kepala Keluarga */}
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                        <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+                            <span className="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-sm font-black">
+                                👑
+                            </span>
+                            <h3 className="font-extrabold text-sm text-gray-900 tracking-tight">
+                                Identitas Pemegang Kepala Keluarga
+                            </h3>
+                        </div>
+
+                        <div className="space-y-2.5 text-xs">
+                            <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-gray-500 font-semibold">Nama Lengkap</span>
+                                <span className="font-extrabold text-gray-900 uppercase">
+                                    {keluarga.kepala_keluarga?.nama_lengkap || keluarga.kepala_keluarga_nama || '-'}
                                 </span>
-                                <h3 className="font-extrabold text-sm text-gray-800 tracking-tight">
-                                    Informasi Alamat & Domisili
-                                </h3>
                             </div>
-
-                            <div className="space-y-3">
-                                {/* Alamat Lengkap */}
-                                <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/60">
-                                    <span className="text-[10px] font-extrabold text-emerald-800 uppercase tracking-wider">
-                                        Alamat Lengkap
-                                    </span>
-                                    <p className="text-sm font-black text-gray-900 mt-0.5 leading-snug">
-                                        {keluarga.alamat_lengkap || '-'}
-                                    </p>
-                                </div>
-
-                                {/* RT/RW & Domisili Blok */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="p-3 rounded-2xl bg-teal-50/70 border border-teal-200/60">
-                                        <span className="text-[10px] font-extrabold text-teal-800 uppercase tracking-wider">
-                                            RT / RW
-                                        </span>
-                                        <p className="text-sm font-black text-gray-900 mt-0.5">
-                                            RT {keluarga.rt} / RW {keluarga.rw}
-                                        </p>
-                                    </div>
-                                    <div className="p-3 rounded-2xl bg-cyan-50/70 border border-cyan-200/60">
-                                        <span className="text-[10px] font-extrabold text-cyan-800 uppercase tracking-wider">
-                                            Domisili Blok RT
-                                        </span>
-                                        <p className="text-sm font-black text-gray-900 mt-0.5">
-                                            {keluarga.rumah_blok ? `Blok ${keluarga.rumah_blok.blok} No. ${keluarga.rumah_blok.nomor_rumah}` : '-'}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {/* Detail Wilayah */}
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 pt-2 text-xs">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 font-bold">🗺️ Kel/Desa:</span>
-                                        <span className="font-black text-gray-800">{keluarga.kelurahan || '-'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 font-bold">🏢 Kecamatan:</span>
-                                        <span className="font-black text-gray-800">{keluarga.kecamatan || '-'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 font-bold">🏙️ Kab/Kota:</span>
-                                        <span className="font-black text-gray-800">{keluarga.kabupaten_kota || '-'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-gray-400 font-bold">🌐 Provinsi:</span>
-                                        <span className="font-black text-gray-800">{keluarga.provinsi || '-'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2 col-span-2">
-                                        <span className="text-gray-400 font-bold">📮 Kode Pos:</span>
-                                        <span className="font-black text-gray-800">{keluarga.kode_pos || '-'}</span>
-                                    </div>
-                                </div>
+                            <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-gray-500 font-semibold">NIK Kepala Keluarga</span>
+                                <span className="font-mono font-bold text-gray-900">
+                                    {keluarga.kepala_keluarga?.nik || '-'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-gray-500 font-semibold">Nomor Handphone (WA)</span>
+                                <span className="font-bold text-emerald-700">
+                                    {keluarga.kepala_keluarga?.no_hp || '-'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1">
+                                <span className="text-gray-500 font-semibold">Status Tempat Tinggal</span>
+                                <span className="font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded">
+                                    Domisili Asli KK
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    {/* Kartu Dokumen Lampiran KK & KTP */}
-                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                        <div>
-                            <div className="flex items-center gap-2 pb-3 mb-4 border-b border-gray-100">
-                                <span className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-800 flex items-center justify-center text-sm font-black">
-                                    🗂️
-                                </span>
-                                <h3 className="font-extrabold text-sm text-gray-800 tracking-tight">
-                                    Dokumen Lampiran KK & KTP
-                                </h3>
-                            </div>
-
-                            <div className="space-y-4">
-                                {/* Lampiran Scan KK */}
-                                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/40 border border-blue-100/80 flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-blue-500 text-white flex items-center justify-center text-lg font-black shadow-md shadow-blue-500/20">
-                                            📄
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-extrabold text-gray-900">Scan Kartu Keluarga</p>
-                                            <p className="text-[11px] text-gray-500 font-medium">
-                                                {keluarga.file_kk ? '✓ Dokumen Terverifikasi' : '⚠️ Belum diunggah'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {keluarga.file_kk ? (
-                                        <button
-                                            onClick={() => setPreviewModal({ title: 'Scan Kartu Keluarga', url: keluarga.file_kk })}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-sm transition-all hover:scale-105"
-                                        >
-                                            <span>👁️</span>
-                                            <span>Lihat File</span>
-                                        </button>
-                                    ) : (
-                                        <span className="px-3 py-1 rounded-full bg-gray-200 text-gray-600 font-bold text-xs italic">
-                                            Kosong
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Lampiran KTP Kepala Keluarga */}
-                                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-indigo-50/40 border border-indigo-100/80 flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg font-black shadow-md shadow-indigo-600/20">
-                                            🪪
-                                        </div>
-                                        <div>
-                                            <p className="text-sm font-extrabold text-gray-900">KTP Kepala Keluarga</p>
-                                            <p className="text-[11px] text-gray-500 font-medium">
-                                                {keluarga.file_ktp_kepala ? '✓ Dokumen Terverifikasi' : '⚠️ Belum diunggah'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {keluarga.file_ktp_kepala ? (
-                                        <button
-                                            onClick={() => setPreviewModal({ title: 'KTP Kepala Keluarga', url: keluarga.file_ktp_kepala })}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-sm transition-all hover:scale-105"
-                                        >
-                                            <span>👁️</span>
-                                            <span>Lihat File</span>
-                                        </button>
-                                    ) : (
-                                        <span className="px-3 py-1 rounded-full bg-gray-200 text-gray-600 font-bold text-xs italic">
-                                            Kosong
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
+                    {/* Alamat & Wilayah Administrative */}
+                    <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 space-y-4">
+                        <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+                            <span className="w-8 h-8 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center text-sm font-black">
+                                📍
+                            </span>
+                            <h3 className="font-extrabold text-sm text-gray-900 tracking-tight">
+                                Alamat & Wilayah Domisili
+                            </h3>
                         </div>
 
-                        {/* Note Lampiran */}
-                        <p className="text-[11px] text-gray-400 font-medium italic mt-4 pt-3 border-t border-gray-100">
-                            💡 Klik tombol "Lihat File" untuk membuka pratinjau dokumen tanpa mengunduh.
-                        </p>
+                        <div className="space-y-2.5 text-xs">
+                            <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-gray-500 font-semibold">Alamat Jalan / Perumahan</span>
+                                <span className="font-bold text-gray-900 text-right max-w-[220px]">
+                                    {keluarga.alamat_lengkap || '-'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-gray-500 font-semibold">Desa / Kelurahan</span>
+                                <span className="font-bold text-gray-900">{keluarga.kelurahan || 'Pontang'}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-gray-500 font-semibold">Kecamatan</span>
+                                <span className="font-bold text-gray-900">{keluarga.kecamatan || 'Pontang'}</span>
+                            </div>
+                            <div className="flex justify-between py-1 border-b border-gray-50">
+                                <span className="text-gray-500 font-semibold">Kabupaten / Kota</span>
+                                <span className="font-bold text-gray-900">{keluarga.kabupaten_kota || 'Kabupaten Serang'}</span>
+                            </div>
+                            <div className="flex justify-between py-1">
+                                <span className="text-gray-500 font-semibold">Provinsi & Kode Pos</span>
+                                <span className="font-bold text-gray-900">{keluarga.provinsi || 'Banten'} ({keluarga.kode_pos || '42135'})</span>
+                            </div>
+                        </div>
                     </div>
 
                 </div>
 
-                {/* 3. Daftar Anggota Keluarga Section (Numbered, Colorful & Iconic Table) */}
+                {/* 3. Daftar Anggota Keluarga Section */}
                 <div className="bg-white p-5 rounded-3xl shadow-sm border border-gray-100">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 mb-4 border-b border-gray-100">
                         <div className="flex items-center gap-2">
@@ -322,7 +272,7 @@ export default function Show({ keluarga }) {
                                     Daftar Anggota Keluarga ({keluarga.wargas?.length || 0})
                                 </h3>
                                 <p className="text-xs text-gray-500 font-medium">
-                                    Semua warga yang terdaftar dalam nomor Kartu Keluarga ini
+                                    Arahkan mouse atau klik <b>Detail</b> untuk menampilkan pop-up ringkas informasi warga.
                                 </p>
                             </div>
                         </div>
@@ -379,17 +329,20 @@ export default function Show({ keluarga }) {
                                             </td>
                                             <td className="px-4 py-3 text-right text-xs">
                                                 <div className="flex items-center justify-end gap-1.5">
-                                                    <Link
-                                                        href={route('admin.warga.show', warga.id)}
-                                                        className="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1.5 rounded-lg text-[11px] transition-all hover:scale-105"
-                                                        title="Lihat Detail Warga"
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSelectedWargaDetail(warga)}
+                                                        onMouseEnter={() => handleMouseEnterDetail(warga)}
+                                                        onMouseLeave={handleMouseLeaveDetail}
+                                                        className="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1.5 rounded-lg text-[11px] transition-all hover:scale-105 cursor-pointer"
+                                                        title="Klik atau tahan mouse untuk Pratinjau Detail Warga (10 Detik)"
                                                     >
                                                         <span>👁️</span>
                                                         <span>Detail</span>
-                                                    </Link>
+                                                    </button>
                                                     <button
                                                         onClick={() => handleDelete(warga.id)}
-                                                        className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1.5 rounded-lg text-[11px] transition-all hover:scale-105"
+                                                        className="inline-flex items-center gap-1 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1.5 rounded-lg text-[11px] transition-all hover:scale-105 cursor-pointer"
                                                         title="Hapus Anggota"
                                                     >
                                                         <span>🗑️</span>
@@ -412,6 +365,130 @@ export default function Show({ keluarga }) {
                 </div>
 
             </div>
+
+            {/* MINIMALIST POPUP SHOW WARGA DETAIL MODAL */}
+            {activeDetail && (
+                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+                        
+                        {/* Header Minimalis Popup */}
+                        <div className="px-6 py-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <span className="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-xl backdrop-blur-md shadow-inner">
+                                    👤
+                                </span>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="px-2 py-0.5 rounded-full bg-indigo-400/20 text-indigo-200 text-[10px] font-black uppercase tracking-wider border border-indigo-300/30">
+                                            Detail Warga Minimalis
+                                        </span>
+                                        {hoverWargaDetail && !selectedWargaDetail && (
+                                            <span className="px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-black animate-pulse">
+                                                ⏱️ Pratinjau (10 Detik)
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="font-black text-base tracking-wide text-white uppercase">
+                                        {activeDetail.nama_lengkap}
+                                    </h3>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setSelectedWargaDetail(null);
+                                    setHoverWargaDetail(null);
+                                }}
+                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-sm font-bold transition"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Body Detail Minimalis */}
+                        <div className="p-5 space-y-4 text-xs">
+                            
+                            {/* Card Header NIK & Hubungan */}
+                            <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between shadow-xs">
+                                <div>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">NIK 16 Digit Warga</span>
+                                    <span className="font-mono font-black text-sm text-slate-900">{activeDetail.nik}</span>
+                                </div>
+                                <span className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-tight ${getStatusBadge(activeDetail.status_hubungan_keluarga)}`}>
+                                    {activeDetail.status_hubungan_keluarga}
+                                </span>
+                            </div>
+
+                            {/* Grid Informasi Warga */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Jenis Kelamin</span>
+                                    <span className="font-extrabold text-gray-900">{activeDetail.jenis_kelamin || 'Laki-laki'}</span>
+                                </div>
+
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Tempat, Tgl Lahir</span>
+                                    <span className="font-extrabold text-gray-900">
+                                        {activeDetail.tempat_lahir || 'SERANG'}, {activeDetail.tanggal_lahir || '-'}
+                                    </span>
+                                </div>
+
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Pendidikan</span>
+                                    <span className="font-extrabold text-gray-900">{activeDetail.pendidikan || '-'}</span>
+                                </div>
+
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Pekerjaan</span>
+                                    <span className="font-extrabold text-gray-900">{activeDetail.pekerjaan || '-'}</span>
+                                </div>
+
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Agama</span>
+                                    <span className="font-extrabold text-gray-900">{activeDetail.agama || 'Islam'}</span>
+                                </div>
+
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Status Perkawinan</span>
+                                    <span className="font-extrabold text-gray-900">{activeDetail.status_perkawinan || '-'}</span>
+                                </div>
+
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Nama Ayah</span>
+                                    <span className="font-extrabold text-gray-900">{activeDetail.nama_ayah || '-'}</span>
+                                </div>
+
+                                <div className="p-3 bg-gray-50 rounded-xl space-y-1 border border-gray-100">
+                                    <span className="text-[10px] text-gray-400 font-bold block">Nama Ibu</span>
+                                    <span className="font-extrabold text-gray-900">{activeDetail.nama_ibu || '-'}</span>
+                                </div>
+                            </div>
+
+                            {/* Footer Status Contact */}
+                            <div className="pt-2 flex items-center justify-between border-t border-gray-100 text-[11px] text-gray-500 font-semibold">
+                                <div>📱 No. HP: <span className="font-bold text-gray-900">{activeDetail.no_hp || '-'}</span></div>
+                                <div>🟢 Status: <span className="font-bold text-emerald-700">{activeDetail.status_hidup || 'Hidup'}</span></div>
+                            </div>
+                        </div>
+
+                        {/* Footer Modal Action */}
+                        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
+                            <p className="text-[11px] text-slate-500 font-medium">
+                                💡 {hoverWargaDetail && !selectedWargaDetail ? 'Pratinjau hover otomatis tertutup dalam 10s' : 'Pop-up minimalis detail warga'}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedWargaDetail(null);
+                                    setHoverWargaDetail(null);
+                                }}
+                                className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs shadow-sm transition cursor-pointer"
+                            >
+                                Tutup
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }
