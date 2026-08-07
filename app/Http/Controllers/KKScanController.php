@@ -56,17 +56,22 @@ class KKScanController extends Controller
             "}";
 
         if (!empty($apiKey)) {
+            // Updated active Google Gemini model endpoints
             $modelsToTry = [
-                'gemini-1.5-flash',
                 'gemini-2.0-flash',
-                'gemini-1.5-pro'
+                'gemini-2.0-flash-lite',
+                'gemini-flash-latest',
+                'gemini-pro-latest',
+                'gemini-2.5-flash-lite'
             ];
+
+            $lastErrorMessage = '';
 
             foreach ($modelsToTry as $modelName) {
                 try {
                     $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$apiKey}";
 
-                    $response = Http::timeout(45)->post($url, [
+                    $response = Http::timeout(35)->post($url, [
                         'contents' => [
                             [
                                 'parts' => [
@@ -113,16 +118,19 @@ class KKScanController extends Controller
                             ]);
                         }
                     } else {
-                        Log::warning("Gemini API {$modelName} Response Error: " . $response->body());
+                        $errBody = $response->json();
+                        $lastErrorMessage = $errBody['error']['message'] ?? ('HTTP Error ' . $response->status());
+                        Log::warning("Gemini API {$modelName} Error: " . $response->body());
                     }
                 } catch (\Exception $e) {
+                    $lastErrorMessage = $e->getMessage();
                     Log::error("Gemini API {$modelName} Exception: " . $e->getMessage());
                 }
             }
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal memproses dengan Gemini AI API. Pastikan API key Anda aktif di Google AI Studio.',
+                'message' => 'Google Gemini API Error: ' . $lastErrorMessage,
             ], 200);
         }
 
