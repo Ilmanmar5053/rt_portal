@@ -56,59 +56,74 @@ class KKScanController extends Controller
             "}";
 
         if (!empty($apiKey)) {
-            try {
-                // Try Gemini 1.5 Flash Vision Model API
-                $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={$apiKey}";
+            $modelsToTry = [
+                'gemini-1.5-flash',
+                'gemini-2.0-flash',
+                'gemini-1.5-pro'
+            ];
 
-                $response = Http::timeout(30)->post($url, [
-                    'contents' => [
-                        [
-                            'parts' => [
-                                ['text' => $prompt],
-                                [
-                                    'inline_data' => [
-                                        'mime_type' => $mimeType,
-                                        'data' => $base64Image,
+            foreach ($modelsToTry as $modelName) {
+                try {
+                    $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$apiKey}";
+
+                    $response = Http::timeout(45)->post($url, [
+                        'contents' => [
+                            [
+                                'parts' => [
+                                    ['text' => $prompt],
+                                    [
+                                        'inline_data' => [
+                                            'mime_type' => $mimeType,
+                                            'data' => $base64Image,
+                                        ]
                                     ]
                                 ]
                             ]
+                        ],
+                        'generationConfig' => [
+                            'temperature' => 0.1,
+                            'maxOutputTokens' => 4096,
                         ]
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.1,
-                        'maxOutputTokens' => 4096,
-                    ]
-                ]);
+                    ]);
 
-                if ($response->successful()) {
-                    $resData = $response->json();
-                    $rawText = $resData['candidates'][0]['content']['parts'][0]['text'] ?? '';
-                    
-                    // Clean code blocks if returned
-                    $jsonString = trim(preg_replace('/^```(?:json)?|```$/m', '', trim($rawText)));
-                    $parsedJson = json_decode($jsonString, true);
+                    if ($response->successful()) {
+                        $resData = $response->json();
+                        $rawText = $resData['candidates'][0]['content']['parts'][0]['text'] ?? '';
 
-                    if ($parsedJson && is_array($parsedJson)) {
-                        return response()->json([
-                            'status' => 'success',
-                            'source' => 'Google Gemini 1.5 Flash AI Vision',
-                            'data' => $parsedJson,
-                        ]);
+                        // Robust Substring JSON Extraction
+                        $parsedJson = null;
+                        $firstBrace = strpos($rawText, '{');
+                        $lastBrace = strrpos($rawText, '}');
+
+                        if ($firstBrace !== false && $lastBrace !== false && $lastBrace > $firstBrace) {
+                            $jsonSub = substr($rawText, $firstBrace, $lastBrace - $firstBrace + 1);
+                            $parsedJson = json_decode($jsonSub, true);
+                        }
+
+                        if (!$parsedJson) {
+                            $jsonString = trim(preg_replace('/^```(?:json)?|```$/m', '', trim($rawText)));
+                            $parsedJson = json_decode($jsonString, true);
+                        }
+
+                        if ($parsedJson && is_array($parsedJson)) {
+                            return response()->json([
+                                'status' => 'success',
+                                'source' => "Google {$modelName} AI Vision",
+                                'data' => $parsedJson,
+                            ]);
+                        }
+                    } else {
+                        Log::warning("Gemini API {$modelName} Response Error: " . $response->body());
                     }
-                } else {
-                    Log::warning('Gemini API Error: ' . $response->body());
-                    return response()->json([
-                        'status' => 'error',
-                        'message' => 'API Key Gemini ditolak atau kuota habis: ' . ($response->json('error.message') ?? 'HTTP Error ' . $response->status()),
-                    ], 200);
+                } catch (\Exception $e) {
+                    Log::error("Gemini API {$modelName} Exception: " . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                Log::error('Gemini API Exception: ' . $e->getMessage());
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Terjadi kesalahan koneksi ke server Gemini API: ' . $e->getMessage(),
-                ], 200);
             }
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal memproses dengan Gemini AI API. Pastikan API key Anda aktif di Google AI Studio.',
+            ], 200);
         }
 
         // Return HTTP 200 with guidance so fetch doesn't throw catch error

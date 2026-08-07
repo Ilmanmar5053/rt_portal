@@ -76,6 +76,24 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         return scaledCanvas.toDataURL('image/jpeg', 0.85);
     };
 
+    // Helper to render PDF file to high-res canvas
+    const renderPdfToCanvas = async (f) => {
+        const pdfjsLib = await loadPdfJs();
+        const arrayBuffer = await f.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const page = await pdf.getPage(1);
+
+        const scale = 2.0;
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({ canvasContext: context, viewport }).promise;
+        return getOptimizedBase64(canvas);
+    };
+
     // Process File Preview (supports PDF, JPG, PNG, WEBP)
     const processFilePreview = async (f) => {
         if (!f) return;
@@ -85,20 +103,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
             setStatusText('Mengonversi halaman PDF menjadi gambar HD...');
             try {
-                const pdfjsLib = await loadPdfJs();
-                const arrayBuffer = await f.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                const page = await pdf.getPage(1);
-
-                const scale = 2.0;
-                const viewport = page.getViewport({ scale });
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-
-                await page.render({ canvasContext: context, viewport }).promise;
-                const optDataUrl = getOptimizedBase64(canvas);
+                const optDataUrl = await renderPdfToCanvas(f);
                 setPreviewUrl(optDataUrl);
                 setBase64Image(optDataUrl);
                 setStatusText('Dokumen PDF siap dipindai dengan AI Multimodal!');
@@ -140,7 +145,29 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         localStorage.setItem('gemini_api_key', val);
     };
 
-    // Parse AI Vision extracted JSON
+    // Helper: Extract valid JSON object from string using substring matching
+    const extractJsonFromText = (rawText) => {
+        if (!rawText) return null;
+        const firstBrace = rawText.indexOf('{');
+        const lastBrace = rawText.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            const jsonSub = rawText.substring(firstBrace, lastBrace + 1);
+            try {
+                return JSON.parse(jsonSub);
+            } catch (e) {
+                console.error('JSON Substring Parse Error:', e);
+            }
+        }
+        try {
+            const cleaned = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
+            return JSON.parse(cleaned);
+        } catch (e) {
+            console.error('Cleaned JSON Parse Error:', e);
+        }
+        return null;
+    };
+
+    // Parse AI Vision extracted JSON into state
     const applyExtractedJson = (data, sourceName) => {
         setScanEngine(sourceName || 'Google Gemini AI Vision');
         setStatusText('✨ Ekstraksi AI Berhasil! Data Kartu Keluarga otomatis terisi.');
@@ -178,7 +205,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         
         const promptText = `Anda adalah sistem OCR AI Multimodal presisi tinggi untuk dokumen resmi Kartu Keluarga (KK) Republik Indonesia.
 Tugas Anda: Baca dan ekstrak SELURUH informasi dari gambar Kartu Keluarga ini secara teliti tanpa ada yang terlewat.
-WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa \`\`\`json atau \`\`\`). Format JSON persis seperti berikut:
+WAJIB mengembalikan HANYA JSON murni tanpa format markdown. Format JSON persis seperti berikut:
 {
   "no_kk": "16 digit nomor KK",
   "alamat_lengkap": "Alamat jalan / blok / rumah",
@@ -200,39 +227,44 @@ WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa \`\`\`json ata
   ]
 }`;
 
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${keyToUse}`;
+        const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
 
-        const resp = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: promptText },
-                        { inline_data: { mime_type: 'image/jpeg', data: cleanBase64 } }
-                    ]
-                }],
-                generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
-            })
-        });
+        for (const model of models) {
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToUse}`;
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: promptText },
+                                { inline_data: { mime_type: 'image/jpeg', data: cleanBase64 } }
+                            ]
+                        }],
+                        generationConfig: { temperature: 0.1, maxOutputTokens: 4096 }
+                    })
+                });
 
-        if (!resp.ok) {
-            const errJson = await resp.json().catch(() => ({}));
-            throw new Error(errJson.error?.message || `HTTP ${resp.status}`);
+                if (!resp.ok) {
+                    const errJson = await resp.json().catch(() => ({}));
+                    console.warn(`Direct Gemini API ${model} Error:`, errJson);
+                    continue;
+                }
+
+                const resData = await resp.json();
+                const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                const parsed = extractJsonFromText(rawText);
+                if (parsed) return { data: parsed, source: `Google ${model} Direct AI` };
+            } catch (err) {
+                console.warn(`Direct Gemini API ${model} Exception:`, err);
+            }
         }
 
-        const resData = await resp.json();
-        const rawText = resData.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonString = trimCodeBlocks(rawText);
-        const parsed = JSON.parse(jsonString);
-        return parsed;
+        throw new Error('Gemini API menolak permintaan. Pastikan API key Anda aktif.');
     };
 
-    const trimCodeBlocks = (str) => {
-        return str.replace(/^```(?:json)?|```$/gm, '').trim();
-    };
-
-    // AI Vision Extraction Function
+    // AI Vision Extraction Trigger
     const startScanning = async () => {
         if (!selectedFile) {
             alert('Silakan pilih file Kartu Keluarga terlebih dahulu!');
@@ -247,18 +279,10 @@ WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa \`\`\`json ata
         try {
             let imgToScan = base64Image;
 
+            // Jika base64 belum ada, proses secara sinkron
             if (!imgToScan) {
                 if (selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf')) {
-                    const pdfjsLib = await loadPdfJs();
-                    const arrayBuffer = await selectedFile.arrayBuffer();
-                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                    const page = await pdf.getPage(1);
-                    const viewport = page.getViewport({ scale: 2.0 });
-                    const canvas = document.createElement('canvas');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-                    imgToScan = getOptimizedBase64(canvas);
+                    imgToScan = await renderPdfToCanvas(selectedFile);
                 } else {
                     imgToScan = await new Promise((res) => {
                         const r = new FileReader();
@@ -266,25 +290,28 @@ WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa \`\`\`json ata
                         r.readAsDataURL(selectedFile);
                     });
                 }
+                setBase64Image(imgToScan);
             }
 
             setProgress(40);
             setStatusText('🤖 Menganalisis dokumen dengan Google Gemini AI Vision...');
 
-            // If API key exists in client state, call direct Gemini API first for maximum speed
-            if (apiKey && apiKey.trim().length > 10) {
+            const cleanKey = (apiKey || '').trim();
+
+            // Client-side Direct API call first if key is present
+            if (cleanKey.length > 10) {
                 try {
-                    const parsed = await callGeminiDirect(apiKey.trim(), imgToScan);
+                    const directRes = await callGeminiDirect(cleanKey, imgToScan);
                     setProgress(100);
-                    applyExtractedJson(parsed, 'Google Gemini 1.5 Direct AI');
+                    applyExtractedJson(directRes.data, directRes.source);
                     setIsScanning(false);
                     return;
                 } catch (directErr) {
-                    console.warn('Direct Gemini Call Error, fallbacking to backend server:', directErr.message);
+                    console.warn('Direct call failed, trying backend endpoint:', directErr);
                 }
             }
 
-            // Call Backend Laravel AI Endpoint
+            // Backend Server Call
             const targetUrl = typeof route === 'function' ? route('scan-kk-ai') : '/scan-kk-ai';
 
             const response = await fetch(targetUrl, {
@@ -296,7 +323,7 @@ WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa \`\`\`json ata
                 },
                 body: JSON.stringify({
                     image: imgToScan,
-                    api_key: apiKey,
+                    api_key: cleanKey,
                 })
             });
 
@@ -307,16 +334,16 @@ WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa \`\`\`json ata
                 applyExtractedJson(result.data, result.source);
                 setProgress(100);
             } else if (result.status === 'key_required') {
-                setStatusText(result.message);
+                setStatusText('💡 ' + result.message);
                 setShowKeyInput(true);
             } else {
-                setStatusText(result.message || 'Gagal memproses AI Vision.');
+                setStatusText('⚠️ ' + (result.message || 'Gagal memproses AI Vision. Periksa API Key Anda.'));
                 setShowKeyInput(true);
             }
 
         } catch (err) {
             console.error('Scan Exception:', err);
-            setStatusText('💡 Silakan masukkan Gemini API Key gratis di menu "🔑 API Key AI" di atas untuk hasil AI presisi 100%.');
+            setStatusText('💡 Masukkan Gemini API Key gratis di menu "🔑 API Key AI" untuk hasil AI presisi 100%.');
             setShowKeyInput(true);
         } finally {
             setIsScanning(false);
@@ -629,76 +656,84 @@ WAJIB mengembalikan HANYA JSON murni tanpa format markdown (tanpa \`\`\`json ata
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-100">
-                                        {anggotaList.map((row, idx) => (
-                                            <tr key={idx} className="hover:bg-emerald-50/30">
-                                                <td className="py-2 px-3 text-center font-bold text-gray-500">{idx + 1}</td>
-                                                <td className="py-2 px-3">
-                                                    <input
-                                                        type="text"
-                                                        maxLength="16"
-                                                        value={row.nik}
-                                                        onChange={(e) => handleUpdateAnggota(idx, 'nik', e.target.value)}
-                                                        className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-mono font-bold text-gray-900"
-                                                        placeholder="3201..."
-                                                    />
-                                                </td>
-                                                <td className="py-2 px-3">
-                                                    <input
-                                                        type="text"
-                                                        value={row.nama}
-                                                        onChange={(e) => handleUpdateAnggota(idx, 'nama', e.target.value.toUpperCase())}
-                                                        className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-bold text-gray-900 uppercase"
-                                                        placeholder="NAMA LENGKAP"
-                                                    />
-                                                </td>
-                                                <td className="py-2 px-3">
-                                                    <select
-                                                        value={row.jk}
-                                                        onChange={(e) => handleUpdateAnggota(idx, 'jk', e.target.value)}
-                                                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800"
-                                                    >
-                                                        <option value="Laki-laki">Laki-laki</option>
-                                                        <option value="Perempuan">Perempuan</option>
-                                                    </select>
-                                                </td>
-                                                <td className="py-2 px-3">
-                                                    <input
-                                                        type="text"
-                                                        value={row.ttl}
-                                                        onChange={(e) => handleUpdateAnggota(idx, 'ttl', e.target.value)}
-                                                        className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-medium text-gray-900"
-                                                        placeholder="Jakarta, 12-05-1990"
-                                                    />
-                                                </td>
-                                                <td className="py-2 px-3">
-                                                    <select
-                                                        value={row.hubungan}
-                                                        onChange={(e) => handleUpdateAnggota(idx, 'hubungan', e.target.value)}
-                                                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800"
-                                                    >
-                                                        <option value="Kepala Keluarga">Kepala Keluarga</option>
-                                                        <option value="Istri">Istri</option>
-                                                        <option value="Anak">Anak</option>
-                                                        <option value="Menantu">Menantu</option>
-                                                        <option value="Cucu">Cucu</option>
-                                                        <option value="Orang Tua">Orang Tua</option>
-                                                        <option value="Mertua">Mertua</option>
-                                                        <option value="Famili Lain">Famili Lain</option>
-                                                        <option value="Lainnya">Lainnya</option>
-                                                    </select>
-                                                </td>
-                                                <td className="py-2 px-3 text-center">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleRemoveAnggotaRow(idx)}
-                                                        className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold flex items-center justify-center mx-auto"
-                                                        title="Hapus baris"
-                                                    >
-                                                        ✕
-                                                    </button>
+                                        {anggotaList.length > 0 ? (
+                                            anggotaList.map((row, idx) => (
+                                                <tr key={idx} className="hover:bg-emerald-50/30">
+                                                    <td className="py-2 px-3 text-center font-bold text-gray-500">{idx + 1}</td>
+                                                    <td className="py-2 px-3">
+                                                        <input
+                                                            type="text"
+                                                            maxLength="16"
+                                                            value={row.nik}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'nik', e.target.value)}
+                                                            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-mono font-bold text-gray-900"
+                                                            placeholder="3201..."
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 px-3">
+                                                        <input
+                                                            type="text"
+                                                            value={row.nama}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'nama', e.target.value.toUpperCase())}
+                                                            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-bold text-gray-900 uppercase"
+                                                            placeholder="NAMA LENGKAP"
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 px-3">
+                                                        <select
+                                                            value={row.jk}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'jk', e.target.value)}
+                                                            className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800"
+                                                        >
+                                                            <option value="Laki-laki">Laki-laki</option>
+                                                            <option value="Perempuan">Perempuan</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="py-2 px-3">
+                                                        <input
+                                                            type="text"
+                                                            value={row.ttl}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'ttl', e.target.value)}
+                                                            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-medium text-gray-900"
+                                                            placeholder="Jakarta, 12-05-1990"
+                                                        />
+                                                    </td>
+                                                    <td className="py-2 px-3">
+                                                        <select
+                                                            value={row.hubungan}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'hubungan', e.target.value)}
+                                                            className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800"
+                                                        >
+                                                            <option value="Kepala Keluarga">Kepala Keluarga</option>
+                                                            <option value="Istri">Istri</option>
+                                                            <option value="Anak">Anak</option>
+                                                            <option value="Menantu">Menantu</option>
+                                                            <option value="Cucu">Cucu</option>
+                                                            <option value="Orang Tua">Orang Tua</option>
+                                                            <option value="Mertua">Mertua</option>
+                                                            <option value="Famili Lain">Famili Lain</option>
+                                                            <option value="Lainnya">Lainnya</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="py-2 px-3 text-center">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleRemoveAnggotaRow(idx)}
+                                                            className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold flex items-center justify-center mx-auto"
+                                                            title="Hapus baris"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                                <td colSpan="7" className="py-8 text-center text-gray-400 font-medium">
+                                                    Belum ada baris anggota keluarga. Klik "+ Tambah Baris" atau jalankan Scan AI.
                                                 </td>
                                             </tr>
-                                        ))}
+                                        )}
                                     </tbody>
                                 </table>
                             </div>
