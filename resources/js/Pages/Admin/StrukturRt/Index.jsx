@@ -286,6 +286,26 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
         >
             <Head title="Struktur RT" />
 
+            <style>{`
+                @keyframes smoothMovingGradient {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .animate-smooth-green-gradient {
+                    background: linear-gradient(-45deg, #f0fdf4, #d1fae5, #ecfdf5, #a7f3d0, #f0fdf4, #e6f4ea);
+                    background-size: 300% 300%;
+                    animation: smoothMovingGradient 10s ease infinite;
+                }
+                @keyframes pulseGlowOrb {
+                    0%, 100% { opacity: 0.4; transform: scale(1); }
+                    50% { opacity: 0.85; transform: scale(1.18); }
+                }
+                .animate-pulse-glow {
+                    animation: pulseGlowOrb 6s ease-in-out infinite;
+                }
+            `}</style>
+
             <div className="max-w-6xl mx-auto pb-12">
                 
                 {flash.message && (
@@ -294,22 +314,22 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
                     </div>
                 )}
 
-                {/* Dynamic Iconic Tabs */}
-                <div className="mb-8">
-                    <div className="flex overflow-x-auto hide-scrollbar gap-2 pb-3 -mx-4 px-4 sm:mx-0 sm:px-0">
+                {/* Dynamic Iconic Tabs with Soft Green Container */}
+                <div className="mb-8 p-3 sm:p-4 rounded-3xl bg-emerald-50/80 border border-emerald-200/60 shadow-sm backdrop-blur-md">
+                    <div className="flex overflow-x-auto hide-scrollbar gap-2 py-1 px-1">
                         {rtTabs.map(rt => {
                             const isActive = activeTab === rt;
                             return (
                                 <button
                                     key={rt}
                                     onClick={() => handleTabChange(rt)}
-                                    className={`relative flex items-center gap-2 whitespace-nowrap px-5 py-2.5 rounded-2xl font-bold text-xs transition-all duration-300 ${
+                                    className={`relative flex items-center gap-2 whitespace-nowrap px-5 py-2.5 rounded-2xl font-black text-xs transition-all duration-300 ${
                                         isActive 
-                                        ? 'bg-gray-900 text-white shadow-xl shadow-gray-900/20 scale-105 z-10' 
-                                        : 'bg-white text-gray-500 border border-gray-100 hover:bg-gray-50 hover:border-gray-300'
+                                        ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-lg shadow-emerald-600/30 scale-105 z-10 ring-2 ring-emerald-400/50' 
+                                        : 'bg-white/80 text-emerald-900 border border-emerald-100 hover:bg-emerald-100/80 hover:border-emerald-300 hover:text-emerald-950'
                                     }`}
                                 >
-                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${isActive ? 'bg-white/20' : 'bg-gray-100 text-gray-400'}`}>
+                                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${isActive ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-600'}`}>
                                         📍
                                     </span>
                                     RT {rt}
@@ -319,16 +339,17 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
                     </div>
                 </div>
 
-                {/* Organizational Chart Area */}
-                <div className="bg-gradient-to-br from-white to-gray-50/50 rounded-[2rem] p-6 sm:p-10 shadow-sm border border-gray-100 relative overflow-hidden">
-                    {/* Decorative bg blobs */}
-                    <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
-                    <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-50 rounded-full blur-3xl opacity-60 pointer-events-none"></div>
+                {/* Organizational Chart Area with Moving Gradient Background */}
+                <div className="animate-smooth-green-gradient rounded-[2.5rem] p-6 sm:p-10 shadow-xl border border-emerald-200/60 relative overflow-hidden">
+                    {/* Decorative bg blobs with pulse glow animation */}
+                    <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-300/40 rounded-full blur-3xl animate-pulse-glow pointer-events-none"></div>
+                    <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-teal-300/40 rounded-full blur-3xl animate-pulse-glow pointer-events-none" style={{ animationDelay: '3s' }}></div>
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-green-200/30 rounded-full blur-3xl animate-pulse-glow pointer-events-none" style={{ animationDelay: '1.5s' }}></div>
 
                     <div className="relative z-10 flex flex-col items-center">
                         <div className="text-center mb-10">
-                            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-full mb-3 inline-block border border-emerald-200/50">Struktur Organisasi</span>
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Rukun Tetangga {activeTab}</h3>
+                            <span className="px-4 py-1.5 bg-emerald-700/90 text-white text-[10px] font-black uppercase tracking-widest rounded-full mb-3 inline-block border border-emerald-500/50 shadow-md">Struktur Organisasi</span>
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight drop-shadow-sm">Rukun Tetangga {activeTab}</h3>
                         </div>
 
                         {/* Level 1: Ketua */}
