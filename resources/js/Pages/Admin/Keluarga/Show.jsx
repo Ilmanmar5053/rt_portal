@@ -1,30 +1,10 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 
 export default function Show({ keluarga }) {
     const [copied, setCopied] = useState(false);
     const [selectedWargaDetail, setSelectedWargaDetail] = useState(null);
-    const [hoverWargaDetail, setHoverWargaDetail] = useState(null);
-    const hoverTimerRef = useRef(null);
-
-    const handleMouseEnterDetail = (warga) => {
-        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-        setHoverWargaDetail(warga);
-        // Auto hide hover popup after 10 seconds
-        hoverTimerRef.current = setTimeout(() => {
-            setHoverWargaDetail(null);
-        }, 10000);
-    };
-
-    const handleMouseLeaveDetail = () => {
-        if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
-        hoverTimerRef.current = setTimeout(() => {
-            setHoverWargaDetail(null);
-        }, 3000);
-    };
-
-    const activeDetail = selectedWargaDetail || hoverWargaDetail;
 
     const handleDelete = (id) => {
         if (confirm('Yakin ingin menghapus data anggota keluarga ini?')) {
@@ -145,7 +125,7 @@ export default function Show({ keluarga }) {
                                 </h1>
                                 <button
                                     onClick={handleCopyKK}
-                                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-300 font-bold text-xs transition border border-white/10 flex items-center gap-1"
+                                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-amber-300 font-bold text-xs transition border border-white/10 flex items-center gap-1 cursor-pointer"
                                     title="Salin Nomor KK"
                                 >
                                     <span>{copied ? '✓ Tersalin!' : '📋 Salin'}</span>
@@ -271,7 +251,7 @@ export default function Show({ keluarga }) {
                                     Daftar Anggota Keluarga ({keluarga.wargas?.length || 0})
                                 </h3>
                                 <p className="text-xs text-gray-500 font-medium">
-                                    Arahkan mouse atau klik <b>Detail</b> untuk menampilkan card ID 4x5 warga.
+                                    Klik <b>Detail</b> untuk menampilkan card ID 4x5 warga.
                                 </p>
                             </div>
                         </div>
@@ -331,10 +311,8 @@ export default function Show({ keluarga }) {
                                                     <button
                                                         type="button"
                                                         onClick={() => setSelectedWargaDetail(warga)}
-                                                        onMouseEnter={() => handleMouseEnterDetail(warga)}
-                                                        onMouseLeave={handleMouseLeaveDetail}
                                                         className="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2.5 py-1.5 rounded-lg text-[11px] transition-all hover:scale-105 cursor-pointer"
-                                                        title="Klik atau tahan mouse untuk Card Detail Warga 4x5"
+                                                        title="Lihat Card Detail Warga 4x5"
                                                     >
                                                         <span>👁️</span>
                                                         <span>Detail</span>
@@ -365,10 +343,16 @@ export default function Show({ keluarga }) {
 
             </div>
 
-            {/* ULTRA COMPACT 4x5 ID CARD POPUP */}
-            {activeDetail && (
-                <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in duration-150">
-                    <div className="bg-white rounded-2xl shadow-2xl w-[340px] overflow-hidden border-2 border-indigo-500/30 animate-in zoom-in-95 duration-150 relative">
+            {/* ULTRA COMPACT 4x5 ID CARD POPUP (TANPA TIMER AUTO-HIDE) */}
+            {selectedWargaDetail && (
+                <div 
+                    onClick={() => setSelectedWargaDetail(null)}
+                    className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in duration-150"
+                >
+                    <div 
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-2xl shadow-2xl w-[340px] overflow-hidden border-2 border-indigo-500/30 animate-in zoom-in-95 duration-150 relative"
+                    >
                         
                         {/* Card Header (Authentic Minimalist ID Badge Header) */}
                         <div className="px-4 py-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-blue-900 text-white flex items-center justify-between">
@@ -377,27 +361,17 @@ export default function Show({ keluarga }) {
                                     🆔
                                 </span>
                                 <div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-[9px] font-black uppercase text-amber-300 tracking-wider">
-                                            Kartu Identitas Warga
-                                        </span>
-                                        {hoverWargaDetail && !selectedWargaDetail && (
-                                            <span className="text-[8px] bg-amber-400/30 text-amber-200 px-1.5 py-0.2 rounded font-black animate-pulse">
-                                                10s
-                                            </span>
-                                        )}
-                                    </div>
+                                    <span className="text-[9px] font-black uppercase text-amber-300 tracking-wider block">
+                                        Kartu Identitas Warga
+                                    </span>
                                     <h4 className="font-black text-xs text-white uppercase tracking-tight truncate max-w-[200px]">
-                                        {activeDetail.nama_lengkap}
+                                        {selectedWargaDetail.nama_lengkap}
                                     </h4>
                                 </div>
                             </div>
                             <button
-                                onClick={() => {
-                                    setSelectedWargaDetail(null);
-                                    setHoverWargaDetail(null);
-                                }}
-                                className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xs font-bold transition"
+                                onClick={() => setSelectedWargaDetail(null)}
+                                className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white text-xs font-bold transition cursor-pointer"
                             >
                                 ✕
                             </button>
@@ -410,10 +384,10 @@ export default function Show({ keluarga }) {
                             <div className="p-2 bg-indigo-50/80 rounded-xl border border-indigo-100 flex items-center justify-between">
                                 <div>
                                     <span className="text-[9px] text-indigo-500 font-bold uppercase block">NIK</span>
-                                    <span className="font-mono font-black text-xs text-indigo-950">{activeDetail.nik}</span>
+                                    <span className="font-mono font-black text-xs text-indigo-950">{selectedWargaDetail.nik}</span>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded-md text-[10px] uppercase font-black ${getStatusBadge(activeDetail.status_hubungan_keluarga)}`}>
-                                    {activeDetail.status_hubungan_keluarga}
+                                <span className={`px-2 py-0.5 rounded-md text-[10px] uppercase font-black ${getStatusBadge(selectedWargaDetail.status_hubungan_keluarga)}`}>
+                                    {selectedWargaDetail.status_hubungan_keluarga}
                                 </span>
                             </div>
 
@@ -421,41 +395,41 @@ export default function Show({ keluarga }) {
                             <div className="grid grid-cols-2 gap-2 text-[10.5px]">
                                 <div className="p-2 bg-slate-50 rounded-lg">
                                     <span className="text-[9px] text-slate-400 font-bold block">Jenis Kelamin</span>
-                                    <span className="font-extrabold text-slate-800">{activeDetail.jenis_kelamin || 'Laki-laki'}</span>
+                                    <span className="font-extrabold text-slate-800">{selectedWargaDetail.jenis_kelamin || 'Laki-laki'}</span>
                                 </div>
 
                                 <div className="p-2 bg-slate-50 rounded-lg">
                                     <span className="text-[9px] text-slate-400 font-bold block">Tempat, Tgl Lahir</span>
                                     <span className="font-extrabold text-slate-800 truncate block">
-                                        {activeDetail.tempat_lahir || 'SERANG'}, {activeDetail.tanggal_lahir || '-'}
+                                        {selectedWargaDetail.tempat_lahir || 'SERANG'}, {selectedWargaDetail.tanggal_lahir || '-'}
                                     </span>
                                 </div>
 
                                 <div className="p-2 bg-slate-50 rounded-lg">
                                     <span className="text-[9px] text-slate-400 font-bold block">Pendidikan</span>
-                                    <span className="font-extrabold text-slate-800 truncate block">{activeDetail.pendidikan || '-'}</span>
+                                    <span className="font-extrabold text-slate-800 truncate block">{selectedWargaDetail.pendidikan || '-'}</span>
                                 </div>
 
                                 <div className="p-2 bg-slate-50 rounded-lg">
                                     <span className="text-[9px] text-slate-400 font-bold block">Pekerjaan</span>
-                                    <span className="font-extrabold text-slate-800 truncate block">{activeDetail.pekerjaan || '-'}</span>
+                                    <span className="font-extrabold text-slate-800 truncate block">{selectedWargaDetail.pekerjaan || '-'}</span>
                                 </div>
 
                                 <div className="p-2 bg-slate-50 rounded-lg">
                                     <span className="text-[9px] text-slate-400 font-bold block">Nama Ayah</span>
-                                    <span className="font-extrabold text-slate-800 truncate block">{activeDetail.nama_ayah || '-'}</span>
+                                    <span className="font-extrabold text-slate-800 truncate block">{selectedWargaDetail.nama_ayah || '-'}</span>
                                 </div>
 
                                 <div className="p-2 bg-slate-50 rounded-lg">
                                     <span className="text-[9px] text-slate-400 font-bold block">Nama Ibu</span>
-                                    <span className="font-extrabold text-slate-800 truncate block">{activeDetail.nama_ibu || '-'}</span>
+                                    <span className="font-extrabold text-slate-800 truncate block">{selectedWargaDetail.nama_ibu || '-'}</span>
                                 </div>
                             </div>
 
                             {/* Footer Rapat HP & Status */}
                             <div className="pt-1.5 flex items-center justify-between border-t border-slate-100 text-[10px] font-semibold text-slate-500">
-                                <div>📱 <span className="font-bold text-slate-800">{activeDetail.no_hp || '-'}</span></div>
-                                <div>🟢 Status: <span className="font-bold text-emerald-600">{activeDetail.status_hidup || 'Hidup'}</span></div>
+                                <div>📱 <span className="font-bold text-slate-800">{selectedWargaDetail.no_hp || '-'}</span></div>
+                                <div>🟢 Status: <span className="font-bold text-emerald-600">{selectedWargaDetail.status_hidup || 'Hidup'}</span></div>
                             </div>
                         </div>
 
@@ -463,11 +437,8 @@ export default function Show({ keluarga }) {
                         <div className="px-3 py-2 bg-slate-100 border-t border-slate-200 flex justify-end">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    setSelectedWargaDetail(null);
-                                    setHoverWargaDetail(null);
-                                }}
-                                className="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] shadow-xs cursor-pointer"
+                                onClick={() => setSelectedWargaDetail(null)}
+                                className="px-3.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold text-[10px] shadow-xs cursor-pointer"
                             >
                                 Tutup
                             </button>
