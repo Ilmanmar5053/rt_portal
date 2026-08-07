@@ -116,12 +116,15 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
             .trim();
     };
 
-    // Fetch Kabupaten when Provinsi changes
+    // Fetch Kabupaten when Provinsi changes & auto-align target string
     useEffect(() => {
         if (data.provinsi) {
             const cleanTarget = cleanWilayahName(data.provinsi);
             const selectedProv = provinsiList.find(p => cleanWilayahName(p.nama) === cleanTarget || p.nama.toUpperCase().includes(cleanTarget));
             if (selectedProv) {
+                if (data.provinsi !== selectedProv.nama) {
+                    setData('provinsi', selectedProv.nama);
+                }
                 axios.get(`/api/wilayah/kabupaten/${selectedProv.kode}`)
                     .then(res => setKabupatenList(res.data))
                     .catch(err => console.error('Gagal memuat kabupaten:', err));
@@ -131,12 +134,15 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
         }
     }, [data.provinsi, provinsiList]);
 
-    // Fetch Kecamatan when Kabupaten changes
+    // Fetch Kecamatan when Kabupaten changes & auto-align target string
     useEffect(() => {
         if (data.kabupaten_kota) {
             const cleanTarget = cleanWilayahName(data.kabupaten_kota);
             const selectedKab = kabupatenList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
             if (selectedKab) {
+                if (data.kabupaten_kota !== selectedKab.nama) {
+                    setData('kabupaten_kota', selectedKab.nama);
+                }
                 axios.get(`/api/wilayah/kecamatan/${selectedKab.kode}`)
                     .then(res => setKecamatanList(res.data))
                     .catch(err => console.error('Gagal memuat kecamatan:', err));
@@ -146,12 +152,15 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
         }
     }, [data.kabupaten_kota, kabupatenList]);
 
-    // Fetch Kelurahan when Kecamatan changes
+    // Fetch Kelurahan when Kecamatan changes & auto-align target string
     useEffect(() => {
         if (data.kecamatan) {
             const cleanTarget = cleanWilayahName(data.kecamatan);
             const selectedKec = kecamatanList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
             if (selectedKec) {
+                if (data.kecamatan !== selectedKec.nama) {
+                    setData('kecamatan', selectedKec.nama);
+                }
                 axios.get(`/api/wilayah/kelurahan/${selectedKec.kode}`)
                     .then(res => setKelurahanList(res.data))
                     .catch(err => console.error('Gagal memuat kelurahan:', err));
@@ -160,6 +169,17 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
             setKelurahanList([]);
         }
     }, [data.kecamatan, kecamatanList]);
+
+    // Auto-align Kelurahan target string
+    useEffect(() => {
+        if (data.kelurahan && kelurahanList.length > 0) {
+            const cleanTarget = cleanWilayahName(data.kelurahan);
+            const selectedKel = kelurahanList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
+            if (selectedKel && data.kelurahan !== selectedKel.nama) {
+                setData('kelurahan', selectedKel.nama);
+            }
+        }
+    }, [data.kelurahan, kelurahanList]);
 
     // Apply data from OCR Scanner Modal
     const handleApplyOCRData = ({ kkHeader, anggotaList }) => {
@@ -210,7 +230,8 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
 
         setData(prev => ({
             ...prev,
-            no_kk: kkHeader.no_kk || prev.no_kk,
+            // Preserve existing no_kk if already set by user
+            no_kk: prev.no_kk ? prev.no_kk : (kkHeader.no_kk || ''),
             alamat_lengkap: kkHeader.alamat_lengkap || prev.alamat_lengkap,
             rt: kkHeader.rt || prev.rt,
             rw: kkHeader.rw || prev.rw,
