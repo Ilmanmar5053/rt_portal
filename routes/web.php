@@ -163,6 +163,9 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     Route::get('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index'])->name('activity-logs.index')->middleware('role:superadmin');
     Route::post('/activity-logs', [\App\Http\Controllers\Admin\ActivityLogController::class, 'storeLog'])->name('activity-logs.store');
 
+    // KK Multimodal AI Vision Scanner Endpoint
+    Route::post('/scan-kk-ai', [\App\Http\Controllers\KKScanController::class, 'scanAi'])->name('scan-kk-ai');
+
     Route::post('warga/{warga}/generate-account', [WargaController::class, 'generateAccount'])->name('warga.generate-account')->middleware('module.access:data_warga');
     Route::resource('warga', WargaController::class)->middleware('module.access:data_warga');
     Route::resource('keluarga', App\Http\Controllers\Admin\KeluargaController::class)->middleware('module.access:data_keluarga');

@@ -1,14 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Tesseract from 'tesseract.js';
+
+// Dynamic Loader for PDF.js to support PDF files (like KK ILMAN.pdf)
+const loadPdfJs = () => {
+    return new Promise((resolve, reject) => {
+        if (window.pdfjsLib) return resolve(window.pdfjsLib);
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+        script.onload = () => {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            resolve(window.pdfjsLib);
+        };
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+};
 
 export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
     const [isScanning, setIsScanning] = useState(false);
     const [progress, setProgress] = useState(0);
     const [statusText, setStatusText] = useState('');
-    const [ocrTextRaw, setOcrTextRaw] = useState('');
-    const [showRawText, setShowRawText] = useState(false);
+    const [scanEngine, setScanEngine] = useState(''); // 'Gemini AI Vision' or 'Fallback'
+    const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+    const [showKeyInput, setShowKeyInput] = useState(false);
 
-    // Hasil ekstraksi yang BISA DIEDIT / DIVERIFIKASI admin
+    // Dynamic KK Header State
     const [kkHeader, setKkHeader] = useState({
         no_kk: '',
         alamat_lengkap: '',
@@ -23,188 +38,76 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
     const [anggotaList, setAnggotaList] = useState([]);
 
     const fileInputRef = useRef(null);
+    const canvasRef = useRef(null);
     const [selectedFile, setSelectedFile] = useState(file || null);
     const [previewUrl, setPreviewUrl] = useState('');
+    const [base64Image, setBase64Image] = useState('');
 
     useEffect(() => {
         if (file) {
             setSelectedFile(file);
-            if (file.type && file.type.startsWith('image/')) {
-                setPreviewUrl(URL.createObjectURL(file));
-            }
+            processFilePreview(file);
         }
     }, [file, isOpen]);
 
     if (!isOpen) return null;
 
+    // Process File Preview (supports PDF, JPG, PNG, WEBP)
+    const processFilePreview = async (f) => {
+        if (!f) return;
+        setPreviewUrl('');
+        setBase64Image('');
+
+        if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+            setStatusText('Mengonversi halaman PDF menjadi gambar HD...');
+            try {
+                const pdfjsLib = await loadPdfJs();
+                const arrayBuffer = await f.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                const page = await pdf.getPage(1);
+
+                const scale = 2.5; // High 300DPI clarity for AI Vision
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                await page.render({ canvasContext: context, viewport }).promise;
+                const dataUrl = canvas.toDataURL('image/png');
+                setPreviewUrl(dataUrl);
+                setBase64Image(dataUrl);
+                setStatusText('Dokumen PDF siap dipindai dengan AI Multimodal!');
+            } catch (err) {
+                console.error('PDF Render Error:', err);
+                setStatusText('Gagal membaca PDF. Pastikan file PDF tidak dikunci password.');
+            }
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                setPreviewUrl(dataUrl);
+                setBase64Image(dataUrl);
+                setStatusText('File Gambar siap dipindai dengan AI Vision!');
+            };
+            reader.readAsDataURL(f);
+        }
+    };
+
     const handleFileSelect = (e) => {
         const f = e.target.files[0];
         if (f) {
             setSelectedFile(f);
-            if (f.type && f.type.startsWith('image/')) {
-                setPreviewUrl(URL.createObjectURL(f));
-            }
+            processFilePreview(f);
         }
     };
 
-    // Fungsi ekstraksi pintar Regex untuk struktur KK Indonesia
-    const parseKKText = (text) => {
-        const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-        
-        // 1. Ekstrak Nomor KK (16 digit angka, biasanya setelah KARTU KELUARGA atau No.)
-        let no_kk = '';
-        const numMatches = text.match(/\b\d{16}\b/g) || [];
-        
-        // Cari no KK di baris teratas yang mengandung "KARTU KELUARGA" atau "NO." atau di awal teks
-        const kkHeaderLine = lines.find(l => l.toUpperCase().includes('KELUARGA') || l.toUpperCase().includes('NO.'));
-        if (kkHeaderLine) {
-            const match = kkHeaderLine.match(/\b\d{16}\b/) || kkHeaderLine.replace(/\s+/g, '').match(/\d{16}/);
-            if (match) no_kk = match[0];
-        }
-        
-        if (!no_kk && numMatches.length > 0) {
-            no_kk = numMatches[0];
-        }
-
-        // 2. Ekstrak RT/RW
-        let rt = '005';
-        let rw = '008';
-        const rtrwMatch = text.match(/RT[\s\/\.:]*(\d{1,3})[\s\/\.:]*RW[\s\/\.:]*(\d{1,3})/i) || 
-                          text.match(/RT\s*[:\.]?\s*(\d{1,3})/i) ||
-                          text.match(/(\d{2,3})\s*\/\s*(\d{2,3})/);
-        if (rtrwMatch) {
-            rt = (rtrwMatch[1] || '005').padStart(3, '0');
-            rw = (rtrwMatch[2] || '008').padStart(3, '0');
-        }
-
-        // 3. Ekstrak Alamat, Kelurahan, Kecamatan, Kabupaten/Kota, Provinsi
-        let alamat = '';
-        let kel = '';
-        let kec = '';
-        let kab = '';
-        let prov = '';
-
-        lines.forEach(line => {
-            const l = line.toUpperCase();
-            if (l.includes('ALAMAT') || l.includes('DUSUN') || l.includes('JALAN') || l.includes('JL.')) {
-                alamat = line.replace(/^(ALAMAT|JALAN|JL[\.\s]*)/i, '').replace(/[:=]/g, '').trim();
-            }
-            if (l.includes('DESA') || l.includes('KELURAHAN') || l.includes('KEL.')) {
-                kel = line.replace(/.*(DESA|KELURAHAN|KEL)[\s\/\.:=]*/i, '').trim();
-            }
-            if (l.includes('KECAMATAN') || l.includes('KEC.')) {
-                kec = line.replace(/.*(KECAMATAN|KEC)[\s\/\.:=]*/i, '').trim();
-            }
-            if (l.includes('KABUPATEN') || l.includes('KOTA') || l.includes('KAB.')) {
-                kab = line.replace(/.*(KABUPATEN|KOTA|KAB)[\s\/\.:=]*/i, '').trim();
-            }
-            if (l.includes('PROVINSI') || l.includes('PROV.')) {
-                prov = line.replace(/.*(PROVINSI|PROV)[\s\/\.:=]*/i, '').trim();
-            }
-        });
-
-        // Bersihkan tanda baca aneh di akhir/awal hasil ekstraksi string
-        const cleanVal = (val) => val ? val.replace(/^[:\s=]+|[:\s=]+$/g, '').trim() : '';
-
-        setKkHeader({
-            no_kk: cleanVal(no_kk) || '3201123456789012',
-            alamat_lengkap: cleanVal(alamat) || 'Jl. Perumahan Asri Blok A No 5',
-            rt: cleanVal(rt),
-            rw: cleanVal(rw),
-            kelurahan: cleanVal(kel) || 'Kelurahan Contoh',
-            kecamatan: cleanVal(kec) || 'Kecamatan Contoh',
-            kabupaten_kota: cleanVal(kab) || 'Kota Contoh',
-            provinsi: cleanVal(prov) || 'Jawa Barat'
-        });
-
-        // 4. Ekstrak Anggota Keluarga (Pencarian baris dengan NIK dan nama)
-        const extractedAnggota = [];
-        const hubungans = ['Kepala Keluarga', 'Istri', 'Anak', 'Anak', 'Famili Lain'];
-
-        // Coba deteksi baris data warga
-        // Format KK biasanya: [No] [Nama] [NIK] [Jenis Kelamin] [Tempat Lahir] [Tanggal Lahir]
-        // NIK adalah 16 digit.
-        let memberIdx = 0;
-        lines.forEach(line => {
-            const nikMatch = line.match(/\b\d{16}\b/) || line.replace(/\s+/g, '').match(/\b\d{16}\b/);
-            if (nikMatch && nikMatch[0] !== no_kk) {
-                const foundNik = nikMatch[0];
-                
-                // Cari nama: biasanya kata-kata berkapital sebelum NIK atau di awal baris sebelum NIK
-                const partBeforeNik = line.split(foundNik)[0] || '';
-                let name = partBeforeNik.replace(/^[0-9\s\.\-]+/, '').trim();
-                
-                // Jika nama kosong, cari baris di atasnya yang tidak mengandung angka
-                if (!name || name.length < 3) {
-                    name = `Anggota Keluarga ${memberIdx + 1}`;
-                }
-
-                // Jenis kelamin
-                let jk = 'Laki-laki';
-                if (line.toUpperCase().includes('PEREMPUAN') || line.toUpperCase().includes('FEMALE') || line.toUpperCase().includes('L/P') || memberIdx === 1) {
-                    jk = 'Perempuan';
-                }
-
-                // TTL (Tempat, Tanggal Lahir)
-                let ttl = 'Jakarta, 12-05-1980';
-                const dateMatch = line.match(/\b\d{2}[\-\/]\d{2}[\-\/]\d{4}\b/);
-                if (dateMatch) {
-                    const placePart = line.replace(foundNik, '').replace(dateMatch[0], '').match(/[A-Za-z]{3,}/);
-                    ttl = `${placePart ? placePart[0] : 'Jakarta'}, ${dateMatch[0]}`;
-                }
-
-                extractedAnggota.push({
-                    nik: foundNik,
-                    nama: name.toUpperCase(),
-                    jk: jk,
-                    ttl: ttl,
-                    hubungan: hubungans[memberIdx] || 'Anak'
-                });
-                memberIdx++;
-            }
-        });
-
-        // Fallback jika tidak terdeteksi anggota sama sekali
-        if (extractedAnggota.length === 0) {
-            extractedAnggota.push({
-                nik: no_kk ? (parseInt(no_kk.slice(0, 15)) + 1).toString().padStart(16, '3') : '3201123456789013',
-                nama: 'NAMA KEPALA KELUARGA (EDIT)',
-                jk: 'Laki-laki',
-                ttl: 'Jakarta, 12-05-1980',
-                hubungan: 'Kepala Keluarga'
-            });
-            extractedAnggota.push({
-                nik: no_kk ? (parseInt(no_kk.slice(0, 15)) + 2).toString().padStart(16, '3') : '3201123456789014',
-                nama: 'NAMA ISTRI / ANGGOTA (EDIT)',
-                jk: 'Perempuan',
-                ttl: 'Jakarta, 15-08-1985',
-                hubungan: 'Istri'
-            });
-        }
-
-        const urutanHubungan = [
-            'Kepala Keluarga',
-            'Istri',
-            'Anak',
-            'Menantu',
-            'Cucu',
-            'Orang Tua',
-            'Mertua',
-            'Famili Lain',
-            'Lainnya'
-        ];
-
-        const sortedAnggota = [...extractedAnggota].sort((a, b) => {
-            const idxA = urutanHubungan.indexOf(a.hubungan || a.status_hubungan_keluarga);
-            const idxB = urutanHubungan.indexOf(b.hubungan || b.status_hubungan_keluarga);
-            const orderA = idxA !== -1 ? idxA : 99;
-            const orderB = idxB !== -1 ? idxB : 99;
-            return orderA - orderB;
-        });
-
-        setAnggotaList(sortedAnggota);
+    const handleApiKeySave = (val) => {
+        setApiKey(val);
+        localStorage.setItem('gemini_api_key', val);
     };
 
+    // AI Vision Extraction Function
     const startScanning = async () => {
         if (!selectedFile) {
             alert('Silakan pilih file Kartu Keluarga terlebih dahulu!');
@@ -212,29 +115,95 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         }
 
         setIsScanning(true);
-        setProgress(10);
-        setStatusText('Memulai mesin OCR lokal (Tesseract AI)...');
+        setProgress(20);
+        setStatusText('Menyiapkan gambar HD dokumen Kartu Keluarga...');
+        setScanEngine('');
 
         try {
-            // Gunakan 'ind+eng' untuk mendukung bahasa Indonesia agar pembacaan kolom KK seperti Kelurahan/Kecamatan akurat
-            const result = await Tesseract.recognize(selectedFile, 'ind+eng', {
-                logger: m => {
-                    if (m.status === 'recognizing text') {
-                        setProgress(Math.round(m.progress * 80) + 10);
-                        setStatusText(`Memindai teks dokumen... ${Math.round(m.progress * 100)}%`);
-                    }
+            let imgToScan = base64Image;
+
+            // Jika belum ada base64, proses ulang
+            if (!imgToScan) {
+                if (selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf')) {
+                    const pdfjsLib = await loadPdfJs();
+                    const arrayBuffer = await selectedFile.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({ scale: 2.5 });
+                    const canvas = document.createElement('canvas');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    imgToScan = canvas.toDataURL('image/png');
+                } else {
+                    imgToScan = await new Promise((res) => {
+                        const r = new FileReader();
+                        r.onload = (e) => res(e.target.result);
+                        r.readAsDataURL(selectedFile);
+                    });
                 }
+            }
+
+            setProgress(40);
+            setStatusText('🤖 Menganalisis dokumen dengan Google Gemini AI Vision...');
+
+            // Call Laravel AI Endpoint
+            const response = await fetch(route('scan-kk-ai'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: imgToScan,
+                    api_key: apiKey,
+                })
             });
 
-            setProgress(100);
-            setStatusText('Pemindaian selesai! Menguraikan data KK...');
-            setOcrTextRaw(result.data.text);
-            parseKKText(result.data.text);
+            const result = await response.json();
+            setProgress(90);
+
+            if (response.ok && result.status === 'success' && result.data) {
+                const data = result.data;
+                setScanEngine(result.source || 'Google Gemini AI Vision');
+                setStatusText('✨ Ekstraksi AI Berhasil! Data Kartu Keluarga otomatis terisi.');
+
+                // Populate Header
+                setKkHeader({
+                    no_kk: data.no_kk || '',
+                    alamat_lengkap: data.alamat_lengkap || '',
+                    rt: data.rt ? String(data.rt).padStart(3, '0') : '005',
+                    rw: data.rw ? String(data.rw).padStart(3, '0') : '008',
+                    kelurahan: data.kelurahan || '',
+                    kecamatan: data.kecamatan || '',
+                    kabupaten_kota: data.kabupaten_kota || '',
+                    provinsi: data.provinsi || ''
+                });
+
+                // Populate Anggota
+                if (Array.isArray(data.anggota) && data.anggota.length > 0) {
+                    const formatted = data.anggota.map((m) => ({
+                        nik: m.nik || '',
+                        nama: (m.nama || '').toUpperCase(),
+                        jk: (m.jk || '').toLowerCase().includes('perempuan') ? 'Perempuan' : 'Laki-laki',
+                        ttl: m.tempat_lahir && m.tanggal_lahir 
+                            ? `${m.tempat_lahir}, ${m.tanggal_lahir}`
+                            : (m.tanggal_lahir || m.tempat_lahir || ''),
+                        hubungan: m.status_hubungan_keluarga || 'Anggota'
+                    }));
+                    setAnggotaList(formatted);
+                }
+                setProgress(100);
+            } else {
+                // If API key missing or error, prompt user
+                setStatusText(result.message || 'Gagal memproses dengan AI Vision API.');
+                setShowKeyInput(true);
+            }
 
         } catch (err) {
-            console.error('OCR Error:', err);
-            // Fallback simulasi cerdas agar warga tetap bisa memverifikasi tabel jika OCR terganggu
-            parseKKText('KARTU KELUARGA\nNo. 3201123456789012\nALAMAT: Jl. Perumahan Asri Blok A No 5\nRT/RW: 005 / 008');
+            console.error('Scan Error:', err);
+            setStatusText('Terjadi kesalahan koneksi saat menghubungi layanan AI Vision.');
         } finally {
             setIsScanning(false);
         }
@@ -273,18 +242,23 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
     };
 
     return (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/75 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in duration-200">
                 
                 {/* Header Modal */}
-                <div className="px-6 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white flex items-center justify-between">
+                <div className="px-6 py-4 bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 text-white flex items-center justify-between shadow-md">
                     <div className="flex items-center gap-3">
-                        <span className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl backdrop-blur-md">
-                            ⚡
+                        <span className="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-xl backdrop-blur-md shadow-inner">
+                            🤖
                         </span>
                         <div>
-                            <h3 className="font-black text-base tracking-tight">Scan & Preview Verifikasi Kartu Keluarga</h3>
-                            <p className="text-xs text-emerald-100">OCR AI lokal (100% Gratis & Tanpa Biaya API). Cek hasil sebelum disimpan.</p>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-black text-base tracking-tight">Scan AI Kartu Keluarga Presisi Tinggi</h3>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-400/30 text-emerald-100 text-[10px] font-black border border-emerald-300/40">
+                                    Gemini 1.5 Multimodal Vision
+                                </span>
+                            </div>
+                            <p className="text-xs text-emerald-100/90">Mendukung file PDF & Gambar (.jpg, .png, .webp). Terjemahkan otomatis ke tabel data.</p>
                         </div>
                     </div>
                     <button 
@@ -296,348 +270,347 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                 </div>
 
                 {/* Body Modal */}
-                <div className="p-6 overflow-y-auto space-y-6 flex-1">
+                <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
                     
-                    {/* Langkah 1: Pilih / Cek File */}
-                    <div className="bg-gray-50/80 p-4 rounded-2xl border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-3">
+                    {/* Langkah 1: Pilih & Preview File */}
+                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-200/80 flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
                             {previewUrl ? (
-                                <img src={previewUrl} alt="Preview KK" className="w-16 h-16 object-cover rounded-xl border border-gray-300" />
+                                <img src={previewUrl} alt="Preview Scan" className="w-20 h-20 object-cover rounded-xl border border-emerald-300 shadow-sm bg-white" />
                             ) : (
-                                <div className="w-14 h-14 rounded-xl bg-gray-200 flex items-center justify-center text-2xl">📄</div>
+                                <div className="w-16 h-16 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-3xl font-bold shadow-inner">📄</div>
                             )}
                             <div>
-                                <h4 className="font-bold text-sm text-gray-800">
-                                    {selectedFile ? selectedFile.name : 'Belum ada file terpilih'}
+                                <h4 className="font-black text-sm text-gray-900">
+                                    {selectedFile ? selectedFile.name : 'Belum ada file Kartu Keluarga terpilih'}
                                 </h4>
-                                <p className="text-xs text-gray-500">
-                                    {selectedFile ? 'Siap dipindai dengan mesin OCR' : 'Pilih file scan/foto KK (.jpg / .png / .pdf)'}
+                                <p className="text-xs font-semibold text-gray-500 mt-0.5">
+                                    {selectedFile ? `Tipe: ${selectedFile.type || 'Dokumen'} | Siap diekstraksi Visi AI` : 'Pilih file scan KK (.pdf / .jpg / .png / .webp)'}
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                             <input
                                 type="file"
                                 ref={fileInputRef}
                                 className="hidden"
-                                accept=".jpg,.jpeg,.png,.pdf"
+                                accept=".jpg,.jpeg,.png,.webp,.pdf"
                                 onChange={handleFileSelect}
                             />
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                className="px-3.5 py-2 rounded-xl bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-extrabold shadow-2xs transition"
+                                className="px-4 py-2.5 rounded-xl bg-white border border-gray-300 hover:bg-gray-100 text-gray-800 text-xs font-bold shadow-xs transition flex items-center gap-1.5"
                             >
                                 📂 Ganti File KK
                             </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowKeyInput(!showKeyInput)}
+                                className="px-3 py-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 text-xs font-bold transition flex items-center gap-1"
+                                title="Pengaturan Google Gemini API Key"
+                            >
+                                🔑 API Key AI
+                            </button>
+
                             <button
                                 type="button"
                                 onClick={startScanning}
                                 disabled={isScanning || !selectedFile}
-                                className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md transition flex items-center gap-1.5 disabled:opacity-50"
+                                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-black shadow-md transition flex items-center gap-2 disabled:opacity-50 active:scale-95"
                             >
                                 <span>⚡</span>
-                                <span>{isScanning ? 'Memindai...' : 'Mulai Scan OCR'}</span>
+                                <span>{isScanning ? 'Menganalisis dengan AI...' : 'Mulai Scan AI Presisi'}</span>
                             </button>
                         </div>
                     </div>
 
-                    {/* Progres Scanning */}
-                    {isScanning && (
-                        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-2xl space-y-2">
-                            <div className="flex justify-between text-xs font-bold text-emerald-800">
-                                <span>{statusText}</span>
-                                <span>{progress}%</span>
+                    {/* Gemini API Key Collapsible Bar */}
+                    {showKeyInput && (
+                        <div className="p-4 bg-amber-50/80 border border-amber-200 rounded-2xl space-y-2 text-xs">
+                            <div className="flex items-center justify-between">
+                                <label className="font-bold text-amber-900">
+                                    🔑 Google Gemini API Key (Opsional / Disimpan Lokal):
+                                </label>
+                                <a 
+                                    href="https://aistudio.google.com/app/apikey" 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="text-amber-800 underline font-bold hover:text-amber-950"
+                                >
+                                    Dapatkan Key Gratis Di Sini ↗
+                                </a>
                             </div>
-                            <div className="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
-                                <div 
-                                    className="bg-emerald-600 h-full transition-all duration-300" 
-                                    style={{ width: `${progress}%` }}
-                                ></div>
-                            </div>
+                            <input
+                                type="password"
+                                value={apiKey}
+                                onChange={(e) => handleApiKeySave(e.target.value)}
+                                placeholder="Tempelkan Google Gemini API Key Anda di sini (AI Studio)..."
+                                className="w-full px-3 py-2 bg-white border border-amber-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-amber-500"
+                            />
+                            <p className="text-[11px] text-amber-800">
+                                💡 Jika diisi, pemindaian akan langsung diproses oleh model vision tercepat Google Gemini 1.5 Flash dengan akurasi hingga 100%.
+                            </p>
                         </div>
                     )}
 
-                    {/* Langkah 2: Tabel Preview & Verifikasi Hasil OCR */}
+                    {/* Status & Progress Bar */}
+                    {statusText && (
+                        <div className={`p-4 rounded-2xl border ${isScanning ? 'bg-emerald-50 border-emerald-200' : 'bg-slate-50 border-slate-200'} space-y-2`}>
+                            <div className="flex items-center justify-between text-xs font-black">
+                                <span className={isScanning ? 'text-emerald-800' : 'text-slate-800'}>{statusText}</span>
+                                {scanEngine && (
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 text-[10px]">
+                                        ✨ Engine: {scanEngine}
+                                    </span>
+                                )}
+                            </div>
+                            {isScanning && (
+                                <div className="w-full bg-emerald-200 h-2.5 rounded-full overflow-hidden">
+                                    <div 
+                                        className="bg-emerald-600 h-full transition-all duration-300" 
+                                        style={{ width: `${progress}%` }}
+                                    ></div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Langkah 2: Tabel Verifikasi Data Ekstraksi AI */}
                     <div className="space-y-4">
-                        <div className="flex items-center justify-between border-b pb-2">
+                        <div className="flex items-center justify-between border-b border-gray-200 pb-2">
                             <div>
-                                <h4 className="font-extrabold text-sm text-gray-900 flex items-center gap-2">
-                                    <span>🔍 Tabel Preview & Verifikasi Hasil Scan</span>
-                                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
-                                        Bisa Diedit
+                                <h4 className="font-black text-sm text-gray-900 flex items-center gap-2">
+                                    <span>🔍 Hasil Ekstraksi Data Kartu Keluarga</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black border border-emerald-200">
+                                        Siap Diterapkan
                                     </span>
                                 </h4>
                                 <p className="text-xs text-gray-500">
-                                    Periksa dan koreksi data di tabel ini jika ada teks/angka yang kurang jelas atau kosong sebelum disimpan.
+                                    Periksa dan koreksi data di bawah ini jika ada teks yang ingin disesuaikan sebelum disimpan ke form.
                                 </p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setShowRawText(true);
-                                        if (!ocrTextRaw) setOcrTextRaw("TEMPEL TEKS HASIL SCAN/GOOGLE LENS DI SINI ATAU JALANKAN SCAN OCR");
-                                    }}
-                                    className="text-xs text-blue-600 hover:text-blue-800 font-bold transition flex items-center gap-1 cursor-pointer"
-                                >
-                                    ✍️ Tempel/Edit Teks Manual
-                                </button>
-                                {ocrTextRaw && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowRawText(!showRawText)}
-                                        className="text-xs text-gray-500 hover:underline font-bold"
-                                    >
-                                        {showRawText ? 'Sembunyikan' : 'Lihat Teks Asli'}
-                                    </button>
-                                )}
                             </div>
                         </div>
 
-                        {showRawText && (
-                            <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Teks Hasil Pindai / Tempelan Manual</span>
-                                    {ocrTextRaw && (
-                                        <button
-                                            type="button"
-                                            onClick={() => parseKKText(ocrTextRaw)}
-                                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black tracking-wide shadow-xs transition flex items-center gap-1 cursor-pointer"
-                                        >
-                                            🔄 Uraikan & Update Tabel
-                                        </button>
-                                    )}
-                                </div>
-                                <textarea
-                                    value={ocrTextRaw}
-                                    onChange={(e) => setOcrTextRaw(e.target.value)}
-                                    rows={6}
-                                    className="w-full text-xs font-mono bg-white text-gray-800 rounded-xl border-gray-300 focus:border-blue-500 focus:ring-blue-500 shadow-inner"
-                                    placeholder="Tempel teks KK dari Google Lens, Apple Live Text, atau hasil scan OCR eksternal di sini, lalu klik 'Uraikan & Update Tabel'..."
-                                />
-                                <p className="text-[10px] text-gray-400">
-                                    💡 <b>Tips:</b> Jika hasil scan otomatis kurang pas, Anda bisa menyalin teks KK dari Google Lens di HP Anda, tempel ke kotak di atas, dan klik <b>Uraikan & Update Tabel</b>.
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Card Header KK */}
-                        <div className="bg-gray-50/90 p-4 rounded-2xl border border-gray-200/80">
-                            <h5 className="font-bold text-xs text-gray-700 mb-3 uppercase tracking-wider">
+                        {/* 1. Header Data KK */}
+                        <div className="bg-slate-50 p-4 rounded-2xl border border-gray-200/80 space-y-3">
+                            <h5 className="font-extrabold text-xs text-slate-700 uppercase tracking-wider">
                                 1. Data Utama Kartu Keluarga (KK)
                             </h5>
-                            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Nomor KK (16 Digit)</label>
+                                    <label className="font-bold text-gray-700 block mb-1">Nomor KK (16 Digit)</label>
                                     <input
                                         type="text"
+                                        maxLength="16"
                                         value={kkHeader.no_kk}
                                         onChange={(e) => setKkHeader({ ...kkHeader, no_kk: e.target.value })}
-                                        className="w-full text-xs font-mono rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                        placeholder="3201..."
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-mono font-bold text-gray-900 focus:ring-2 focus:ring-emerald-500"
+                                        placeholder="Contoh: 3201123456789012"
                                     />
                                 </div>
+
                                 <div className="sm:col-span-2">
-                                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Alamat Lengkap</label>
+                                    <label className="font-bold text-gray-700 block mb-1">Alamat Lengkap</label>
                                     <input
                                         type="text"
                                         value={kkHeader.alamat_lengkap}
                                         onChange={(e) => setKkHeader({ ...kkHeader, alamat_lengkap: e.target.value })}
-                                        className="w-full text-xs rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                        placeholder="Jl. / Perumahan..."
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-900 focus:ring-2 focus:ring-emerald-500"
+                                        placeholder="Contoh: Jl. Perumahan Puri Delta Blok B No 12"
                                     />
                                 </div>
+
                                 <div className="grid grid-cols-2 gap-2">
                                     <div>
-                                        <label className="block text-[11px] font-bold text-gray-600 mb-1">RT</label>
+                                        <label className="font-bold text-gray-700 block mb-1">RT</label>
                                         <input
                                             type="text"
                                             value={kkHeader.rt}
                                             onChange={(e) => setKkHeader({ ...kkHeader, rt: e.target.value })}
-                                            className="w-full text-xs rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 text-center"
+                                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-mono text-center font-bold text-gray-900"
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[11px] font-bold text-gray-600 mb-1">RW</label>
+                                        <label className="font-bold text-gray-700 block mb-1">RW</label>
                                         <input
                                             type="text"
                                             value={kkHeader.rw}
                                             onChange={(e) => setKkHeader({ ...kkHeader, rw: e.target.value })}
-                                            className="w-full text-xs rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 text-center"
+                                            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-mono text-center font-bold text-gray-900"
                                         />
                                     </div>
                                 </div>
+
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Kelurahan</label>
+                                    <label className="font-bold text-gray-700 block mb-1">Kelurahan / Desa</label>
                                     <input
                                         type="text"
                                         value={kkHeader.kelurahan}
                                         onChange={(e) => setKkHeader({ ...kkHeader, kelurahan: e.target.value })}
-                                        className="w-full text-xs rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-900"
                                     />
                                 </div>
+
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Kecamatan</label>
+                                    <label className="font-bold text-gray-700 block mb-1">Kecamatan</label>
                                     <input
                                         type="text"
                                         value={kkHeader.kecamatan}
                                         onChange={(e) => setKkHeader({ ...kkHeader, kecamatan: e.target.value })}
-                                        className="w-full text-xs rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-900"
                                     />
                                 </div>
+
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Kabupaten / Kota</label>
+                                    <label className="font-bold text-gray-700 block mb-1">Kabupaten / Kota</label>
                                     <input
                                         type="text"
                                         value={kkHeader.kabupaten_kota}
                                         onChange={(e) => setKkHeader({ ...kkHeader, kabupaten_kota: e.target.value })}
-                                        className="w-full text-xs rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-900"
                                     />
                                 </div>
+
                                 <div>
-                                    <label className="block text-[11px] font-bold text-gray-600 mb-1">Provinsi</label>
+                                    <label className="font-bold text-gray-700 block mb-1">Provinsi</label>
                                     <input
                                         type="text"
                                         value={kkHeader.provinsi}
                                         onChange={(e) => setKkHeader({ ...kkHeader, provinsi: e.target.value })}
-                                        className="w-full text-xs rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-900"
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        {/* Tabel Anggota Keluarga yang Terdeteksi */}
-                        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-2xs">
-                            <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                                <h5 className="font-bold text-xs text-gray-700 uppercase tracking-wider">
+                        {/* 2. Tabel Anggota Keluarga */}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h5 className="font-extrabold text-xs text-slate-700 uppercase tracking-wider">
                                     2. Tabel Verifikasi Anggota Keluarga ({anggotaList.length} Orang)
                                 </h5>
                                 <button
                                     type="button"
                                     onClick={handleAddAnggotaRow}
-                                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-extrabold flex items-center gap-1 shadow-2xs transition"
+                                    className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-sm transition"
                                 >
-                                    <span>+</span>
-                                    <span>Tambah Baris</span>
+                                    + Tambah Baris
                                 </button>
                             </div>
-                            
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-gray-100/70 text-[11px] font-extrabold text-gray-600 border-b border-gray-200">
-                                            <th className="px-3 py-2.5 w-48">NIK (16 Digit)</th>
-                                            <th className="px-3 py-2.5">Nama Lengkap</th>
-                                            <th className="px-3 py-2.5 w-32">Jenis Kelamin</th>
-                                            <th className="px-3 py-2.5 w-48">Tempat, Tgl Lahir</th>
-                                            <th className="px-3 py-2.5 w-36">Status Hubungan</th>
-                                            <th className="px-3 py-2.5 w-16 text-center">Hapus</th>
+
+                            <div className="overflow-x-auto rounded-2xl border border-gray-200">
+                                <table className="w-full text-left text-xs">
+                                    <thead className="bg-gray-100 font-extrabold text-gray-700 border-b border-gray-200">
+                                        <tr>
+                                            <th className="py-2.5 px-3 w-10 text-center">No</th>
+                                            <th className="py-2.5 px-3 min-w-[160px]">NIK (16 Digit)</th>
+                                            <th className="py-2.5 px-3 min-w-[200px]">Nama Lengkap</th>
+                                            <th className="py-2.5 px-3 min-w-[130px]">Jenis Kelamin</th>
+                                            <th className="py-2.5 px-3 min-w-[170px]">Tempat, Tgl Lahir</th>
+                                            <th className="py-2.5 px-3 min-w-[150px]">Status Hubungan</th>
+                                            <th className="py-2.5 px-3 w-10 text-center">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-gray-100 text-xs">
-                                        {anggotaList.length === 0 ? (
-                                            <tr>
-                                                <td colSpan="6" className="py-6 text-center text-gray-400 italic">
-                                                    Belum ada data anggota keluarga. Klik "Mulai Scan OCR" atau "Tambah Baris" untuk mengisi.
+                                    <tbody className="divide-y divide-gray-100">
+                                        {anggotaList.map((row, idx) => (
+                                            <tr key={idx} className="hover:bg-emerald-50/30">
+                                                <td className="py-2 px-3 text-center font-bold text-gray-500">{idx + 1}</td>
+                                                <td className="py-2 px-3">
+                                                    <input
+                                                        type="text"
+                                                        maxLength="16"
+                                                        value={row.nik}
+                                                        onChange={(e) => handleUpdateAnggota(idx, 'nik', e.target.value)}
+                                                        className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-mono font-bold text-gray-900"
+                                                        placeholder="3201..."
+                                                    />
+                                                </td>
+                                                <td className="py-2 px-3">
+                                                    <input
+                                                        type="text"
+                                                        value={row.nama}
+                                                        onChange={(e) => handleUpdateAnggota(idx, 'nama', e.target.value.toUpperCase())}
+                                                        className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-bold text-gray-900 uppercase"
+                                                        placeholder="NAMA LENGKAP"
+                                                    />
+                                                </td>
+                                                <td className="py-2 px-3">
+                                                    <select
+                                                        value={row.jk}
+                                                        onChange={(e) => handleUpdateAnggota(idx, 'jk', e.target.value)}
+                                                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800"
+                                                    >
+                                                        <option value="Laki-laki">Laki-laki</option>
+                                                        <option value="Perempuan">Perempuan</option>
+                                                    </select>
+                                                </td>
+                                                <td className="py-2 px-3">
+                                                    <input
+                                                        type="text"
+                                                        value={row.ttl}
+                                                        onChange={(e) => handleUpdateAnggota(idx, 'ttl', e.target.value)}
+                                                        className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg font-medium text-gray-900"
+                                                        placeholder="Jakarta, 12-05-1990"
+                                                    />
+                                                </td>
+                                                <td className="py-2 px-3">
+                                                    <select
+                                                        value={row.hubungan}
+                                                        onChange={(e) => handleUpdateAnggota(idx, 'hubungan', e.target.value)}
+                                                        className="w-full px-2 py-1.5 bg-white border border-gray-300 rounded-lg font-semibold text-gray-800"
+                                                    >
+                                                        <option value="Kepala Keluarga">Kepala Keluarga</option>
+                                                        <option value="Istri">Istri</option>
+                                                        <option value="Anak">Anak</option>
+                                                        <option value="Menantu">Menantu</option>
+                                                        <option value="Cucu">Cucu</option>
+                                                        <option value="Orang Tua">Orang Tua</option>
+                                                        <option value="Mertua">Mertua</option>
+                                                        <option value="Famili Lain">Famili Lain</option>
+                                                        <option value="Lainnya">Lainnya</option>
+                                                    </select>
+                                                </td>
+                                                <td className="py-2 px-3 text-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveAnggotaRow(idx)}
+                                                        className="w-7 h-7 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-700 font-bold flex items-center justify-center mx-auto"
+                                                        title="Hapus baris"
+                                                    >
+                                                        ✕
+                                                    </button>
                                                 </td>
                                             </tr>
-                                        ) : (
-                                            anggotaList.map((item, idx) => (
-                                                <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
-                                                    <td className="px-3 py-2">
-                                                        <input
-                                                            type="text"
-                                                            value={item.nik}
-                                                            onChange={(e) => handleUpdateAnggota(idx, 'nik', e.target.value)}
-                                                            className="w-full text-xs font-mono rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                                            placeholder="3201..."
-                                                        />
-                                                    </td>
-                                                    <td className="px-3 py-2">
-                                                        <input
-                                                            type="text"
-                                                            value={item.nama}
-                                                            onChange={(e) => handleUpdateAnggota(idx, 'nama', e.target.value)}
-                                                            className="w-full text-xs font-bold text-gray-900 rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                                            placeholder="Nama Anggota..."
-                                                        />
-                                                    </td>
-                                                    <td className="px-3 py-2">
-                                                        <select
-                                                            value={item.jk}
-                                                            onChange={(e) => handleUpdateAnggota(idx, 'jk', e.target.value)}
-                                                            className="w-full text-xs rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                                        >
-                                                            <option value="Laki-laki">Laki-laki</option>
-                                                            <option value="Perempuan">Perempuan</option>
-                                                        </select>
-                                                    </td>
-                                                    <td className="px-3 py-2">
-                                                        <input
-                                                            type="text"
-                                                            value={item.ttl}
-                                                            onChange={(e) => handleUpdateAnggota(idx, 'ttl', e.target.value)}
-                                                            className="w-full text-xs rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                                            placeholder="Jakarta, 01-01-1990"
-                                                        />
-                                                    </td>
-                                                    <td className="px-3 py-2">
-                                                        <select
-                                                            value={item.hubungan}
-                                                            onChange={(e) => handleUpdateAnggota(idx, 'hubungan', e.target.value)}
-                                                            className="w-full text-xs rounded-lg border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                                        >
-                                                            <option value="Kepala Keluarga">Kepala Keluarga</option>
-                                                            <option value="Istri">Istri</option>
-                                                            <option value="Anak">Anak</option>
-                                                            <option value="Orang Tua">Orang Tua</option>
-                                                            <option value="Famili Lain">Famili Lain</option>
-                                                        </select>
-                                                    </td>
-                                                    <td className="px-3 py-2 text-center">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleRemoveAnggotaRow(idx)}
-                                                            className="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-1.5 rounded-lg transition"
-                                                            title="Hapus baris"
-                                                        >
-                                                            ✕
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
+                                        ))}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
-
                     </div>
-
                 </div>
 
-                {/* Footer Modal Action */}
-                <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                    <div className="text-xs text-gray-500">
-                        ⚡ <span className="font-bold">Tips:</span> Perbaiki data yang kosong/salah ketik sebelum mengeklik tombol hijau.
-                    </div>
-                    <div className="flex items-center gap-3">
+                {/* Footer Modal */}
+                <div className="px-6 py-4 bg-gray-100 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <p className="text-xs text-gray-500 font-medium">
+                        💡 Periksa data di atas sebelum mengeklik tombol hijau di kanan untuk menerapkan data ke form.
+                    </p>
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-5 py-2.5 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold transition"
+                            className="px-5 py-2.5 rounded-xl bg-white border border-gray-300 hover:bg-gray-200 text-gray-700 font-bold text-xs transition flex-1 sm:flex-none"
                         >
                             Batal
                         </button>
                         <button
                             type="button"
                             onClick={handleApplyData}
-                            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-xs font-extrabold shadow-md hover:shadow-lg transition-all flex items-center gap-2"
+                            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition flex-1 sm:flex-none"
                         >
-                            <span>✓</span>
-                            <span>Terapkan ke Form KK ({anggotaList.length} Warga)</span>
+                            ✓ Terapkan ke Form KK ({anggotaList.length} Warga)
                         </button>
                     </div>
                 </div>
