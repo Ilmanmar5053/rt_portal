@@ -79,54 +79,77 @@ export default function Edit({ keluarga, rumahBloks, wargas }) {
 
     // Fetch Kabupaten when Provinsi changes & auto-align target string
     useEffect(() => {
-        if (data.provinsi) {
-            const cleanTarget = cleanWilayahName(data.provinsi);
-            const selectedProv = provinsiList.find(p => cleanWilayahName(p.nama) === cleanTarget || p.nama.toUpperCase().includes(cleanTarget));
+        if (data.provinsi && provinsiList.length > 0) {
+            let selectedProv = provinsiList.find(p => p.nama === data.provinsi) ||
+                provinsiList.find(p => p.nama.toUpperCase() === data.provinsi.toUpperCase());
+
+            if (!selectedProv) {
+                const cleanTarget = cleanWilayahName(data.provinsi);
+                selectedProv = provinsiList.find(p => cleanWilayahName(p.nama) === cleanTarget);
+            }
+
             if (selectedProv) {
-                if (data.provinsi !== selectedProv.nama) {
+                if (data.provinsi !== selectedProv.nama && !provinsiList.some(p => p.nama === data.provinsi)) {
                     setData('provinsi', selectedProv.nama);
                 }
                 axios.get(`/api/wilayah/kabupaten/${selectedProv.kode}`).then(res => {
                     setKabupatenList(res.data);
                 });
             }
-        } else {
+        } else if (!data.provinsi) {
             setKabupatenList([]);
         }
     }, [data.provinsi, provinsiList]);
 
     // Fetch Kecamatan when Kabupaten changes & auto-align target string
     useEffect(() => {
-        if (data.kabupaten_kota) {
-            const cleanTarget = cleanWilayahName(data.kabupaten_kota);
-            const selectedKab = kabupatenList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
+        if (data.kabupaten_kota && kabupatenList.length > 0) {
+            let selectedKab = kabupatenList.find(k => k.nama === data.kabupaten_kota) ||
+                kabupatenList.find(k => k.nama.toUpperCase() === data.kabupaten_kota.toUpperCase());
+
+            if (!selectedKab) {
+                const cleanTarget = cleanWilayahName(data.kabupaten_kota);
+                const isKota = data.kabupaten_kota.toUpperCase().includes('KOTA');
+                selectedKab = kabupatenList.find(k => {
+                    const kClean = cleanWilayahName(k.nama);
+                    const kIsKota = k.nama.toUpperCase().includes('KOTA');
+                    return kClean === cleanTarget && isKota === kIsKota;
+                }) || kabupatenList.find(k => cleanWilayahName(k.nama) === cleanTarget);
+            }
+
             if (selectedKab) {
-                if (data.kabupaten_kota !== selectedKab.nama) {
+                if (data.kabupaten_kota !== selectedKab.nama && !kabupatenList.some(k => k.nama === data.kabupaten_kota)) {
                     setData('kabupaten_kota', selectedKab.nama);
                 }
                 axios.get(`/api/wilayah/kecamatan/${selectedKab.kode}`).then(res => {
                     setKecamatanList(res.data);
                 });
             }
-        } else {
+        } else if (!data.kabupaten_kota) {
             setKecamatanList([]);
         }
     }, [data.kabupaten_kota, kabupatenList]);
 
     // Fetch Kelurahan when Kecamatan changes & auto-align target string
     useEffect(() => {
-        if (data.kecamatan) {
-            const cleanTarget = cleanWilayahName(data.kecamatan);
-            const selectedKec = kecamatanList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
+        if (data.kecamatan && kecamatanList.length > 0) {
+            let selectedKec = kecamatanList.find(k => k.nama === data.kecamatan) ||
+                kecamatanList.find(k => k.nama.toUpperCase() === data.kecamatan.toUpperCase());
+
+            if (!selectedKec) {
+                const cleanTarget = cleanWilayahName(data.kecamatan);
+                selectedKec = kecamatanList.find(k => cleanWilayahName(k.nama) === cleanTarget);
+            }
+
             if (selectedKec) {
-                if (data.kecamatan !== selectedKec.nama) {
+                if (data.kecamatan !== selectedKec.nama && !kecamatanList.some(k => k.nama === data.kecamatan)) {
                     setData('kecamatan', selectedKec.nama);
                 }
                 axios.get(`/api/wilayah/kelurahan/${selectedKec.kode}`).then(res => {
                     setKelurahanList(res.data);
                 });
             }
-        } else {
+        } else if (!data.kecamatan) {
             setKelurahanList([]);
         }
     }, [data.kecamatan, kecamatanList]);
@@ -134,9 +157,15 @@ export default function Edit({ keluarga, rumahBloks, wargas }) {
     // Auto-align Kelurahan target string
     useEffect(() => {
         if (data.kelurahan && kelurahanList.length > 0) {
-            const cleanTarget = cleanWilayahName(data.kelurahan);
-            const selectedKel = kelurahanList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
-            if (selectedKel && data.kelurahan !== selectedKel.nama) {
+            let selectedKel = kelurahanList.find(k => k.nama === data.kelurahan) ||
+                kelurahanList.find(k => k.nama.toUpperCase() === data.kelurahan.toUpperCase());
+
+            if (!selectedKel) {
+                const cleanTarget = cleanWilayahName(data.kelurahan);
+                selectedKel = kelurahanList.find(k => cleanWilayahName(k.nama) === cleanTarget);
+            }
+
+            if (selectedKel && data.kelurahan !== selectedKel.nama && !kelurahanList.some(k => k.nama === data.kelurahan)) {
                 setData('kelurahan', selectedKel.nama);
             }
         }
