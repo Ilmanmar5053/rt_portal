@@ -10,6 +10,7 @@ import axios from 'axios';
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
         no_kk: '',
+        kepala_keluarga_nama: '',
         blok: '',
         nomor_rumah: '',
         alamat_lengkap: '',
@@ -22,6 +23,7 @@ export default function Create() {
         kode_pos: '',
         file_kk: null,
         file_ktp_kepala: null,
+        anggota: [],
     });
 
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -76,9 +78,13 @@ export default function Create() {
             };
         });
 
+        const kepalaObj = mappedAnggota.find(x => x.status_hubungan_keluarga === 'Kepala Keluarga');
+        const kepalaNama = kepalaObj ? kepalaObj.nama_lengkap : (kkHeader.nama_kepala_keluarga || '');
+
         setData(prev => ({
             ...prev,
             no_kk: prev.no_kk ? prev.no_kk : (kkHeader.no_kk || ''),
+            kepala_keluarga_nama: kepalaNama || prev.kepala_keluarga_nama,
             alamat_lengkap: kkHeader.alamat_lengkap || prev.alamat_lengkap,
             rt: kkHeader.rt || prev.rt,
             rw: kkHeader.rw || prev.rw,
@@ -87,6 +93,7 @@ export default function Create() {
             kabupaten_kota: kkHeader.kabupaten_kota || prev.kabupaten_kota || 'SERANG',
             kecamatan: kkHeader.kecamatan || prev.kecamatan || 'PONTANG',
             kelurahan: kkHeader.kelurahan || prev.kelurahan || 'PONTANG',
+            anggota: mappedAnggota,
         }));
 
         setScannedAnggotaList(mappedAnggota);

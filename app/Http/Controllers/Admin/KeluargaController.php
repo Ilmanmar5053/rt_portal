@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Keluarga;
 use App\Models\RumahBlok;
+use App\Models\Warga;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
@@ -34,6 +35,7 @@ class KeluargaController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('no_kk', 'like', "%{$search}%")
+                      ->orWhere('kepala_keluarga_nama', 'like', "%{$search}%")
                       ->orWhereHas('kepalaKeluarga', function ($q2) use ($search) {
                           $q2->where('nama_lengkap', 'like', "%{$search}%");
                       });
@@ -43,8 +45,11 @@ class KeluargaController extends Controller
                 $query->where('no_kk', 'like', "%{$noKk}%");
             })
             ->when($kepala, function ($query, $kepala) {
-                $query->whereHas('kepalaKeluarga', function ($q) use ($kepala) {
-                    $q->where('nama_lengkap', 'like', "%{$kepala}%");
+                $query->where(function ($q) use ($kepala) {
+                    $q->where('kepala_keluarga_nama', 'like', "%{$kepala}%")
+                      ->orWhereHas('kepalaKeluarga', function ($q2) use ($kepala) {
+                          $q2->where('nama_lengkap', 'like', "%{$kepala}%");
+                      });
                 });
             })
             ->when($alamat, function ($query, $alamat) {
@@ -100,6 +105,9 @@ class KeluargaController extends Controller
             'kode_pos' => 'nullable|string',
             'file_kk' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'file_ktp_kepala' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'kepala_keluarga_id' => 'nullable|exists:wargas,id',
+            'kepala_keluarga_nama' => 'nullable|string|max:255',
+            'anggota' => 'nullable|array',
         ]);
 
         $rumahBlok = RumahBlok::firstOrCreate(
@@ -118,6 +126,8 @@ class KeluargaController extends Controller
             'kecamatan' => $validated['kecamatan'],
             'kelurahan' => $validated['kelurahan'],
             'kode_pos' => $validated['kode_pos'] ?? null,
+            'kepala_keluarga_id' => $validated['kepala_keluarga_id'] ?? null,
+            'kepala_keluarga_nama' => $validated['kepala_keluarga_nama'] ?? null,
         ];
 
         if ($request->hasFile('file_kk')) {
@@ -128,9 +138,74 @@ class KeluargaController extends Controller
             $data['file_ktp_kepala'] = $request->file('file_ktp_kepala')->store('dokumen/ktp', 'public');
         }
 
-        Keluarga::create($data);
+        $keluarga = Keluarga::create($data);
 
-        return redirect()->route('admin.keluarga.index')->with('message', 'Data Kartu Keluarga berhasil ditambahkan.');
+        $kepalaWargaId = $validated['kepala_keluarga_id'] ?? null;
+
+        // Process members if submitted
+        if ($request->has('anggota') && is_array($request->input('anggota'))) {
+            foreach ($request->input('anggota') as $a) {
+                if (empty($a['nik']) && empty($a['nama_lengkap'])) continue;
+
+                $nik = !empty($a['nik']) ? $a['nik'] : (string) mt_rand(1000000000000000, 9999999999999999);
+                $nama = !empty($a['nama_lengkap']) ? $a['nama_lengkap'] : ($a['nama'] ?? 'WARGA');
+                $statusHub = !empty($a['status_hubungan_keluarga']) ? $a['status_hubungan_keluarga'] : ($a['hubungan'] ?? 'Anak');
+
+                $warga = Warga::create([
+                    'keluarga_id' => $keluarga->id,
+                    'nik' => $nik,
+                    'nama_lengkap' => strtoupper($nama),
+                    'tempat_lahir' => $a['tempat_lahir'] ?? 'SERANG',
+                    'tanggal_lahir' => !empty($a['tanggal_lahir']) ? $a['tanggal_lahir'] : '1990-01-01',
+                    'jenis_kelamin' => $a['jenis_kelamin'] ?? ($a['jk'] ?? 'Laki-laki'),
+                    'agama' => $a['agama'] ?? 'Islam',
+                    'pendidikan' => $a['pendidikan'] ?? 'Tidak/Belum Sekolah',
+                    'pekerjaan' => $a['pekerjaan'] ?? 'Belum/Tidak Bekerja',
+                    'status_perkawinan' => $a['status_perkawinan'] ?? 'Belum Kawin',
+                    'status_hubungan_keluarga' => $statusHub,
+                    'kewarganegaraan' => $a['kewarganegaraan'] ?? 'WNI',
+                    'nama_ayah' => $a['nama_ayah'] ?? '-',
+                    'nama_ibu' => $a['nama_ibu'] ?? '-',
+                    'no_hp' => $a['no_hp'] ?? null,
+                    'status_hidup' => $a['status_hidup'] ?? 'Hidup',
+                ]);
+
+                if ($statusHub === 'Kepala Keluarga' && !$kepalaWargaId) {
+                    $kepalaWargaId = $warga->id;
+                }
+            }
+        }
+
+        // Fallback: If no Kepala Keluarga member found, but kepala_keluarga_nama exists
+        if (!$kepalaWargaId && !empty($validated['kepala_keluarga_nama'])) {
+            $wargaKepala = Warga::create([
+                'keluarga_id' => $keluarga->id,
+                'nik' => $validated['no_kk'],
+                'nama_lengkap' => strtoupper($validated['kepala_keluarga_nama']),
+                'tempat_lahir' => 'SERANG',
+                'tanggal_lahir' => '1990-01-01',
+                'jenis_kelamin' => 'Laki-laki',
+                'agama' => 'Islam',
+                'pendidikan' => 'SLTA/Sederajat',
+                'pekerjaan' => 'Karyawan Swasta',
+                'status_perkawinan' => 'Kawin',
+                'status_hubungan_keluarga' => 'Kepala Keluarga',
+                'kewarganegaraan' => 'WNI',
+                'nama_ayah' => '-',
+                'nama_ibu' => '-',
+                'status_hidup' => 'Hidup',
+            ]);
+            $kepalaWargaId = $wargaKepala->id;
+        }
+
+        if ($kepalaWargaId) {
+            $keluarga->update([
+                'kepala_keluarga_id' => $kepalaWargaId,
+                'kepala_keluarga_nama' => null
+            ]);
+        }
+
+        return redirect()->route('admin.keluarga.index')->with('message', 'Data Kartu Keluarga & Anggota Warga berhasil ditambahkan.');
     }
 
     public function show(Keluarga $keluarga)
@@ -173,9 +248,8 @@ class KeluargaController extends Controller
             'kepala_keluarga_nama' => 'nullable|string|max:255',
         ]);
 
-        // Jika nama diinput manual (tanpa ID), cari warga berdasarkan nama di KK ini
         if (empty($validated['kepala_keluarga_id']) && !empty($validated['kepala_keluarga_nama'])) {
-            $wargaDitemukan = \App\Models\Warga::where('keluarga_id', $keluarga->id)
+            $wargaDitemukan = Warga::where('keluarga_id', $keluarga->id)
                 ->whereRaw('LOWER(nama_lengkap) = ?', [strtolower(trim($validated['kepala_keluarga_nama']))])
                 ->first();
             if ($wargaDitemukan) {
@@ -200,9 +274,8 @@ class KeluargaController extends Controller
             'kelurahan' => $validated['kelurahan'],
             'kode_pos' => $validated['kode_pos'] ?? null,
             'kepala_keluarga_id' => $validated['kepala_keluarga_id'] ?? null,
-            // Simpan nama manual sebagai fallback tampilan jika tidak ada ID warga
             'kepala_keluarga_nama' => !empty($validated['kepala_keluarga_id'])
-                ? null  // kalau sudah ada ID, nama diambil dari relasi (tidak perlu dobel)
+                ? null
                 : ($validated['kepala_keluarga_nama'] ?? null),
         ];
 
@@ -219,12 +292,12 @@ class KeluargaController extends Controller
         $keluarga->update($data);
 
         if (!empty($data['kepala_keluarga_id'])) {
-            \App\Models\Warga::where('keluarga_id', $keluarga->id)
+            Warga::where('keluarga_id', $keluarga->id)
                 ->where('id', '!=', $data['kepala_keluarga_id'])
                 ->where('status_hubungan_keluarga', 'Kepala Keluarga')
                 ->update(['status_hubungan_keluarga' => 'Famili Lain']);
             
-            \App\Models\Warga::where('id', $data['kepala_keluarga_id'])
+            Warga::where('id', $data['kepala_keluarga_id'])
                 ->update(['status_hubungan_keluarga' => 'Kepala Keluarga']);
         }
 

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\RumahBlok;
+use App\Models\Keluarga;
+use App\Models\Warga;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -11,6 +13,33 @@ class RumahBlokController extends Controller
 {
     public function index(Request $request)
     {
+        // Auto-heal any KK records that currently have no Warga members attached
+        $emptyKeluargas = Keluarga::doesntHave('wargas')->get();
+        foreach ($emptyKeluargas as $emptyKk) {
+            $namaKepala = !empty($emptyKk->kepala_keluarga_nama) ? $emptyKk->kepala_keluarga_nama : 'KEPALA KELUARGA';
+            $wargaKepala = Warga::create([
+                'keluarga_id' => $emptyKk->id,
+                'nik' => $emptyKk->no_kk,
+                'nama_lengkap' => strtoupper($namaKepala),
+                'tempat_lahir' => 'SERANG',
+                'tanggal_lahir' => '1990-01-01',
+                'jenis_kelamin' => 'Laki-laki',
+                'agama' => 'Islam',
+                'pendidikan' => 'SLTA/Sederajat',
+                'pekerjaan' => 'Karyawan Swasta',
+                'status_perkawinan' => 'Kawin',
+                'status_hubungan_keluarga' => 'Kepala Keluarga',
+                'kewarganegaraan' => 'WNI',
+                'nama_ayah' => '-',
+                'nama_ibu' => '-',
+                'status_hidup' => 'Hidup',
+            ]);
+            $emptyKk->update([
+                'kepala_keluarga_id' => $wargaKepala->id,
+                'kepala_keluarga_nama' => null
+            ]);
+        }
+
         $search = $request->query('search');
         $blok = $request->query('blok');
         $nomorRumah = $request->query('nomor_rumah');
@@ -49,14 +78,14 @@ class RumahBlokController extends Controller
                       ->orWhere('nomor_rumah', 'like', "%{$alamat}%");
                 });
             })
-            ->when($status && $status !== 'Semua', function ($query) use ($status) {
+            ->when($status !== 'Semua', function ($query) use ($status) {
                 $query->where('status_hunian', $status);
             })
             ->when(is_numeric($jumlahKeluarga), function ($query) use ($jumlahKeluarga) {
-                $query->having('keluargas_count', $jumlahKeluarga);
+                $query->having('keluargas_count', '=', $jumlahKeluarga);
             })
             ->orderBy($sortField, $sortDirection)
-            ->paginate(20)
+            ->paginate(12)
             ->withQueryString();
 
         return Inertia::render('Admin/RumahBlok/Index', [
@@ -82,27 +111,15 @@ class RumahBlokController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'blok' => 'required|string|max:10',
-            'nomor_rumah' => 'required|string|max:10',
+            'blok' => 'required|string|max:50',
+            'nomor_rumah' => 'required|string|max:50',
+            'status_hunian' => 'required|string|in:Diisi,Kosong',
+            'keterangan' => 'nullable|string',
         ]);
 
-        $exists = RumahBlok::where('blok', $validated['blok'])
-            ->where('nomor_rumah', $validated['nomor_rumah'])
-            ->exists();
+        RumahBlok::create($validated);
 
-        if ($exists) {
-            return back()->withErrors([
-                'blok' => 'Kombinasi Blok dan Nomor Rumah ini sudah ada.'
-            ])->withInput();
-        }
-
-        RumahBlok::create([
-            'blok' => $validated['blok'],
-            'nomor_rumah' => $validated['nomor_rumah'],
-            'status_hunian' => 'Kosong',
-        ]);
-
-        return redirect()->route('admin.rumah.index')->with('message', 'Data Rumah berhasil ditambahkan.');
+        return redirect()->route('admin.rumah-blok.index')->with('message', 'Data rumah berhasil ditambahkan.');
     }
 
     public function edit(RumahBlok $rumah)
@@ -115,34 +132,20 @@ class RumahBlokController extends Controller
     public function update(Request $request, RumahBlok $rumah)
     {
         $validated = $request->validate([
-            'blok' => 'required|string|max:10',
-            'nomor_rumah' => 'required|string|max:10',
+            'blok' => 'required|string|max:50',
+            'nomor_rumah' => 'required|string|max:50',
+            'status_hunian' => 'required|string|in:Diisi,Kosong',
+            'keterangan' => 'nullable|string',
         ]);
-
-        $exists = RumahBlok::where('blok', $validated['blok'])
-            ->where('nomor_rumah', $validated['nomor_rumah'])
-            ->where('id', '!=', $rumah->id)
-            ->exists();
-
-        if ($exists) {
-            return back()->withErrors([
-                'blok' => 'Kombinasi Blok dan Nomor Rumah ini sudah terdaftar pada data lain.'
-            ])->withInput();
-        }
 
         $rumah->update($validated);
 
-        return redirect()->route('admin.rumah.index')->with('message', 'Data Rumah berhasil diperbarui.');
+        return redirect()->route('admin.rumah-blok.index')->with('message', 'Data rumah berhasil diperbarui.');
     }
 
     public function destroy(RumahBlok $rumah)
     {
-        if ($rumah->keluargas()->exists()) {
-            return redirect()->route('admin.rumah.index')->with('error', 'Tidak dapat menghapus rumah yang masih didiami oleh data KK. Ubah status huniannya menjadi Kosong atau hapus/pindahkan data KK tersebut terlebih dahulu.');
-        }
-
         $rumah->delete();
-
-        return redirect()->route('admin.rumah.index')->with('message', 'Data Rumah berhasil dihapus.');
+        return redirect()->route('admin.rumah-blok.index')->with('message', 'Data rumah berhasil dihapus.');
     }
 }
