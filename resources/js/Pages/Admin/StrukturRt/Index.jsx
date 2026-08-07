@@ -17,6 +17,7 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [errorPopup, setErrorPopup] = useState(null);
     const fileInputRef = useRef(null);
 
     const { data, setData, post, put, delete: destroy, processing, errors, reset, clearErrors } = useForm({
@@ -27,6 +28,14 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
         periode_selesai: '',
         foto_profil: null,
     });
+
+    useEffect(() => {
+        if (flash?.error) {
+            setErrorPopup(flash.error);
+        } else if (errors?.warga_id) {
+            setErrorPopup(errors.warga_id);
+        }
+    }, [flash, errors]);
 
     // Handle Tab Change
     const handleTabChange = (rt) => {
@@ -60,16 +69,15 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
         if (item) {
             setEditingItem(item);
             setData({
-                rt_nomor: item.rt_nomor,
-                warga_id: item.warga_id,
-                jabatan: item.jabatan,
+                rt_nomor: item.rt_nomor || activeTab,
+                warga_id: item.warga_id || '',
+                jabatan: item.jabatan || '',
                 periode_mulai: item.periode_mulai || '',
                 periode_selesai: item.periode_selesai || '',
                 foto_profil: null, 
             });
         } else {
             setEditingItem(null);
-            reset();
             setData({
                 rt_nomor: activeTab,
                 warga_id: '',
@@ -85,31 +93,69 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
     const closeModal = () => {
         setIsModalOpen(false);
         setTimeout(() => {
-            reset();
             setEditingItem(null);
+            clearErrors();
         }, 300);
+    };
+
+    const handleWargaSelect = (selectedId) => {
+        if (!selectedId) {
+            setData('warga_id', '');
+            return;
+        }
+
+        const selectedWarga = wargas.find(w => String(w.id) === String(selectedId));
+        if (selectedWarga && selectedWarga.is_pengurus && String(selectedWarga.pengurus_id) !== String(editingItem?.id)) {
+            setErrorPopup(`🚫 Tidak Dapat Ditambahkan!\n\nNama warga "${selectedWarga.nama_lengkap}" sudah menjadi pengurus (${selectedWarga.jabatan_pengurus}) di RT ${selectedWarga.rt_pengurus}.\n\nPenambahan data pengurus RT hanya bisa dengan nama warga yang belum menjadi pengurus di RT mana pun!`);
+            setData('warga_id', '');
+            return;
+        }
+
+        setData('warga_id', selectedId);
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
         
+        const selectedWarga = wargas.find(w => String(w.id) === String(data.warga_id));
+        if (selectedWarga && selectedWarga.is_pengurus && String(selectedWarga.pengurus_id) !== String(editingItem?.id)) {
+            setErrorPopup(`🚫 Tidak Dapat Ditambahkan!\n\nNama warga "${selectedWarga.nama_lengkap}" sudah menjadi pengurus (${selectedWarga.jabatan_pengurus}) di RT ${selectedWarga.rt_pengurus}.\n\nPenambahan data pengurus RT hanya bisa dengan nama warga yang belum menjadi pengurus di RT mana pun!`);
+            return;
+        }
+
+        const targetRt = editingItem ? editingItem.rt_nomor : activeTab;
+        const payload = {
+            ...data,
+            rt_nomor: targetRt
+        };
+
         if (editingItem) {
             router.post(route('admin.struktur-rt.update', editingItem.id), {
                 _method: 'put',
-                ...data
+                ...payload
             }, {
+                preserveScroll: true,
                 onSuccess: () => closeModal(),
+                onError: (err) => {
+                    if (err.warga_id) setErrorPopup(err.warga_id);
+                }
             });
         } else {
-            post(route('admin.struktur-rt.store'), {
+            router.post(route('admin.struktur-rt.store'), payload, {
+                preserveScroll: true,
                 onSuccess: () => closeModal(),
+                onError: (err) => {
+                    if (err.warga_id) setErrorPopup(err.warga_id);
+                }
             });
         }
     };
 
     const handleDelete = (id) => {
         if (confirm('Yakin ingin menghapus pengurus ini?')) {
-            destroy(route('admin.struktur-rt.destroy', id));
+            router.delete(route('admin.struktur-rt.destroy', id), {
+                preserveScroll: true,
+            });
         }
     };
 
@@ -479,16 +525,26 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
                                                 <label className="block text-xs font-bold text-gray-700 mb-1.5">Pilih Warga</label>
                                                 <select
                                                     value={data.warga_id}
-                                                    onChange={e => setData('warga_id', e.target.value)}
-                                                    className="w-full rounded-xl border-gray-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-sm shadow-sm"
+                                                    onChange={e => handleWargaSelect(e.target.value)}
+                                                    className="w-full rounded-xl border-gray-200 focus:ring-emerald-500 focus:border-emerald-500 bg-white text-sm shadow-sm font-medium"
                                                     required
                                                 >
-                                                    <option value="">-- Cari Nama Warga --</option>
-                                                    {wargas.map(w => (
-                                                        <option key={w.id} value={w.id}>{w.nama_lengkap} (NIK: {w.nik})</option>
-                                                    ))}
+                                                    <option value="">-- Pilih Warga (Status: Warga Biasa) --</option>
+                                                    {wargas.map(w => {
+                                                        const isAlreadyPengurus = w.is_pengurus && String(w.pengurus_id) !== String(editingItem?.id);
+                                                        return (
+                                                            <option 
+                                                                key={w.id} 
+                                                                value={w.id}
+                                                                disabled={isAlreadyPengurus}
+                                                                className={isAlreadyPengurus ? 'text-gray-400 bg-gray-50' : 'text-gray-900 font-medium'}
+                                                            >
+                                                                {w.nama_lengkap} {isAlreadyPengurus ? `(Sudah menjadi pengurus di RT ${w.rt_pengurus} - ${w.jabatan_pengurus})` : `(NIK: ${w.nik})`}
+                                                            </option>
+                                                        );
+                                                    })}
                                                 </select>
-                                                {errors.warga_id && <p className="text-rose-500 text-[10px] mt-1">{errors.warga_id}</p>}
+                                                {errors.warga_id && <p className="text-rose-500 text-[10px] mt-1 font-semibold">{errors.warga_id}</p>}
                                             </div>
 
                                             {/* Periode */}
@@ -559,6 +615,63 @@ export default function Index({ auth, strukturRts, wargas, flash, wargaList, act
                                             </button>
                                         </div>
                                     </form>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+
+            {/* Error Popup Dialog */}
+            <Transition appear show={!!errorPopup} as={React.Fragment}>
+                <Dialog as="div" className="relative z-[60]" onClose={() => setErrorPopup(null)}>
+                    <Transition.Child
+                        enter="ease-out duration-300"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-200"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" />
+                    </Transition.Child>
+
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                enter="ease-out duration-300"
+                                enterFrom="opacity-0 scale-95 translate-y-4"
+                                enterTo="opacity-100 scale-100 translate-y-0"
+                                leave="ease-in duration-200"
+                                leaveFrom="opacity-100 scale-100 translate-y-0"
+                                leaveTo="opacity-0 scale-95 translate-y-4"
+                            >
+                                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-3xl bg-white p-6 text-left align-middle shadow-2xl transition-all border border-rose-100">
+                                    <div className="flex items-center gap-3 text-rose-600 mb-4">
+                                        <div className="w-12 h-12 rounded-2xl bg-rose-100 flex items-center justify-center text-2xl flex-shrink-0">
+                                            🚫
+                                        </div>
+                                        <div>
+                                            <Dialog.Title as="h3" className="text-base font-black text-gray-900 leading-tight">
+                                                Gagal Menambahkan Pengurus
+                                            </Dialog.Title>
+                                            <p className="text-xs text-rose-500 font-semibold mt-0.5">Validasi Data Pengurus RT</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="bg-rose-50/70 rounded-2xl p-4 border border-rose-100 text-xs text-gray-800 leading-relaxed font-semibold whitespace-pre-line mb-6">
+                                        {errorPopup}
+                                    </div>
+
+                                    <div className="flex justify-end">
+                                        <button
+                                            type="button"
+                                            onClick={() => setErrorPopup(null)}
+                                            className="w-full sm:w-auto px-6 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-all shadow-md shadow-rose-600/20 text-xs"
+                                        >
+                                            Tutup & Perbaiki Data
+                                        </button>
+                                    </div>
                                 </Dialog.Panel>
                             </Transition.Child>
                         </div>

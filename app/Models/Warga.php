@@ -95,4 +95,9 @@ class Warga extends Model
     {
         return $this->hasMany(SuratPengantar::class);
     }
+
+    public function strukturRt()
+    {
+        return $this->hasOne(StrukturRt::class, 'warga_id');
+    }
 }

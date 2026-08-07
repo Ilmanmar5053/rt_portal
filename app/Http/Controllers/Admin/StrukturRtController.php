@@ -18,8 +18,24 @@ class StrukturRtController extends Controller
         // Get all struktur with related warga and keluarga (for address)
         $strukturRts = StrukturRt::with(['warga.keluarga'])->orderBy('rt_nomor')->get();
         
-        // Get wargas for dropdown
-        $wargas = Warga::select('id', 'nama_lengkap', 'nik')->orderBy('nama_lengkap')->get();
+        // Get wargas for dropdown with pengurus status info
+        $wargas = Warga::with(['strukturRt'])
+            ->select('id', 'nama_lengkap', 'nik')
+            ->orderBy('nama_lengkap')
+            ->get()
+            ->map(function ($warga) {
+                $pengurus = $warga->strukturRt;
+                return [
+                    'id' => $warga->id,
+                    'nama_lengkap' => $warga->nama_lengkap,
+                    'nik' => $warga->nik,
+                    'is_pengurus' => $pengurus ? true : false,
+                    'rt_pengurus' => $pengurus ? $pengurus->rt_nomor : null,
+                    'jabatan_pengurus' => $pengurus ? $pengurus->jabatan : null,
+                    'pengurus_id' => $pengurus ? $pengurus->id : null,
+                    'status_label' => $pengurus ? "Sudah menjadi pengurus di RT {$pengurus->rt_nomor} ({$pengurus->jabatan})" : null,
+                ];
+            });
 
         // Get paginated warga for the selected RT
         $wargaList = Warga::with(['keluarga.rumahBlok'])
@@ -49,6 +65,19 @@ class StrukturRtController extends Controller
             'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
+        // Validasi: Warga tidak boleh sudah menjadi pengurus di RT mana pun
+        $existing = StrukturRt::where('warga_id', $validated['warga_id'])->first();
+        if ($existing) {
+            $warga = Warga::find($validated['warga_id']);
+            $namaWarga = $warga ? $warga->nama_lengkap : 'Warga ini';
+            $errorMsg = "Gagal! Nama warga \"{$namaWarga}\" sudah menjadi pengurus ({$existing->jabatan}) di RT {$existing->rt_nomor}. Penambahan data pengurus RT hanya bisa dengan warga yang belum menjadi pengurus di RT mana pun!";
+
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['warga_id' => $errorMsg])
+                ->with('error', $errorMsg);
+        }
+
         if ($request->hasFile('foto_profil')) {
             $path = $request->file('foto_profil')->store('struktur_rts', 'public');
             $validated['foto_profil'] = $path;
@@ -56,7 +85,7 @@ class StrukturRtController extends Controller
 
         StrukturRt::create($validated);
 
-        return redirect()->route('admin.struktur-rt.index')->with('message', 'Data pengurus berhasil ditambahkan');
+        return redirect()->route('admin.struktur-rt.index', ['rt' => $validated['rt_nomor']])->with('message', 'Data pengurus berhasil ditambahkan');
     }
 
     public function update(Request $request, $id)
@@ -72,6 +101,21 @@ class StrukturRtController extends Controller
             'foto_profil' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
+        // Validasi: Warga tidak boleh sudah menjadi pengurus di tempat lain
+        $existing = StrukturRt::where('warga_id', $validated['warga_id'])
+            ->where('id', '!=', $id)
+            ->first();
+        if ($existing) {
+            $warga = Warga::find($validated['warga_id']);
+            $namaWarga = $warga ? $warga->nama_lengkap : 'Warga ini';
+            $errorMsg = "Gagal! Nama warga \"{$namaWarga}\" sudah menjadi pengurus ({$existing->jabatan}) di RT {$existing->rt_nomor}. Penambahan data pengurus RT hanya bisa dengan warga yang belum menjadi pengurus di RT mana pun!";
+
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['warga_id' => $errorMsg])
+                ->with('error', $errorMsg);
+        }
+
         if ($request->hasFile('foto_profil')) {
             // Delete old photo
             if ($strukturRt->foto_profil) {
@@ -84,12 +128,13 @@ class StrukturRtController extends Controller
 
         $strukturRt->update($validated);
 
-        return redirect()->route('admin.struktur-rt.index')->with('message', 'Data pengurus berhasil diperbarui');
+        return redirect()->route('admin.struktur-rt.index', ['rt' => $validated['rt_nomor']])->with('message', 'Data pengurus berhasil diperbarui');
     }
 
     public function destroy($id)
     {
         $strukturRt = StrukturRt::findOrFail($id);
+        $rtNomor = $strukturRt->rt_nomor;
         
         if ($strukturRt->foto_profil) {
             Storage::disk('public')->delete($strukturRt->foto_profil);
@@ -97,6 +142,6 @@ class StrukturRtController extends Controller
         
         $strukturRt->delete();
 
-        return redirect()->route('admin.struktur-rt.index')->with('message', 'Data pengurus berhasil dihapus');
+        return redirect()->route('admin.struktur-rt.index', ['rt' => $rtNomor])->with('message', 'Data pengurus berhasil dihapus');
     }
 }
