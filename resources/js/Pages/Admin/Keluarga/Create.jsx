@@ -91,10 +91,19 @@ export default function Create() {
         }).catch(err => console.error('Error fetching provinsi:', err));
     }, []);
 
+    const cleanWilayahName = (str) => {
+        if (!str) return '';
+        return str.toUpperCase()
+            .replace(/^(KAB\.?|KABUPATEN|KOTA|PROVINSI)\s+/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
     // Fetch Kabupaten when Provinsi changes
     useEffect(() => {
         if (data.provinsi) {
-            const selectedProv = provinsiList.find(p => p.nama === data.provinsi);
+            const cleanTarget = cleanWilayahName(data.provinsi);
+            const selectedProv = provinsiList.find(p => cleanWilayahName(p.nama) === cleanTarget || p.nama.toUpperCase().includes(cleanTarget));
             if (selectedProv) {
                 axios.get(`/api/wilayah/kabupaten/${selectedProv.kode}`).then(res => {
                     setKabupatenList(res.data);
@@ -108,7 +117,8 @@ export default function Create() {
     // Fetch Kecamatan when Kabupaten changes
     useEffect(() => {
         if (data.kabupaten_kota) {
-            const selectedKab = kabupatenList.find(k => k.nama === data.kabupaten_kota);
+            const cleanTarget = cleanWilayahName(data.kabupaten_kota);
+            const selectedKab = kabupatenList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
             if (selectedKab) {
                 axios.get(`/api/wilayah/kecamatan/${selectedKab.kode}`).then(res => {
                     setKecamatanList(res.data);
@@ -122,7 +132,8 @@ export default function Create() {
     // Fetch Kelurahan when Kecamatan changes
     useEffect(() => {
         if (data.kecamatan) {
-            const selectedKec = kecamatanList.find(k => k.nama === data.kecamatan);
+            const cleanTarget = cleanWilayahName(data.kecamatan);
+            const selectedKec = kecamatanList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
             if (selectedKec) {
                 axios.get(`/api/wilayah/kelurahan/${selectedKec.kode}`).then(res => {
                     setKelurahanList(res.data);

@@ -108,10 +108,19 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
             .catch(err => console.error('Gagal memuat provinsi:', err));
     }, []);
 
+    const cleanWilayahName = (str) => {
+        if (!str) return '';
+        return str.toUpperCase()
+            .replace(/^(KAB\.?|KABUPATEN|KOTA|PROVINSI)\s+/gi, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    };
+
     // Fetch Kabupaten when Provinsi changes
     useEffect(() => {
         if (data.provinsi) {
-            const selectedProv = provinsiList.find(p => p.nama === data.provinsi);
+            const cleanTarget = cleanWilayahName(data.provinsi);
+            const selectedProv = provinsiList.find(p => cleanWilayahName(p.nama) === cleanTarget || p.nama.toUpperCase().includes(cleanTarget));
             if (selectedProv) {
                 axios.get(`/api/wilayah/kabupaten/${selectedProv.kode}`)
                     .then(res => setKabupatenList(res.data))
@@ -125,7 +134,8 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
     // Fetch Kecamatan when Kabupaten changes
     useEffect(() => {
         if (data.kabupaten_kota) {
-            const selectedKab = kabupatenList.find(k => k.nama === data.kabupaten_kota);
+            const cleanTarget = cleanWilayahName(data.kabupaten_kota);
+            const selectedKab = kabupatenList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
             if (selectedKab) {
                 axios.get(`/api/wilayah/kecamatan/${selectedKab.kode}`)
                     .then(res => setKecamatanList(res.data))
@@ -139,7 +149,8 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
     // Fetch Kelurahan when Kecamatan changes
     useEffect(() => {
         if (data.kecamatan) {
-            const selectedKec = kecamatanList.find(k => k.nama === data.kecamatan);
+            const cleanTarget = cleanWilayahName(data.kecamatan);
+            const selectedKec = kecamatanList.find(k => cleanWilayahName(k.nama) === cleanTarget || k.nama.toUpperCase().includes(cleanTarget));
             if (selectedKec) {
                 axios.get(`/api/wilayah/kelurahan/${selectedKec.kode}`)
                     .then(res => setKelurahanList(res.data))
@@ -508,6 +519,9 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                                     required
                                 >
                                     <option value="">-- Pilih Provinsi --</option>
+                                    {data.provinsi && !provinsiList.some(p => cleanWilayahName(p.nama) === cleanWilayahName(data.provinsi)) && (
+                                        <option value={data.provinsi}>{data.provinsi}</option>
+                                    )}
                                     {provinsiList.map((p) => (
                                         <option key={p.kode} value={p.nama}>{p.nama}</option>
                                     ))}
@@ -521,11 +535,14 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                                     id="kabupaten_kota"
                                     value={data.kabupaten_kota}
                                     onChange={(e) => setData('kabupaten_kota', e.target.value)}
-                                    disabled={!data.provinsi}
+                                    disabled={!data.provinsi && !data.kabupaten_kota}
                                     className="mt-1 block w-full text-xs font-semibold rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 disabled:bg-gray-100"
                                     required
                                 >
                                     <option value="">-- Pilih Kab/Kota --</option>
+                                    {data.kabupaten_kota && !kabupatenList.some(k => cleanWilayahName(k.nama) === cleanWilayahName(data.kabupaten_kota)) && (
+                                        <option value={data.kabupaten_kota}>{data.kabupaten_kota}</option>
+                                    )}
                                     {kabupatenList.map((k) => (
                                         <option key={k.kode} value={k.nama}>{k.nama}</option>
                                     ))}
@@ -539,11 +556,14 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                                     id="kecamatan"
                                     value={data.kecamatan}
                                     onChange={(e) => setData('kecamatan', e.target.value)}
-                                    disabled={!data.kabupaten_kota}
+                                    disabled={!data.kabupaten_kota && !data.kecamatan}
                                     className="mt-1 block w-full text-xs font-semibold rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 disabled:bg-gray-100"
                                     required
                                 >
                                     <option value="">-- Pilih Kecamatan --</option>
+                                    {data.kecamatan && !kecamatanList.some(k => cleanWilayahName(k.nama) === cleanWilayahName(data.kecamatan)) && (
+                                        <option value={data.kecamatan}>{data.kecamatan}</option>
+                                    )}
                                     {kecamatanList.map((k) => (
                                         <option key={k.kode} value={k.nama}>{k.nama}</option>
                                     ))}
@@ -557,11 +577,14 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
                                     id="kelurahan"
                                     value={data.kelurahan}
                                     onChange={(e) => setData('kelurahan', e.target.value)}
-                                    disabled={!data.kecamatan}
+                                    disabled={!data.kecamatan && !data.kelurahan}
                                     className="mt-1 block w-full text-xs font-semibold rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 disabled:bg-gray-100"
                                     required
                                 >
                                     <option value="">-- Pilih Kelurahan --</option>
+                                    {data.kelurahan && !kelurahanList.some(k => cleanWilayahName(k.nama) === cleanWilayahName(data.kelurahan)) && (
+                                        <option value={data.kelurahan}>{data.kelurahan}</option>
+                                    )}
                                     {kelurahanList.map((k) => (
                                         <option key={k.kode} value={k.nama}>{k.nama}</option>
                                     ))}
