@@ -143,7 +143,7 @@ class KeluargaController extends Controller
 
     public function edit(Keluarga $keluarga)
     {
-        $keluarga->load('kepalaKeluarga'); // load nama kepala keluarga
+        $keluarga->load(['kepalaKeluarga', 'rumahBlok']);
         $rumahBloks = RumahBlok::orderBy('blok')->orderBy('nomor_rumah')->get();
         $wargas = $keluarga->wargas()->get();
         return Inertia::render('Admin/Keluarga/Edit', [
