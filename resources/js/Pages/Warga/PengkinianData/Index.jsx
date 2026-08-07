@@ -163,23 +163,39 @@ export default function PengkinianDataIndex({ warga, keluarga }) {
 
         if (anggotaList && anggotaList.length > 0) {
             const mappedAnggota = anggotaList.map(a => {
+                let parsedTgl = a.tanggal_lahir || '';
+                const rawDateStr = a.tanggal_lahir || a.ttl || '';
+                const dmyMatch = rawDateStr.match(/(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/);
+                if (dmyMatch) {
+                    const day = dmyMatch[1].padStart(2, '0');
+                    const month = dmyMatch[2].padStart(2, '0');
+                    const year = dmyMatch[3];
+                    parsedTgl = `${year}-${month}-${day}`;
+                }
+
+                let parsedTempat = a.tempat_lahir || '';
+                if (!parsedTempat && a.ttl && a.ttl.includes(',')) {
+                    parsedTempat = a.ttl.split(',')[0].trim();
+                }
+
                 const existing = data.anggota.find(item =>
                     (item.id && item.nik && item.nik.trim() === (a.nik || '').trim()) ||
-                    (item.id && item.nama_lengkap && item.nama_lengkap.trim().toLowerCase() === (a.nama_lengkap || '').trim().toLowerCase()) ||
-                    (item.id && item.status_hubungan_keluarga === 'Kepala Keluarga' && (a.status_hubungan_keluarga || '') === 'Kepala Keluarga')
+                    (item.id && item.nama_lengkap && item.nama_lengkap.trim().toLowerCase() === (a.nama_lengkap || a.nama || '').trim().toLowerCase()) ||
+                    (item.id && item.status_hubungan_keluarga === 'Kepala Keluarga' && (a.status_hubungan_keluarga || a.hubungan || '') === 'Kepala Keluarga')
                 );
+
                 return {
                     id: existing ? existing.id : null,
                     nik: a.nik || '',
-                    nama_lengkap: a.nama_lengkap || '',
-                    tempat_lahir: a.tempat_lahir || '',
-                    tanggal_lahir: a.tanggal_lahir ? a.tanggal_lahir.substring(0, 10) : '',
-                    jenis_kelamin: a.jenis_kelamin || 'Laki-laki',
+                    nama_lengkap: a.nama_lengkap || a.nama || '',
+                    tempat_lahir: parsedTempat || 'SERANG',
+                    tanggal_lahir: parsedTgl,
+                    jenis_kelamin: a.jenis_kelamin || a.jk || 'Laki-laki',
                     agama: a.agama || 'Islam',
                     pendidikan: a.pendidikan || 'SLTA/Sederajat',
                     pekerjaan: a.pekerjaan || 'Karyawan Swasta',
                     status_perkawinan: a.status_perkawinan || 'Belum Kawin',
-                    status_hubungan_keluarga: a.status_hubungan_keluarga || 'Anak',
+                    status_hubungan_keluarga: a.status_hubungan_keluarga || a.hubungan || 'Anak',
                     kewarganegaraan: a.kewarganegaraan || 'WNI',
                     nama_ayah: a.nama_ayah || '-',
                     nama_ibu: a.nama_ibu || '-',

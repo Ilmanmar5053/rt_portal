@@ -15,6 +15,31 @@ const loadPdfJs = () => {
     });
 };
 
+// Helper to convert DD-MM-YYYY to HTML input date ISO format YYYY-MM-DD
+const formatDateToISO = (dateStr) => {
+    if (!dateStr) return '';
+    const clean = dateStr.trim();
+    if (/^\d{4}\-\d{2}\-\d{2}$/.test(clean)) return clean;
+
+    const dmy = clean.match(/(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/);
+    if (dmy) {
+        const day = dmy[1].padStart(2, '0');
+        const month = dmy[2].padStart(2, '0');
+        const year = dmy[3];
+        return `${year}-${month}-${day}`;
+    }
+
+    const ymd = clean.match(/(\d{4})[\-\/](\d{1,2})[\-\/](\d{1,2})/);
+    if (ymd) {
+        const year = ymd[1];
+        const month = ymd[2].padStart(2, '0');
+        const day = ymd[3].padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    return clean;
+};
+
 export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
     const [isScanning, setIsScanning] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -23,7 +48,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
     const [showPasteBox, setShowPasteBox] = useState(true);
     const [pastedText, setPastedText] = useState('');
 
-    // Authentic Kartu Keluarga Header State (Separated from Member NIK)
+    // Authentic Kartu Keluarga Header State
     const [kkHeader, setKkHeader] = useState({
         no_kk: '',
         nama_kepala_keluarga: '',
@@ -155,11 +180,11 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                     const jkCol = cols.find(c => c.toUpperCase() === 'LAKI-LAKI' || c.toUpperCase() === 'PEREMPUAN') || 'LAKI-LAKI';
                     const jk = jkCol.toUpperCase().includes('PEREMPUAN') ? 'Perempuan' : 'Laki-laki';
 
-                    let tglLahir = '';
+                    let rawTglLahir = '';
                     const dateCol = cols.find(c => /\b\d{2}[\-\/]\d{2}[\-\/]\d{4}\b/.test(c));
                     if (dateCol) {
                         const dm = dateCol.match(/\b\d{2}[\-\/]\d{2}[\-\/]\d{4}\b/);
-                        if (dm) tglLahir = dm[0];
+                        if (dm) rawTglLahir = dm[0];
                     }
 
                     let tempatLahir = '';
@@ -172,7 +197,8 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                         tempatLahir = placeCol;
                     }
 
-                    const ttl = tempatLahir && tglLahir ? `${tempatLahir}, ${tglLahir}` : (tglLahir || tempatLahir || 'SERANG, 01-01-1990');
+                    const isoDate = formatDateToISO(rawTglLahir);
+                    const displayTtl = tempatLahir && rawTglLahir ? `${tempatLahir}, ${rawTglLahir}` : (rawTglLahir || tempatLahir || 'SERANG, 01-01-1990');
                     const statusHub = relationshipsMap[idxNum] || (idxNum === 1 ? 'Kepala Keluarga' : (idxNum === 2 ? 'Istri' : 'Anak'));
 
                     members.push({
@@ -181,9 +207,9 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                         nama_lengkap: name.toUpperCase(),
                         jk: jk,
                         jenis_kelamin: jk,
-                        ttl: ttl,
+                        ttl: displayTtl,
                         tempat_lahir: tempatLahir || 'SERANG',
-                        tanggal_lahir: tglLahir || '1990-01-01',
+                        tanggal_lahir: isoDate || '1990-01-01',
                         hubungan: statusHub,
                         status_hubungan_keluarga: statusHub
                     });
@@ -197,7 +223,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
 
         return {
             header: {
-                no_kk: no_kk || '', // Keeps No. KK Header separate from member NIK
+                no_kk: no_kk || '',
                 nama_kepala_keluarga: nama_kepala_keluarga || 'ILMAN',
                 alamat_lengkap: alamat_lengkap || 'KP. KESABILAN',
                 rt: rt || '004',
@@ -223,8 +249,8 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         if (res && res.members.length > 0) {
             setKkHeader(res.header);
             setAnggotaList(res.members);
-            setScanEngine('Extracted by Gemini / Google Lens (Exact KK Layout)');
-            setStatusText(`✨ Sukses membaca Header KK & ${res.members.length} Anggota Keluarga!`);
+            setScanEngine('Extracted by Gemini / Google Lens (ISO Date Conversion)');
+            setStatusText(`✨ Sukses membaca Header KK & ${res.members.length} Anggota Keluarga (Tanggal Lahir Terformat ISO)!`);
         } else {
             alert('Format teks tidak dikenali. Pastikan teks berisi tabel atau baris NIK 16 digit.');
         }
@@ -276,7 +302,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                 }
             }
 
-            // Fallback sample data
+            // Fallback sample data with ISO dates
             setScanEngine('Preset KK Parser');
             setStatusText('✨ Terapkan data ke form di bawah.');
             setKkHeader({
@@ -292,10 +318,10 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                 provinsi: 'BANTEN'
             });
             setAnggotaList([
-                { nik: '3604120803900004', nama: 'ILMAN', nama_lengkap: 'ILMAN', jk: 'Laki-laki', jenis_kelamin: 'Laki-laki', ttl: 'SERANG, 08-03-1990', tempat_lahir: 'SERANG', tanggal_lahir: '08-03-1990', hubungan: 'Kepala Keluarga', status_hubungan_keluarga: 'Kepala Keluarga' },
-                { nik: '3604125204920002', nama: 'BAYETI', nama_lengkap: 'BAYETI', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'SERANG, 12-04-1992', tempat_lahir: 'SERANG', tanggal_lahir: '12-04-1992', hubungan: 'Istri', status_hubungan_keluarga: 'Istri' },
-                { nik: '3604127101190001', nama: 'ZARA NAVISHA', nama_lengkap: 'ZARA NAVISHA', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'SERANG, 31-01-2019', tempat_lahir: 'SERANG', tanggal_lahir: '31-01-2019', hubungan: 'Anak', status_hubungan_keluarga: 'Anak' },
-                { nik: '3604124212210001', nama: 'ANINDIRA MAHESWARI', nama_lengkap: 'ANINDIRA MAHESWARI', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'BERANG, 02-12-2021', tempat_lahir: 'BERANG', tanggal_lahir: '02-12-2021', hubungan: 'Anak', status_hubungan_keluarga: 'Anak' }
+                { nik: '3604120803900004', nama: 'ILMAN', nama_lengkap: 'ILMAN', jk: 'Laki-laki', jenis_kelamin: 'Laki-laki', ttl: 'SERANG, 08-03-1990', tempat_lahir: 'SERANG', tanggal_lahir: '1990-03-08', hubungan: 'Kepala Keluarga', status_hubungan_keluarga: 'Kepala Keluarga' },
+                { nik: '3604125204920002', nama: 'BAYETI', nama_lengkap: 'BAYETI', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'SERANG, 12-04-1992', tempat_lahir: 'SERANG', tanggal_lahir: '1992-04-12', hubungan: 'Istri', status_hubungan_keluarga: 'Istri' },
+                { nik: '3604127101190001', nama: 'ZARA NAVISHA', nama_lengkap: 'ZARA NAVISHA', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'SERANG, 31-01-2019', tempat_lahir: 'SERANG', tanggal_lahir: '2019-01-31', hubungan: 'Anak', status_hubungan_keluarga: 'Anak' },
+                { nik: '3604124212210001', nama: 'ANINDIRA MAHESWARI', nama_lengkap: 'ANINDIRA MAHESWARI', jk: 'Perempuan', jenis_kelamin: 'Perempuan', ttl: 'BERANG, 02-12-2021', tempat_lahir: 'BERANG', tanggal_lahir: '2021-12-02', hubungan: 'Anak', status_hubungan_keluarga: 'Anak' }
             ]);
             setProgress(100);
 
@@ -314,6 +340,8 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
             jk: 'Laki-laki',
             jenis_kelamin: 'Laki-laki',
             ttl: '',
+            tempat_lahir: 'SERANG',
+            tanggal_lahir: '',
             hubungan: 'Anak',
             status_hubungan_keluarga: 'Anak'
         }]);
@@ -329,6 +357,10 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
         if (field === 'nama') updated[idx]['nama_lengkap'] = val;
         if (field === 'jk') updated[idx]['jenis_kelamin'] = val;
         if (field === 'hubungan') updated[idx]['status_hubungan_keluarga'] = val;
+        if (field === 'ttl') {
+            const iso = formatDateToISO(val);
+            if (iso) updated[idx]['tanggal_lahir'] = iso;
+        }
         setAnggotaList(updated);
     };
 
@@ -359,7 +391,7 @@ export default function KKScannerModal({ isOpen, onClose, file, onApply }) {
                                     Format Otentik Dokumen
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-300">Header Nomor KK terpisah dari NIK Anggota Keluarga. Persis seperti dokumen KK fisik.</p>
+                            <p className="text-xs text-slate-300">Header Nomor KK terpisah dari NIK Anggota Keluarga. Tanggal lahir terkonversi otomatis ke input form.</p>
                         </div>
                     </div>
                     <button 
@@ -437,7 +469,7 @@ Tabel 2: Data Status dan Orang Tua
                         </div>
                     </div>
 
-                    {/* Format Tampilan Kartu Keluarga (Header Dokumen + Identitas + Tabel Warga) */}
+                    {/* Format Tampilan Kartu Keluarga */}
                     <div className="bg-white p-5 rounded-2xl border-2 border-indigo-200/80 shadow-md space-y-4">
                         
                         {/* Header Judul Dokumen & Nomor KK */}
@@ -461,7 +493,7 @@ Tabel 2: Data Status dan Orang Tua
                             </div>
                         </div>
 
-                        {/* Layout 2 Kolom Identitas KK (Persis Seperti Dokumen Fisik) */}
+                        {/* Layout 2 Kolom Identitas KK */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-semibold text-slate-800 bg-slate-50 p-4 rounded-xl border border-slate-200">
                             {/* Kolom Kiri */}
                             <div className="space-y-2">
@@ -576,7 +608,7 @@ Tabel 2: Data Status dan Orang Tua
                                 <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
                                     <span>TABEL ANGGOTA KELUARGA ({anggotaList.length} ORANG)</span>
                                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-black border border-blue-200">
-                                        NIK Anggota Terpisah dari No. KK
+                                        Tanggal Lahir Terformat ISO (YYYY-MM-DD)
                                     </span>
                                 </h4>
                                 <button
