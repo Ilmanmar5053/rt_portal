@@ -136,6 +136,37 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
             if (parts[1]) rw = parts[1].replace(/\D/g, '').padStart(3, '0') || '002';
         }
 
+        // Keywords for education and job matching
+        const eduKeywords = [
+            { key: 'TIDAK/BELUM SEKOLAH', val: 'Tidak/Belum Sekolah' },
+            { key: 'BELUM TAMAT SD', val: 'Belum Tamat SD/Sederajat' },
+            { key: 'TAMAT SD', val: 'Tamat SD/Sederajat' },
+            { key: 'SD/SEDERAJAT', val: 'Tamat SD/Sederajat' },
+            { key: 'SLTP', val: 'SLTP/Sederajat' },
+            { key: 'SMP', val: 'SLTP/Sederajat' },
+            { key: 'SLTA', val: 'SLTA/Sederajat' },
+            { key: 'SMA', val: 'SLTA/Sederajat' },
+            { key: 'SMK', val: 'SLTA/Sederajat' },
+            { key: 'DIPLOMA', val: 'Diploma III/Akademi' },
+            { key: 'STRATA I', val: 'Diploma IV/Strata I' },
+            { key: 'S1', val: 'Diploma IV/Strata I' }
+        ];
+
+        const jobKeywords = [
+            { key: 'BELUM/TIDAK BEKERJA', val: 'Belum/Tidak Bekerja' },
+            { key: 'TIDAK BEKERJA', val: 'Belum/Tidak Bekerja' },
+            { key: 'MENGURUS RUMAH TANGGA', val: 'Mengurus Rumah Tangga' },
+            { key: 'PELAJAR/MAHASISWA', val: 'Pelajar/Mahasiswa' },
+            { key: 'PELAJAR', val: 'Pelajar/Mahasiswa' },
+            { key: 'MAHASISWA', val: 'Pelajar/Mahasiswa' },
+            { key: 'KARYAWAN SWASTA', val: 'Karyawan Swasta' },
+            { key: 'PEGAWAI NEGERI', val: 'PNS' },
+            { key: 'PNS', val: 'PNS' },
+            { key: 'WIRASWASTA', val: 'Wiraswasta' },
+            { key: 'PETANI', val: 'Petani/Pekebun' },
+            { key: 'BURUH', val: 'Buruh Harian Lepas' }
+        ];
+
         // Extract Relationships, Nama Ayah, & Nama Ibu from Table 2
         const relationshipsMap = {};
         const parentsMap = {};
@@ -242,9 +273,46 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
                         tempatLahir = placeCol;
                     }
 
+                    // Extract explicit education and job from row columns
+                    let pendExtracted = '';
+                    let pekExtracted = '';
+                    cols.forEach(c => {
+                        const cu = c.toUpperCase();
+                        eduKeywords.forEach(e => {
+                            if (cu.includes(e.key)) pendExtracted = e.val;
+                        });
+                        jobKeywords.forEach(j => {
+                            if (cu.includes(j.key)) pekExtracted = j.val;
+                        });
+                    });
+
+                    // Age calculation
+                    const birthYearMatch = rawTglLahir.match(/\d{4}/);
+                    const birthYear = birthYearMatch ? parseInt(birthYearMatch[0]) : 1990;
+                    const currentYear = new Date().getFullYear();
+                    const age = Math.max(0, currentYear - birthYear);
+
                     const isoDate = formatDateToISO(rawTglLahir);
                     const displayTtl = tempatLahir && rawTglLahir ? `${tempatLahir}, ${rawTglLahir}` : (rawTglLahir || tempatLahir || 'SERANG, 01-01-1990');
                     const statusHub = relationshipsMap[idxNum] || (idxNum === 1 ? 'Kepala Keluarga' : (idxNum === 2 ? 'Istri' : 'Anak'));
+
+                    // Smart Pendidikan & Pekerjaan inference based on Age and Status
+                    let finalPend = pendExtracted;
+                    if (!finalPend) {
+                        if (age < 6) finalPend = 'Tidak/Belum Sekolah';
+                        else if (age <= 12) finalPend = 'Belum Tamat SD/Sederajat';
+                        else if (age <= 15) finalPend = 'SLTP/Sederajat';
+                        else finalPend = 'SLTA/Sederajat';
+                    }
+
+                    let finalPek = pekExtracted;
+                    if (!finalPek) {
+                        if (age < 6) finalPek = 'Belum/Tidak Bekerja';
+                        else if (age <= 18) finalPek = 'Pelajar/Mahasiswa';
+                        else if (statusHub === 'Istri') finalPek = 'Mengurus Rumah Tangga';
+                        else if (statusHub === 'Kepala Keluarga') finalPek = 'Karyawan Swasta';
+                        else finalPek = 'Belum/Tidak Bekerja';
+                    }
 
                     const pData = parentsMap[idxNum] || {};
 
@@ -260,6 +328,8 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
                         tanggal_lahir: isoDate || '1990-01-01',
                         hubungan: statusHub,
                         status_hubungan_keluarga: statusHub,
+                        pendidikan: finalPend,
+                        pekerjaan: finalPek,
                         nama_ayah: pData.nama_ayah || '',
                         nama_ibu: pData.nama_ibu || ''
                     });
@@ -313,7 +383,7 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
             setKkHeader(res.header);
             setAnggotaList(res.members);
             setScanEngine('Extracted by Gemini / Google Lens');
-            setStatusText(`✨ Sukses membaca Header KK (${res.header.no_kk}) & ${res.members.length} Anggota Keluarga (Lengkap Nama Orang Tua)!`);
+            setStatusText(`✨ Sukses membaca Header KK (${res.header.no_kk}) & ${res.members.length} Anggota Keluarga (Akurat Pendidikan & Pekerjaan)!`);
         } else {
             alert('Format teks tidak dikenali. Pastikan teks berisi tabel atau baris NIK 16 digit.');
         }
@@ -331,6 +401,8 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
             tanggal_lahir: '',
             hubungan: 'Anak',
             status_hubungan_keluarga: 'Anak',
+            pendidikan: 'Belum Tamat SD/Sederajat',
+            pekerjaan: 'Pelajar/Mahasiswa',
             nama_ayah: 'ILMAN',
             nama_ibu: 'BAYETI'
         }]);
@@ -363,7 +435,7 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-5">
-            <div className="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-[94vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl max-w-7xl w-full max-h-[94vh] flex flex-col overflow-hidden border border-gray-100 animate-in fade-in duration-200">
                 
                 {/* Top Bar */}
                 <div className="px-6 py-4 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white flex items-center justify-between shadow-md">
@@ -380,7 +452,7 @@ export default function KKScannerModal({ isOpen, onClose, file, initialNoKk, onA
                                     Format Otentik Dokumen
                                 </span>
                             </div>
-                            <p className="text-xs text-slate-300">Lengkap Nama Ayah & Ibu terisi otomatis. Header Nomor KK terpisah dari NIK Anggota Keluarga.</p>
+                            <p className="text-xs text-slate-300">Pendidikan & Pekerjaan presisi sesuai usia warga. Header Nomor KK terpisah dari NIK Anggota Keluarga.</p>
                         </div>
                     </div>
                     <button 
@@ -598,7 +670,7 @@ Tabel 2: Data Status dan Orang Tua
                                 <h4 className="font-black text-xs text-slate-900 uppercase tracking-wider flex items-center gap-2">
                                     <span>TABEL ANGGOTA KELUARGA ({anggotaList.length} ORANG)</span>
                                     <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-black border border-blue-200">
-                                        Lengkap Nama Ayah & Nama Ibu
+                                        Pendidikan & Pekerjaan Akurat Berdasar Usia
                                     </span>
                                 </h4>
                                 <button
@@ -615,13 +687,15 @@ Tabel 2: Data Status dan Orang Tua
                                     <thead className="bg-slate-900 text-white font-extrabold border-b border-slate-700">
                                         <tr>
                                             <th className="py-2.5 px-3 w-8 text-center border-r border-slate-800">No</th>
-                                            <th className="py-2.5 px-3 min-w-[150px] border-r border-slate-800">NIK (16 Digit Warga)</th>
-                                            <th className="py-2.5 px-3 min-w-[170px] border-r border-slate-800">Nama Lengkap</th>
+                                            <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-800">NIK (16 Digit Warga)</th>
+                                            <th className="py-2.5 px-3 min-w-[160px] border-r border-slate-800">Nama Lengkap</th>
                                             <th className="py-2.5 px-3 min-w-[110px] border-r border-slate-800">Jenis Kelamin</th>
-                                            <th className="py-2.5 px-3 min-w-[150px] border-r border-slate-800">Tempat, Tgl Lahir</th>
+                                            <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-800">Tempat, Tgl Lahir</th>
                                             <th className="py-2.5 px-3 min-w-[130px] border-r border-slate-800">Status Hubungan</th>
-                                            <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-800">Nama Ayah</th>
-                                            <th className="py-2.5 px-3 min-w-[140px] border-r border-slate-800">Nama Ibu</th>
+                                            <th className="py-2.5 px-3 min-w-[150px] border-r border-slate-800">Pendidikan</th>
+                                            <th className="py-2.5 px-3 min-w-[150px] border-r border-slate-800">Pekerjaan</th>
+                                            <th className="py-2.5 px-3 min-w-[130px] border-r border-slate-800">Nama Ayah</th>
+                                            <th className="py-2.5 px-3 min-w-[130px] border-r border-slate-800">Nama Ibu</th>
                                             <th className="py-2.5 px-3 w-10 text-center">Aksi</th>
                                         </tr>
                                     </thead>
@@ -686,6 +760,41 @@ Tabel 2: Data Status dan Orang Tua
                                                         </select>
                                                     </td>
                                                     <td className="py-2 px-2.5 border-r border-slate-100">
+                                                        <select
+                                                            value={row.pendidikan || 'SLTA/Sederajat'}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'pendidikan', e.target.value)}
+                                                            className="w-full px-2 py-1 bg-slate-50 border border-slate-300 rounded text-slate-800 font-medium"
+                                                        >
+                                                            <option value="Tidak/Belum Sekolah">Tidak/Belum Sekolah</option>
+                                                            <option value="Belum Tamat SD/Sederajat">Belum Tamat SD/Sederajat</option>
+                                                            <option value="Tamat SD/Sederajat">Tamat SD/Sederajat</option>
+                                                            <option value="SLTP/Sederajat">SLTP/Sederajat</option>
+                                                            <option value="SLTA/Sederajat">SLTA/Sederajat</option>
+                                                            <option value="Diploma I/II">Diploma I/II</option>
+                                                            <option value="Diploma III/Akademi">Diploma III/Akademi</option>
+                                                            <option value="Diploma IV/Strata I">Diploma IV/Strata I</option>
+                                                            <option value="Strata II">Strata II</option>
+                                                            <option value="Strata III">Strata III</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="py-2 px-2.5 border-r border-slate-100">
+                                                        <select
+                                                            value={row.pekerjaan || 'Pelajar/Mahasiswa'}
+                                                            onChange={(e) => handleUpdateAnggota(idx, 'pekerjaan', e.target.value)}
+                                                            className="w-full px-2 py-1 bg-slate-50 border border-slate-300 rounded text-slate-800 font-medium"
+                                                        >
+                                                            <option value="Belum/Tidak Bekerja">Belum/Tidak Bekerja</option>
+                                                            <option value="Mengurus Rumah Tangga">Mengurus Rumah Tangga</option>
+                                                            <option value="Pelajar/Mahasiswa">Pelajar/Mahasiswa</option>
+                                                            <option value="PNS">PNS</option>
+                                                            <option value="Karyawan Swasta">Karyawan Swasta</option>
+                                                            <option value="Wiraswasta">Wiraswasta</option>
+                                                            <option value="Petani/Pekebun">Petani/Pekebun</option>
+                                                            <option value="Buruh Harian Lepas">Buruh Harian Lepas</option>
+                                                            <option value="Lainnya">Lainnya</option>
+                                                        </select>
+                                                    </td>
+                                                    <td className="py-2 px-2.5 border-r border-slate-100">
                                                         <input
                                                             type="text"
                                                             value={row.nama_ayah || ''}
@@ -717,7 +826,7 @@ Tabel 2: Data Status dan Orang Tua
                                             ))
                                         ) : (
                                             <tr>
-                                                <td colSpan="9" className="py-8 text-center text-slate-400 font-medium">
+                                                <td colSpan="11" className="py-8 text-center text-slate-400 font-medium">
                                                     Belum ada anggota keluarga. Tempelkan teks di atas lalu klik "Uraikan Ke Layout KK".
                                                 </td>
                                             </tr>
