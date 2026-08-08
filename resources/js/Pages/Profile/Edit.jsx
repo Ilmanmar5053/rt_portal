@@ -1,7 +1,7 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import WargaLayout from '@/Layouts/WargaLayout';
-import { Head, Link, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { Head, Link, usePage, useForm, router } from '@inertiajs/react';
+import { useState, useRef } from 'react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
@@ -15,6 +15,33 @@ export default function Edit({ mustVerifyEmail, status, wargaProfile, keluargaPr
 
     // Determine layout automatically based on user role
     const Layout = isWargaRole ? WargaLayout : AdminLayout;
+
+    // Avatar / Foto Profil Upload Logic
+    const avatarPath = user.avatar || (wargaProfile ? wargaProfile.foto_profil : null);
+    const fileInputRef = useRef(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleAvatarSelect = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setIsUploading(true);
+            const formData = new FormData();
+            formData.append('avatar', file);
+            router.post(route('profile.avatar.update'), formData, {
+                preserveScroll: true,
+                onFinish: () => {
+                    setIsUploading(false);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                }
+            });
+        }
+    };
+
+    const handleRemoveAvatar = () => {
+        if (confirm('Apakah Anda yakin ingin menghapus foto profil ini?')) {
+            router.delete(route('profile.avatar.delete'), { preserveScroll: true });
+        }
+    };
 
     const getRoleBadge = (role) => {
         switch (role) {
@@ -70,14 +97,70 @@ export default function Edit({ mustVerifyEmail, status, wargaProfile, keluargaPr
 
             <div className="py-6 max-w-6xl mx-auto space-y-5 px-4 sm:px-6 lg:px-8">
                 
-                {/* ICONIC USER HEADER CARD */}
+                {/* ICONIC USER HEADER CARD WITH AVATAR EDITOR */}
                 <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 rounded-3xl p-6 text-white shadow-xl border border-emerald-600/30 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                     
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 relative z-10">
-                        {/* Avatar Initial Circle */}
-                        <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl font-black text-white shadow-lg flex-shrink-0 border-2 border-white/30">
-                            {initial}
+                        
+                        {/* Avatar Image Frame & Interactive Upload Button */}
+                        <div className="flex flex-col items-center shrink-0">
+                            <div className="relative group">
+                                <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl overflow-hidden bg-white/20 backdrop-blur-md border-2 border-white/40 shadow-xl flex items-center justify-center relative">
+                                    {avatarPath ? (
+                                        <img 
+                                            src={`/storage/${avatarPath}`} 
+                                            alt={user.name} 
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-4xl sm:text-5xl font-black text-white">{initial}</span>
+                                    )}
+
+                                    {/* Hover Camera Overlay Button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-xs font-bold gap-1"
+                                        title="Klik untuk Upload / Ganti Foto Profil"
+                                    >
+                                        <span className="text-xl">📷</span>
+                                        <span className="text-[10px] uppercase font-black tracking-wider">Ubah Foto</span>
+                                    </button>
+                                </div>
+
+                                {/* Hidden File Input */}
+                                <input 
+                                    type="file" 
+                                    ref={fileInputRef} 
+                                    onChange={handleAvatarSelect} 
+                                    accept="image/jpeg,image/png,image/jpg,image/webp" 
+                                    className="hidden" 
+                                />
+                            </div>
+
+                            {/* Action Buttons underneath Avatar */}
+                            <div className="flex items-center gap-1.5 mt-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                    className="px-3 py-1 rounded-xl bg-white/20 hover:bg-white/30 text-white font-extrabold text-[11px] border border-white/30 transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                                >
+                                    <span>📷</span>
+                                    <span>{isUploading ? 'Uploading...' : (avatarPath ? 'Ganti Foto' : 'Upload Foto')}</span>
+                                </button>
+                                {avatarPath && (
+                                    <button
+                                        type="button"
+                                        onClick={handleRemoveAvatar}
+                                        className="px-2 py-1 rounded-xl bg-rose-500/40 hover:bg-rose-500/60 text-rose-100 font-extrabold text-[11px] border border-rose-300/40 transition shadow-2xs cursor-pointer"
+                                        title="Hapus foto profil"
+                                    >
+                                        🗑️
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* User Details */}
@@ -192,6 +275,32 @@ export default function Edit({ mustVerifyEmail, status, wargaProfile, keluargaPr
                                         <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] uppercase border border-emerald-200">
                                             {wargaProfile.status_hubungan_keluarga || 'Warga RT'}
                                         </span>
+                                    </div>
+
+                                    {/* FOTO PROFIL SUMMARY ROW */}
+                                    <div className="flex items-center gap-4 bg-emerald-50/70 p-3.5 rounded-2xl border border-emerald-100">
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden bg-emerald-200 border border-emerald-300 shrink-0 flex items-center justify-center shadow-xs">
+                                            {avatarPath ? (
+                                                <img src={`/storage/${avatarPath}`} alt="Foto Profil" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <span className="text-2xl font-black text-emerald-800">{initial}</span>
+                                            )}
+                                        </div>
+                                        <div className="space-y-0.5">
+                                            <h4 className="font-extrabold text-gray-900 text-xs sm:text-sm">
+                                                Foto Profil {wargaProfile.status_hubungan_keluarga === 'Kepala Keluarga' ? 'Kepala Keluarga' : 'Warga'}
+                                            </h4>
+                                            <p className="text-[11px] text-gray-500">
+                                                {avatarPath ? 'Foto profil resmi aktif & tersimpan' : 'Belum mengunggah foto profil.'}
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className="text-[11px] font-black text-emerald-700 hover:text-emerald-900 underline inline-block"
+                                            >
+                                                📷 Upload / Update Foto Profil Mandiri
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <div className="divide-y divide-gray-100 text-xs">

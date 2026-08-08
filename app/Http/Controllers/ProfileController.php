@@ -94,4 +94,60 @@ class ProfileController extends Controller
 
         return Redirect::to('/');
     }
+
+    /**
+     * Upload or Update profile picture (Avatar / Foto Profil)
+     */
+    public function updateAvatar(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ]);
+
+        $user = $request->user();
+
+        if ($request->hasFile('avatar')) {
+            // Delete old avatar if exists
+            if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+            }
+
+            $path = $request->file('avatar')->store('avatars', 'public');
+            $user->update(['avatar' => $path]);
+
+            // Sync with Warga model if linked
+            if ($user->warga) {
+                $user->warga->update(['foto_profil' => $path]);
+            } else {
+                $warga = Warga::where('nik', $user->nik ?? '')
+                    ->orWhere('nama_lengkap', 'like', "%{$user->name}%")
+                    ->first();
+                if ($warga) {
+                    $warga->update(['foto_profil' => $path]);
+                }
+            }
+        }
+
+        return redirect()->back()->with('message', 'Foto profil berhasil diperbarui.');
+    }
+
+    /**
+     * Hapus foto profil (Reset ke inisial default)
+     */
+    public function deleteAvatar(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        if ($user->avatar && \Illuminate\Support\Facades\Storage::disk('public')->exists($user->avatar)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($user->avatar);
+        }
+
+        $user->update(['avatar' => null]);
+
+        if ($user->warga) {
+            $user->warga->update(['foto_profil' => null]);
+        }
+
+        return redirect()->back()->with('message', 'Foto profil berhasil dihapus.');
+    }
 }

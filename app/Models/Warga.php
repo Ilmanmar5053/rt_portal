@@ -16,7 +16,7 @@ class Warga extends Model
         'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'agama', 
         'pendidikan', 'pekerjaan', 'status_perkawinan', 
         'status_hubungan_keluarga', 'kewarganegaraan', 'nama_ayah', 'nama_ibu',
-        'no_hp', 'status_hidup'
+        'no_hp', 'status_hidup', 'foto_profil'
     ];
 
     protected static function booted()
