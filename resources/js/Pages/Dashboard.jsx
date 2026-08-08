@@ -319,22 +319,77 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
         >
             <Head title="Dashboard Admin" />
 
+            {/* Custom Animation Keyframes for Welcome Banner */}
+            <style>{`
+                @keyframes handWave {
+                    0% { transform: rotate(0deg); }
+                    15% { transform: rotate(14deg); }
+                    30% { transform: rotate(-8deg); }
+                    45% { transform: rotate(14deg); }
+                    60% { transform: rotate(-4deg); }
+                    75% { transform: rotate(10deg); }
+                    100% { transform: rotate(0deg); }
+                }
+                .animate-hand-wave {
+                    display: inline-block;
+                    transform-origin: 70% 70%;
+                    animation: handWave 2s infinite;
+                }
+                @keyframes borderFlash {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .animate-border-flash {
+                    background-size: 250% 250%;
+                    animation: borderFlash 4s linear infinite;
+                }
+                @keyframes marqueeText {
+                    0% { transform: translateX(100%); }
+                    100% { transform: translateX(-100%); }
+                }
+                .animate-marquee-slow {
+                    display: inline-block;
+                    white-space: nowrap;
+                    animation: marqueeText 24s linear infinite;
+                }
+            `}</style>
+
             <div className="space-y-6 animate-in fade-in duration-300">
-                {/* Welcome Hero Banner (Fresh, Iconic & Modern) */}
-                <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-rose-900 rounded-3xl p-6 sm:p-7 shadow-lg shadow-emerald-900/10 text-white relative overflow-hidden">
-                    <div className="relative z-10">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-100 text-xs font-bold mb-2.5 border border-white/20">
-                            <span>🏡 Perumahan {namaPerumahan} • {namaRt}</span>
+                {/* Welcome Hero Banner WITH ANIMATED FLASH BORDER & SAY HI HAND WAVE */}
+                <div className="relative rounded-3xl p-[2.5px] bg-gradient-to-r from-amber-400 via-emerald-400 via-cyan-400 to-rose-400 animate-border-flash shadow-xl shadow-emerald-900/10 overflow-hidden">
+                    <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-teal-900 rounded-[22px] p-6 sm:p-7 text-white relative overflow-hidden">
+                        <div className="relative z-10">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-200 text-xs font-bold mb-2.5 border border-white/20">
+                                <span>🏡 Perumahan {namaPerumahan} • {namaRt}</span>
+                            </div>
+                            <h3 className="text-xl sm:text-2xl font-black mb-1.5 tracking-tight flex items-center gap-2 flex-wrap">
+                                <span>Selamat datang kembali,</span>
+                                <span className="bg-gradient-to-r from-amber-300 via-emerald-200 to-white bg-clip-text text-transparent font-black underline decoration-amber-400/50">
+                                    {auth.user.name}!
+                                </span>
+                                <span className="animate-hand-wave text-2xl sm:text-3xl ml-1 cursor-default" title="Say Hi!">👋</span>
+                            </h3>
+                            <p className="text-emerald-100/90 text-xs sm:text-sm font-medium">
+                                Ringkasan dan kendali cepat data kewargaan lingkungan hari ini di Perumahan {namaPerumahan}.
+                            </p>
                         </div>
-                        <h3 className="text-xl sm:text-2xl font-black mb-1.5 tracking-tight">
-                            Selamat datang kembali, {auth.user.name}! 👋
-                        </h3>
-                        <p className="text-emerald-100/90 text-xs sm:text-sm font-medium">
-                            Ringkasan dan kendali cepat data kewargaan lingkungan hari ini di Perumahan {namaPerumahan}.
-                        </p>
-                    </div>
-                    <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
-                        <svg className="w-56 h-56" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+
+                        {/* Marquee Running Text Announcement Banner */}
+                        <div className="mt-4 pt-3 border-t border-white/10 overflow-hidden relative flex items-center bg-black/20 rounded-xl px-3 py-1.5 text-xs text-amber-300 font-bold">
+                            <span className="bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-md text-[10px] uppercase font-black tracking-wider mr-3 shrink-0 border border-amber-300/30">
+                                📢 Info RT
+                            </span>
+                            <div className="overflow-hidden w-full relative">
+                                <div className="animate-marquee-slow font-mono text-[11px] tracking-wide">
+                                    ⚡ Selamat Datang di Portal RT Digital • Layanan Mandiri Kewargaan, Transparansi Kas Realtime, Notifikasi Live & Pengaduan Warga • Tetap jaga kerukunan & kebersihan lingkungan RT 009 / RW 006.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+                            <svg className="w-56 h-56" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                        </div>
                     </div>
                 </div>
 
@@ -718,22 +773,43 @@ function WargaDashboardContent({ auth, warga, quickLinks, iurans, surats, pengad
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
-            {/* Welcome Banner Warga */}
-            <div className="bg-gradient-to-r from-emerald-800 via-teal-800 to-rose-900 rounded-3xl p-6 sm:p-7 shadow-lg shadow-emerald-900/10 text-white relative overflow-hidden">
-                <div className="relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-100 text-xs font-bold mb-2.5 border border-white/20">
-                        <span>🏡 Perumahan {namaPerumahan} • {namaRt}</span>
+            {/* Welcome Banner Warga WITH ANIMATED FLASH BORDER & SAY HI HAND WAVE */}
+            <div className="relative rounded-3xl p-[2.5px] bg-gradient-to-r from-amber-400 via-emerald-400 via-cyan-400 to-rose-400 animate-border-flash shadow-xl shadow-emerald-900/10 overflow-hidden">
+                <div className="bg-gradient-to-r from-slate-900 via-emerald-950 to-teal-900 rounded-[22px] p-6 sm:p-7 text-white relative overflow-hidden">
+                    <div className="relative z-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-emerald-200 text-xs font-bold mb-2.5 border border-white/20">
+                            <span>🏡 Perumahan {namaPerumahan} • {namaRt}</span>
+                        </div>
+                        <h3 className="text-xl sm:text-2xl font-black mb-1.5 tracking-tight flex items-center gap-2 flex-wrap">
+                            <span>Selamat datang,</span>
+                            <span className="bg-gradient-to-r from-amber-300 via-emerald-200 to-white bg-clip-text text-transparent font-black underline decoration-amber-400/50">
+                                {auth.user.name}!
+                            </span>
+                            <span className="animate-hand-wave text-2xl sm:text-3xl ml-1 cursor-default" title="Say Hi!">👋</span>
+                        </h3>
+                        <p className="text-emerald-100/90 text-xs sm:text-sm font-medium">Pantau kewargaan dan layanan lingkungan secara langsung dan transparan.</p>
+                        {warga && (
+                            <p className="mt-3 text-xs bg-white/15 inline-block px-3 py-1.5 rounded-full font-bold border border-white/20">
+                                👤 {warga.nama_lengkap} &mdash; {warga.status_hubungan_keluarga || 'Warga'}
+                            </p>
+                        )}
                     </div>
-                    <h3 className="text-xl sm:text-2xl font-black mb-1.5 tracking-tight">Selamat datang, {auth.user.name}! 👋</h3>
-                    <p className="text-emerald-100/90 text-xs sm:text-sm font-medium">Pantau kewargaan dan layanan lingkungan secara langsung dan transparan.</p>
-                    {warga && (
-                        <p className="mt-3 text-xs bg-white/15 inline-block px-3 py-1.5 rounded-full font-bold">
-                            👤 {warga.nama_lengkap} &mdash; {warga.status_hubungan_keluarga || 'Warga'}
-                        </p>
-                    )}
-                </div>
-                <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
-                    <svg className="w-56 h-56" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+
+                    {/* Marquee Running Text Announcement Banner */}
+                    <div className="mt-4 pt-3 border-t border-white/10 overflow-hidden relative flex items-center bg-black/20 rounded-xl px-3 py-1.5 text-xs text-amber-300 font-bold">
+                        <span className="bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded-md text-[10px] uppercase font-black tracking-wider mr-3 shrink-0 border border-amber-300/30">
+                            📢 Info RT
+                        </span>
+                        <div className="overflow-hidden w-full relative">
+                            <div className="animate-marquee-slow font-mono text-[11px] tracking-wide">
+                                ⚡ Selamat Datang Warga RT 009 / RW 006 • Manfaatkan Fitur Layanan Surat Online, Cek Iuran Kas & Pengaduan Realtime • Lingkungan Aman, Warga Rukun & Sejahtera!
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="absolute right-0 top-0 opacity-10 pointer-events-none transform translate-x-1/4 -translate-y-1/4">
+                        <svg className="w-56 h-56" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                    </div>
                 </div>
             </div>
 
