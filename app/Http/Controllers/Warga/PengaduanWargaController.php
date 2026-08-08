@@ -101,7 +101,23 @@ class PengaduanWargaController extends Controller
         $validated['is_anonim'] = $request->boolean('is_anonim');
         $validated['status_progres'] = 'Diajukan';
 
-        Pengaduan::create($validated);
+        $pengaduan = Pengaduan::create($validated);
+
+        // Trigger Notifikasi Realtime untuk Admin Portal
+        \App\Models\Notifikasi::create([
+            'user_id' => null,
+            'target_role' => 'admin',
+            'type' => 'pengaduan_baru',
+            'title' => '📢 Pengaduan Baru dari Warga!',
+            'message' => ($request->boolean('is_anonim') ? 'Warga Anonim' : $warga->nama_lengkap) . ' mengajukan: "' . $validated['judul'] . '"',
+            'url' => route('admin.pengaduan.show', $pengaduan->id),
+            'is_read' => false,
+            'meta_data' => [
+                'pengaduan_id' => $pengaduan->id,
+                'kategori' => $validated['kategori'],
+                'nama_warga' => $request->boolean('is_anonim') ? 'Anonim' : $warga->nama_lengkap,
+            ]
+        ]);
 
         return redirect()->route('warga.pengaduan.index')->with('success', 'Pengaduan berhasil dikirim.');
     }

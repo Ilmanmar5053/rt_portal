@@ -92,7 +92,7 @@ class PengaduanController extends Controller
      */
     public function addComment(Request $request, $id)
     {
-        $pengaduan = Pengaduan::findOrFail($id);
+        $pengaduan = Pengaduan::with('warga.user')->findOrFail($id);
 
         $validated = $request->validate([
             'komentar' => 'required|string|max:2000'
@@ -104,7 +104,24 @@ class PengaduanController extends Controller
             'komentar' => $validated['komentar']
         ]);
 
-        return redirect()->route('admin.pengaduan.show', $pengaduan->id)->with('success', 'Komentar berhasil ditambahkan.');
+        // Trigger Notifikasi Realtime untuk Warga
+        if ($pengaduan->warga && $pengaduan->warga->user_id) {
+            \App\Models\Notifikasi::create([
+                'user_id' => $pengaduan->warga->user_id,
+                'target_role' => 'warga',
+                'type' => 'tanggapan_pengaduan',
+                'title' => '💬 Tanggapan Baru dari Pengurus RT!',
+                'message' => 'Pengurus RT menanggapi pengaduan Anda: "' . $pengaduan->judul . '"',
+                'url' => route('warga.pengaduan.show', $pengaduan->id),
+                'is_read' => false,
+                'meta_data' => [
+                    'pengaduan_id' => $pengaduan->id,
+                    'status' => $pengaduan->status_progres,
+                ]
+            ]);
+        }
+
+        return redirect()->route('admin.pengaduan.show', $pengaduan->id)->with('success', 'Tanggapan berhasil dikirim.');
     }
 
     public function edit($id)
@@ -120,7 +137,7 @@ class PengaduanController extends Controller
 
     public function update(Request $request, $id)
     {
-        $pengaduan = Pengaduan::findOrFail($id);
+        $pengaduan = Pengaduan::with('warga.user')->findOrFail($id);
 
         $validated = $request->validate([
             'warga_id' => 'required|exists:wargas,id',
@@ -138,13 +155,29 @@ class PengaduanController extends Controller
         $updateData = collect($validated)->except(['komentar'])->toArray();
         $pengaduan->update($updateData);
 
-        // Jika admin mengirim komentar, simpan ke pengaduan_logs (PengaduanLog)
+        // Jika admin mengirim komentar, simpan ke pengaduan_logs (PengaduanLog) & kirim notifikasi
         if (!empty($validated['komentar'])) {
             PengaduanLog::create([
                 'pengaduan_id' => $pengaduan->id,
                 'user_id' => auth()->id(),
                 'komentar' => $validated['komentar']
             ]);
+
+            if ($pengaduan->warga && $pengaduan->warga->user_id) {
+                \App\Models\Notifikasi::create([
+                    'user_id' => $pengaduan->warga->user_id,
+                    'target_role' => 'warga',
+                    'type' => 'tanggapan_pengaduan',
+                    'title' => '💬 Tanggapan Baru dari Pengurus RT!',
+                    'message' => 'Pengurus RT menanggapi pengaduan Anda: "' . $pengaduan->judul . '"',
+                    'url' => route('warga.pengaduan.show', $pengaduan->id),
+                    'is_read' => false,
+                    'meta_data' => [
+                        'pengaduan_id' => $pengaduan->id,
+                        'status' => $pengaduan->status_progres,
+                    ]
+                ]);
+            }
         }
 
         return redirect()->route('admin.pengaduan.index')->with('success', 'Pengaduan berhasil diperbarui.');

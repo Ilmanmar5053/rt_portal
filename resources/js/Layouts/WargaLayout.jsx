@@ -1,4 +1,5 @@
 import Dropdown from '@/Components/Dropdown';
+import NotificationToast from '@/Components/NotificationToast';
 import { Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
@@ -433,6 +434,7 @@ export default function WargaLayout({ header, children }) {
                     </footer>
                 </main>
             </div>
+            <NotificationToast role="warga" />
         </div>
     );
 }
