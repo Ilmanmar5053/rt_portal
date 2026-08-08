@@ -773,6 +773,42 @@ function WargaDashboardContent({ auth, warga, quickLinks, iurans, surats, pengad
 
     return (
         <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Custom Animation Keyframes for Welcome Banner */}
+            <style>{`
+                @keyframes handWave {
+                    0% { transform: rotate(0deg); }
+                    15% { transform: rotate(14deg); }
+                    30% { transform: rotate(-8deg); }
+                    45% { transform: rotate(14deg); }
+                    60% { transform: rotate(-4deg); }
+                    75% { transform: rotate(10deg); }
+                    100% { transform: rotate(0deg); }
+                }
+                .animate-hand-wave {
+                    display: inline-block;
+                    transform-origin: 70% 70%;
+                    animation: handWave 2s infinite;
+                }
+                @keyframes borderFlash {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                }
+                .animate-border-flash {
+                    background-size: 250% 250%;
+                    animation: borderFlash 4s linear infinite;
+                }
+                @keyframes marqueeText {
+                    0% { transform: translateX(100%); }
+                    100% { transform: translateX(-100%); }
+                }
+                .animate-marquee-slow {
+                    display: inline-block;
+                    white-space: nowrap;
+                    animation: marqueeText 24s linear infinite;
+                }
+            `}</style>
+
             {/* Welcome Banner Warga WITH ANIMATED FLASH BORDER & SAY HI HAND WAVE */}
             <div className="relative rounded-3xl p-[2px] bg-gradient-to-r from-emerald-300 via-teal-200 via-sky-300 to-amber-200 animate-border-flash shadow-lg shadow-emerald-600/15 overflow-hidden">
                 <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 rounded-[22px] p-6 sm:p-7 text-white relative overflow-hidden">
