@@ -7,6 +7,34 @@ use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    public function index(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['notifications' => [], 'unread_count' => 0]);
+        }
+
+        $baseQuery = Notifikasi::latest();
+
+        if (in_array($user->role, ['superadmin', 'rw', 'rt', 'bendahara', 'sekretaris'])) {
+            $baseQuery->where(function ($q) use ($user) {
+                $q->where('target_role', 'admin')
+                  ->orWhere('user_id', $user->id);
+            });
+        } else {
+            $baseQuery->where('user_id', $user->id)
+                  ->where('target_role', 'warga');
+        }
+
+        $unreadCount = (clone $baseQuery)->where('is_read', false)->count();
+        $notifications = (clone $baseQuery)->take(15)->get();
+
+        return response()->json([
+            'notifications' => $notifications,
+            'unread_count' => $unreadCount,
+        ]);
+    }
+
     public function unread(Request $request)
     {
         $user = auth()->user();
@@ -26,7 +54,6 @@ class NotificationController extends Controller
                   ->where('target_role', 'warga');
         }
 
-        // Optional: filter since timestamp
         if ($request->has('since') && !empty($request->since)) {
             $query->where('created_at', '>', $request->since);
         }

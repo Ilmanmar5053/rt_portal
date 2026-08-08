@@ -1,5 +1,6 @@
 import Dropdown from '@/Components/Dropdown';
 import NotificationToast from '@/Components/NotificationToast';
+import NotificationBar from '@/Components/NotificationBar';
 import { Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import { Transition } from '@headlessui/react';
@@ -591,7 +592,10 @@ export default function AdminLayout({ header, children }) {
                                 {currentTime.toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
                             </span>
                         </div>
-                        
+
+                        {/* Bilah Notifikasi Dropdown Bell */}
+                        <NotificationBar />
+
                         <Dropdown>
                             <Dropdown.Trigger>
                                 <button className="flex items-center space-x-2 text-sm focus:outline-none p-1.5 rounded-lg hover:bg-gray-50 transition-colors">
