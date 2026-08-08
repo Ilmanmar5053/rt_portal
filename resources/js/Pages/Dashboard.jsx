@@ -48,6 +48,7 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
 
     // Monitoring Active Users State & Polling
     const [activeUsers, setActiveUsers] = useState({ count: 0, users: [] });
+    const [isMonitoringOpen, setIsMonitoringOpen] = useState(false);
     useEffect(() => {
         if (!isAdmin) return;
         
@@ -337,86 +338,103 @@ export default function Dashboard({ iurans, surats, pengaduans, warga, adminStat
                     </div>
                 </div>
 
-                {/* Live Monitoring Active Users */}
-                <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-emerald-100 overflow-hidden relative">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-5">
+                {/* Live Monitoring Active Users (Folded / Show-Hide Collapsible) */}
+                <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-emerald-100 overflow-hidden relative transition-all duration-300">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <div className="flex items-center gap-3">
                             {/* Sonar Indicator */}
-                            <div className="relative flex items-center justify-center w-8 h-8">
+                            <div className="relative flex items-center justify-center w-8 h-8 shrink-0">
                                 <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
                                 <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
                             </div>
                             <div>
-                                <h3 className="text-lg font-black text-gray-800 tracking-tight flex items-center gap-2">
-                                    Monitoring Pengunjung Aktif
-                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold border border-emerald-200">Live</span>
+                                <h3 className="text-base sm:text-lg font-black text-gray-800 tracking-tight flex items-center gap-2">
+                                    <span>Monitoring Pengunjung Aktif</span>
+                                    <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] uppercase font-bold border border-emerald-200">
+                                        {activeUsers.count} Online
+                                    </span>
                                 </h3>
-                                <p className="text-xs text-gray-500 mt-0.5">Pemantauan aktivitas {activeUsers.count} pengguna secara real-time</p>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Pemantauan aktivitas {activeUsers.count} pengguna terdaftar secara real-time
+                                </p>
                             </div>
                         </div>
+
+                        {/* Show / Hide Toggle Button */}
+                        <button
+                            type="button"
+                            onClick={() => setIsMonitoringOpen(prev => !prev)}
+                            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 font-extrabold text-xs transition cursor-pointer shrink-0"
+                        >
+                            <span>{isMonitoringOpen ? '🙈 Sembunyikan Detail' : '👁️ Tampilkan Monitoring User'}</span>
+                            <span className="text-xs">{isMonitoringOpen ? '▲' : '▼'}</span>
+                        </button>
                     </div>
                     
-                    <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-inner bg-gray-50/50">
-                        <table className="w-full text-left border-collapse whitespace-nowrap">
-                            <thead>
-                                <tr className="bg-gray-100/80 border-b border-gray-200">
-                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Pengguna</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Lokasi / Keterangan</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">IP Address</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Modul Diakses</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Browser</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {activeUsers.users.length > 0 ? (
-                                    activeUsers.users.map((user, idx) => (
-                                        <tr key={user.id || idx} className="hover:bg-white transition-colors">
-                                            <td className="px-4 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs shrink-0">
-                                                        {user.name.charAt(0)}
+                    {/* Collapsible Table Content */}
+                    {isMonitoringOpen && (
+                        <div className="mt-4 overflow-x-auto rounded-2xl border border-gray-100 shadow-inner bg-gray-50/50 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <table className="w-full text-left border-collapse whitespace-nowrap">
+                                <thead>
+                                    <tr className="bg-gray-100/80 border-b border-gray-200">
+                                        <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Pengguna</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Lokasi / Keterangan</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">IP Address</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Modul Diakses</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider">Browser</th>
+                                        <th className="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-wider text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100">
+                                    {activeUsers.users.length > 0 ? (
+                                        activeUsers.users.map((user, idx) => (
+                                            <tr key={user.id || idx} className="hover:bg-white transition-colors">
+                                                <td className="px-4 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-xs shrink-0">
+                                                            {user.name.charAt(0)}
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm font-bold text-gray-800">{user.name}</div>
+                                                            <div className="text-[10px] text-gray-500 uppercase">{user.role.replace('_', ' ')}</div>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <div className="text-sm font-bold text-gray-800">{user.name}</div>
-                                                        <div className="text-[10px] text-gray-500 uppercase">{user.role.replace('_', ' ')}</div>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs font-semibold text-gray-700">
+                                                    {user.lokasi}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <span className="font-mono text-[11px] text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{user.ip_address}</span>
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-gray-600">
+                                                    {user.module}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="text-[11px] text-gray-500 max-w-[150px] truncate" title={user.browser}>
+                                                        {user.browser}
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-xs font-semibold text-gray-700">
-                                                {user.lokasi}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <span className="font-mono text-[11px] text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{user.ip_address}</span>
-                                            </td>
-                                            <td className="px-4 py-3 text-xs text-gray-600">
-                                                {user.module}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <div className="text-[11px] text-gray-500 max-w-[150px] truncate" title={user.browser}>
-                                                    {user.browser}
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-right">
-                                                <div className="flex flex-col items-end">
-                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${user.is_idle ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
-                                                        {user.is_idle ? '🟡' : '🟢'} {user.idle_text}
-                                                    </span>
-                                                    <span className="text-[9px] text-gray-400 mt-1 font-semibold">Login: {user.login_time}</span>
-                                                </div>
+                                                </td>
+                                                <td className="px-4 py-3 text-right">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold ${user.is_idle ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}>
+                                                            {user.is_idle ? '🟡' : '🟢'} {user.idle_text}
+                                                        </span>
+                                                        <span className="text-[9px] text-gray-400 mt-1 font-semibold">Login: {user.login_time}</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="6" className="px-4 py-8 text-center text-gray-500 text-sm font-medium">
+                                                Tidak ada pengguna aktif saat ini.
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan="6" className="px-4 py-8 text-center text-gray-500 text-sm font-medium">
-                                            Tidak ada pengguna aktif saat ini.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 {/* 5 Stats Cards — Rapat, Minimalis & Compact (Kotak Tidak Lebar) */}
