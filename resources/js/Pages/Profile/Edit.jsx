@@ -1,17 +1,17 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import WargaLayout from '@/Layouts/WargaLayout';
-import { Head, usePage } from '@inertiajs/react';
+import { Head, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import DeleteUserForm from './Partials/DeleteUserForm';
 import UpdatePasswordForm from './Partials/UpdatePasswordForm';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm';
 
-export default function Edit({ mustVerifyEmail, status }) {
-    const { auth, profil } = usePage().props;
+export default function Edit({ mustVerifyEmail, status, wargaProfile, keluargaProfile, anggotaKeluarga = [] }) {
+    const { auth } = usePage().props;
     const user = auth?.user || {};
-    const isWargaRole = user.role === 'warga';
+    const isWargaRole = ['warga', 'warga_kk', 'warga_anggota'].includes(user.role);
 
-    const [activeTab, setActiveTab] = useState('info'); // 'info' | 'password' | 'danger'
+    const [activeTab, setActiveTab] = useState(wargaProfile ? 'warga_data' : 'info'); // 'warga_data' | 'info' | 'password' | 'danger'
 
     // Determine layout automatically based on user role
     const Layout = isWargaRole ? WargaLayout : AdminLayout;
@@ -28,6 +28,10 @@ export default function Edit({ mustVerifyEmail, status }) {
                 return { label: '💰 Bendahara RT', bg: 'bg-teal-100 text-teal-800 border-teal-200' };
             case 'sekretaris':
                 return { label: '📝 Sekretaris RT', bg: 'bg-blue-100 text-blue-800 border-blue-200' };
+            case 'warga_kk':
+                return { label: '🏡 Kepala Keluarga', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+            case 'warga_anggota':
+                return { label: '👨‍👩‍👧‍👦 Anggota Warga', bg: 'bg-cyan-100 text-cyan-800 border-cyan-200' };
             default:
                 return { label: '🏡 Warga RT', bg: 'bg-cyan-100 text-cyan-800 border-cyan-200' };
         }
@@ -36,117 +40,457 @@ export default function Edit({ mustVerifyEmail, status }) {
     const roleInfo = getRoleBadge(user.role);
     const initial = (user.name || 'U').charAt(0).toUpperCase();
 
-    return (
-        <Layout header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Profil Akun</h2>}>
-            <Head title="Profil Akun" />
+    // Calculate age if tanggal_lahir exists
+    const getUsia = (tglLahir) => {
+        if (!tglLahir) return null;
+        const birth = new Date(tglLahir);
+        const now = new Date();
+        let age = now.getFullYear() - birth.getFullYear();
+        const m = now.getMonth() - birth.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+            age--;
+        }
+        return age > 0 ? `${age} Tahun` : null;
+    };
 
-            <div className="py-6 max-w-5xl mx-auto space-y-5 px-4 sm:px-6 lg:px-8">
+    // Format tanggal Indonesia
+    const formatTanggal = (tglStr) => {
+        if (!tglStr) return '-';
+        try {
+            const date = new Date(tglStr);
+            return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+        } catch (e) {
+            return tglStr;
+        }
+    };
+
+    return (
+        <Layout header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Profil Saya</h2>}>
+            <Head title="Profil Warga" />
+
+            <div className="py-6 max-w-6xl mx-auto space-y-5 px-4 sm:px-6 lg:px-8">
                 
                 {/* ICONIC USER HEADER CARD */}
-                <div className="bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 rounded-3xl p-6 text-white shadow-xl border border-slate-800 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+                <div className="bg-gradient-to-r from-emerald-700 via-teal-700 to-cyan-800 rounded-3xl p-6 text-white shadow-xl border border-emerald-600/30 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                     
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 relative z-10">
                         {/* Avatar Initial Circle */}
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-3xl font-black text-white shadow-lg shadow-cyan-500/30 flex-shrink-0 border-2 border-white/20">
+                        <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl font-black text-white shadow-lg flex-shrink-0 border-2 border-white/30">
                             {initial}
                         </div>
 
                         {/* User Details */}
                         <div className="flex-1 text-center sm:text-left space-y-1.5">
                             <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                                <h1 className="text-xl font-black tracking-tight">{user.name}</h1>
-                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border ${roleInfo.bg}`}>
+                                <h1 className="text-xl sm:text-2xl font-black tracking-tight">{wargaProfile ? wargaProfile.nama_lengkap : user.name}</h1>
+                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-black border shadow-xs ${roleInfo.bg}`}>
                                     {roleInfo.label}
                                 </span>
                             </div>
 
-                            <p className="text-xs text-cyan-200/80 font-mono font-medium flex items-center justify-center sm:justify-start gap-1">
-                                ✉️ {user.email}
+                            <p className="text-xs text-emerald-100 font-mono font-medium flex items-center justify-center sm:justify-start gap-1.5">
+                                <span>✉️ {user.email}</span>
+                                {wargaProfile && <span>• 🆔 NIK: <strong>{wargaProfile.nik}</strong></span>}
                             </p>
 
                             <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-[11px] font-bold">
-                                {user.email_verified_at ? (
-                                    <span className="bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-lg border border-emerald-500/30 flex items-center gap-1">
-                                        ✓ Email Terverifikasi
-                                    </span>
-                                ) : (
-                                    <span className="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-500/30 flex items-center gap-1">
-                                        ⚠️ Belum Verifikasi
+                                {keluargaProfile && (
+                                    <span className="bg-white/20 text-white px-2.5 py-1 rounded-lg border border-white/30 flex items-center gap-1">
+                                        📜 No. KK: {keluargaProfile.no_kk}
                                     </span>
                                 )}
-                                <span className="bg-white/10 text-slate-200 px-2.5 py-1 rounded-lg border border-white/10">
-                                    ID Akun: #{user.id}
-                                </span>
+                                {keluargaProfile && (keluargaProfile.rumah_blok?.blok || keluargaProfile.blok) && (
+                                    <span className="bg-amber-300 text-emerald-950 px-2.5 py-1 rounded-lg border border-amber-400 flex items-center gap-1 font-extrabold shadow-2xs">
+                                        🏠 Rumah: Blok {keluargaProfile.rumah_blok?.blok || keluargaProfile.blok} No. {keluargaProfile.rumah_blok?.nomor_rumah || keluargaProfile.nomor_rumah}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
                         {/* Quick Navigation Tabs */}
-                        <div className="flex bg-slate-800/80 p-1.5 rounded-2xl border border-slate-700/60 sm:self-end">
+                        <div className="flex flex-wrap justify-center bg-black/20 p-1.5 rounded-2xl border border-white/20 sm:self-end gap-1">
+                            {wargaProfile && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('warga_data')}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                        activeTab === 'warga_data'
+                                            ? 'bg-amber-300 text-emerald-950 shadow-sm font-black'
+                                            : 'text-white/90 hover:text-white hover:bg-white/10'
+                                    }`}
+                                >
+                                    📋 Profil Warga (KK)
+                                </button>
+                            )}
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('info')}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     activeTab === 'info'
-                                        ? 'bg-cyan-500 text-slate-950 shadow-sm font-black'
-                                        : 'text-slate-300 hover:text-white'
+                                        ? 'bg-white text-emerald-950 shadow-sm font-black'
+                                        : 'text-white/90 hover:text-white hover:bg-white/10'
                                 }`}
                             >
-                                👤 Profil
+                                ⚙️ Akun Login
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('password')}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     activeTab === 'password'
-                                        ? 'bg-cyan-500 text-slate-950 shadow-sm font-black'
-                                        : 'text-slate-300 hover:text-white'
+                                        ? 'bg-white text-emerald-950 shadow-sm font-black'
+                                        : 'text-white/90 hover:text-white hover:bg-white/10'
                                 }`}
                             >
-                                🔑 Password
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab('danger')}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                    activeTab === 'danger'
-                                        ? 'bg-rose-600 text-white shadow-sm font-black'
-                                        : 'text-rose-300 hover:text-rose-100'
-                                }`}
-                            >
-                                ⚠️ Hapus
+                                🔑 Ubah Password
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {/* COMPACT & INFORMATIVE CONTENT CARDS */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    
-                    {/* Card 1: Informasi Profil */}
-                    <div className={`bg-white rounded-3xl p-6 shadow-sm border border-gray-100 transition-all ${
-                        activeTab === 'info' ? 'ring-2 ring-blue-500/20' : ''
-                    }`}>
+                {/* ── TAB 1: MASTER DATA WARGA (RINGKASAN SINKRONISASI KK) ── */}
+                {activeTab === 'warga_data' && (
+                    <div className="space-y-5 animate-in fade-in duration-200">
+                        
+                        {/* NOTICE BANNER READ ONLY */}
+                        <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-900 text-xs font-medium flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                            <div className="flex items-start gap-2.5">
+                                <span className="text-xl shrink-0">ℹ️</span>
+                                <div className="space-y-0.5">
+                                    <p className="font-extrabold text-emerald-950 text-sm">
+                                        Data Profil Warga Terintegrasi Master Data KK RT
+                                    </p>
+                                    <p className="text-emerald-800 text-[11px] leading-relaxed">
+                                        Informasi ini tersinkronisasi langsung secara real-time dari Master Data Kartu Keluarga RT. Halaman ini bersifat <strong>Ringkasan (Read-Only)</strong>. Jika ada kesalahan data, silakan gunakan fitur Pengkinian Data.
+                                    </p>
+                                </div>
+                            </div>
+                            <Link
+                                href={route('warga.pengkinian-data.index')}
+                                className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs shadow-xs transition shrink-0 whitespace-nowrap"
+                            >
+                                ✏️ Pengkinian Data Warga →
+                            </Link>
+                        </div>
+
+                        {/* GRID TABLE INFORMASI LENGKAP WARGA & KK */}
+                        {wargaProfile ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                                
+                                {/* TABLE CARD 1: IDENTITAS PRIBADI WARGA */}
+                                <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 space-y-4">
+                                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm font-black">
+                                                👤
+                                            </span>
+                                            <h3 className="font-extrabold text-base text-gray-900">
+                                                Identitas Pribadi Warga
+                                            </h3>
+                                        </div>
+                                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-extrabold text-[10px] uppercase border border-emerald-200">
+                                            {wargaProfile.status_hubungan_keluarga || 'Warga RT'}
+                                        </span>
+                                    </div>
+
+                                    <div className="divide-y divide-gray-100 text-xs">
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Nomor NIK</span>
+                                            <span className="col-span-2 font-mono font-bold text-gray-900 tracking-wider">
+                                                {wargaProfile.nik || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Nama Lengkap</span>
+                                            <span className="col-span-2 font-bold text-gray-900 uppercase">
+                                                {wargaProfile.nama_lengkap || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Jenis Kelamin</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.jenis_kelamin === 'Laki-laki' ? '👨 Laki-laki' : '👩 Perempuan'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Tempat, Tgl Lahir</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.tempat_lahir || '-'}, {formatTanggal(wargaProfile.tanggal_lahir)} {getUsia(wargaProfile.tanggal_lahir) && `(${getUsia(wargaProfile.tanggal_lahir)})`}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Agama</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.agama || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Pendidikan Terakhir</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.pendidikan || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Pekerjaan</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.pekerjaan || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Status Perkawinan</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.status_perkawinan || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Status Hubungan</span>
+                                            <span className="col-span-2 font-bold text-emerald-800">
+                                                {wargaProfile.status_hubungan_keluarga || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Kewarganegaraan</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.kewarganegaraan || 'WNI'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Orang Tua (Ayah / Ibu)</span>
+                                            <span className="col-span-2 font-semibold text-gray-800">
+                                                {wargaProfile.nama_ayah || '-'} / {wargaProfile.nama_ibu || '-'}
+                                            </span>
+                                        </div>
+
+                                        <div className="py-2.5 grid grid-cols-3 gap-2">
+                                            <span className="text-gray-500 font-semibold">Status Keberadaan</span>
+                                            <span className="col-span-2">
+                                                <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
+                                                    🟢 {wargaProfile.status_hidup || 'Hidup'}
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* TABLE CARD 2: DATA KARTU KELUARGA & DOMISILI RT */}
+                                <div className="space-y-5">
+                                    <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 space-y-4">
+                                        <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-8 h-8 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center text-sm font-black">
+                                                    🏡
+                                                </span>
+                                                <h3 className="font-extrabold text-base text-gray-900">
+                                                    Data Kartu Keluarga & Rumah RT
+                                                </h3>
+                                            </div>
+                                            <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase border border-blue-200">
+                                                Terdaftar KK
+                                            </span>
+                                        </div>
+
+                                        {keluargaProfile ? (
+                                            <div className="divide-y divide-gray-100 text-xs">
+                                                <div className="py-2.5 grid grid-cols-3 gap-2">
+                                                    <span className="text-gray-500 font-semibold">Nomor KK</span>
+                                                    <span className="col-span-2 font-mono font-bold text-gray-900 tracking-wider">
+                                                        {keluargaProfile.no_kk || '-'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="py-2.5 grid grid-cols-3 gap-2">
+                                                    <span className="text-gray-500 font-semibold">Kepala Keluarga</span>
+                                                    <span className="col-span-2 font-bold text-gray-900 uppercase">
+                                                        {keluargaProfile.kepala_keluarga_nama || (keluargaProfile.kepala_keluarga ? keluargaProfile.kepala_keluarga.nama_lengkap : '-')}
+                                                    </span>
+                                                </div>
+
+                                                <div className="py-2.5 grid grid-cols-3 gap-2">
+                                                    <span className="text-gray-500 font-semibold">Blok & No. Rumah</span>
+                                                    <span className="col-span-2 font-extrabold text-emerald-700">
+                                                        Blok {keluargaProfile.rumah_blok?.blok || keluargaProfile.blok || '-'} No. {keluargaProfile.rumah_blok?.nomor_rumah || keluargaProfile.nomor_rumah || '-'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="py-2.5 grid grid-cols-3 gap-2">
+                                                    <span className="text-gray-500 font-semibold">Alamat Lengkap</span>
+                                                    <span className="col-span-2 font-semibold text-gray-800">
+                                                        {keluargaProfile.alamat_lengkap || '-'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="py-2.5 grid grid-cols-3 gap-2">
+                                                    <span className="text-gray-500 font-semibold">Wilayah RT / RW</span>
+                                                    <span className="col-span-2 font-bold text-gray-900">
+                                                        RT {keluargaProfile.rt || '005'} / RW {keluargaProfile.rw || '008'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="py-2.5 grid grid-cols-3 gap-2">
+                                                    <span className="text-gray-500 font-semibold">Kelurahan / Kec.</span>
+                                                    <span className="col-span-2 font-semibold text-gray-800">
+                                                        {keluargaProfile.kelurahan || 'Pontang'} / {keluargaProfile.kecamatan || 'Pontang'}
+                                                    </span>
+                                                </div>
+
+                                                <div className="py-2.5 grid grid-cols-3 gap-2">
+                                                    <span className="text-gray-500 font-semibold">Kota & Provinsi</span>
+                                                    <span className="col-span-2 font-semibold text-gray-800">
+                                                        {keluargaProfile.kabupaten_kota || 'Kab. Serang'}, {keluargaProfile.provinsi || 'Banten'} ({keluargaProfile.kode_pos || '42135'})
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs text-gray-500 py-4 text-center italic">
+                                                Data Kartu Keluarga belum dikaitkan secara lengkap.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* TABLE CARD 3: DAFTAR ANGGOTA KELUARGA DALAM 1 KK */}
+                                <div className="lg:col-span-2 bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100 space-y-4">
+                                    <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                                        <div className="flex items-center gap-2">
+                                            <span className="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center text-sm font-black">
+                                                👨‍👩‍👧‍👦
+                                            </span>
+                                            <div>
+                                                <h3 className="font-extrabold text-base text-gray-900">
+                                                    Daftar Anggota Keluarga (Satu KK)
+                                                </h3>
+                                                <p className="text-[11px] text-gray-500">
+                                                    Total {anggotaKeluarga.length} orang terdaftar dalam KK No. {keluargaProfile?.no_kk || '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-extrabold text-[10px] border border-purple-200">
+                                            {anggotaKeluarga.length} Anggota
+                                        </span>
+                                    </div>
+
+                                    <div className="overflow-x-auto rounded-2xl border border-gray-100 shadow-inner bg-gray-50/50">
+                                        <table className="w-full text-left border-collapse text-xs">
+                                            <thead>
+                                                <tr className="bg-gray-100/80 border-b border-gray-200 text-gray-600 font-extrabold">
+                                                    <th className="px-4 py-3">#</th>
+                                                    <th className="px-4 py-3">Nama Lengkap</th>
+                                                    <th className="px-4 py-3">NIK</th>
+                                                    <th className="px-4 py-3">Hubungan Keluarga</th>
+                                                    <th className="px-4 py-3">L/P</th>
+                                                    <th className="px-4 py-3">Pendidikan</th>
+                                                    <th className="px-4 py-3">Pekerjaan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-100">
+                                                {anggotaKeluarga.length > 0 ? (
+                                                    anggotaKeluarga.map((member, idx) => {
+                                                        const isCurrentUser = String(member.id) === String(wargaProfile?.id);
+                                                        return (
+                                                            <tr 
+                                                                key={member.id || idx} 
+                                                                className={`hover:bg-white transition-colors ${
+                                                                    isCurrentUser ? 'bg-emerald-50/80 font-bold text-emerald-950' : 'text-gray-800'
+                                                                }`}
+                                                            >
+                                                                <td className="px-4 py-3 font-semibold text-gray-400">
+                                                                    {idx + 1}
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="font-extrabold uppercase">{member.nama_lengkap}</span>
+                                                                        {isCurrentUser && (
+                                                                            <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white text-[9px] font-black uppercase">
+                                                                                Saya
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-4 py-3 font-mono font-semibold text-gray-700">
+                                                                    {member.nik}
+                                                                </td>
+                                                                <td className="px-4 py-3">
+                                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                                                        member.status_hubungan_keluarga === 'Kepala Keluarga'
+                                                                            ? 'bg-emerald-100 text-emerald-800'
+                                                                            : member.status_hubungan_keluarga === 'Istri'
+                                                                            ? 'bg-purple-100 text-purple-800'
+                                                                            : 'bg-blue-100 text-blue-800'
+                                                                    }`}>
+                                                                        {member.status_hubungan_keluarga}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-4 py-3 font-semibold">
+                                                                    {member.jenis_kelamin === 'Laki-laki' ? 'L' : 'P'}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-gray-600">
+                                                                    {member.pendidikan || '-'}
+                                                                </td>
+                                                                <td className="px-4 py-3 text-gray-600">
+                                                                    {member.pekerjaan || '-'}
+                                                                </td>
+                                                            </tr>
+                                                        );
+                                                    })
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan="7" className="px-4 py-6 text-center text-gray-500 italic">
+                                                            Belum ada daftar anggota keluarga terdata di KK ini.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                            </div>
+                        ) : (
+                            <div className="p-8 bg-white rounded-3xl text-center space-y-2 border border-gray-100 shadow-sm">
+                                <span className="text-3xl block">📋</span>
+                                <h4 className="font-extrabold text-gray-800 text-base">Profil Warga Belum Di-link ke Master Data KK</h4>
+                                <p className="text-xs text-gray-500 max-w-md mx-auto">
+                                    Akun Anda belum secara otomatis terhubung dengan data NIK / KK di Master Data RT. Silakan hubungi Administrator atau Pengurus RT untuk memverifikasi NIK akun Anda.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* ── TAB 2: INFORMASI AKUN LOGIN (EMAIL & NAME) ── */}
+                {activeTab === 'info' && (
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 animate-in fade-in duration-200 max-w-2xl">
                         <UpdateProfileInformationForm
                             mustVerifyEmail={mustVerifyEmail}
                             status={status}
                         />
                     </div>
+                )}
 
-                    {/* Card 2: Keamanan & Password */}
-                    <div className={`bg-white rounded-3xl p-6 shadow-sm border border-gray-100 transition-all ${
-                        activeTab === 'password' ? 'ring-2 ring-purple-500/20' : ''
-                    }`}>
+                {/* ── TAB 3: UBAH PASSWORD AKUN ── */}
+                {activeTab === 'password' && (
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 animate-in fade-in duration-200 max-w-2xl">
                         <UpdatePasswordForm />
                     </div>
+                )}
 
-                    {/* Card 3: Danger Zone / Hapus Akun (Full Width on Bottom or Active Tab) */}
-                    <div className={`lg:col-span-2 bg-white rounded-3xl p-6 shadow-sm border border-rose-100 transition-all ${
-                        activeTab === 'danger' ? 'ring-2 ring-rose-500/20 bg-rose-50/20' : ''
-                    }`}>
+                {/* ── TAB 4: DANGER ZONE ── */}
+                {activeTab === 'danger' && (
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-rose-100 animate-in fade-in duration-200 max-w-2xl">
                         <DeleteUserForm />
                     </div>
-                </div>
+                )}
 
             </div>
         </Layout>
