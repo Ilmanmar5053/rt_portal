@@ -182,9 +182,6 @@ export default function Index({ programs, filters, kategoriList, statusList }) {
                     <h2 className="text-2xl font-black text-gray-900 tracking-tight">
                         Program & Kegiatan Warga {namaRt}
                     </h2>
-                    <p className="text-sm text-gray-600 mt-1">
-                        Informasi lengkap agenda, acara lingkungan, serta program kerja pengurus RT untuk seluruh warga.
-                    </p>
                 </div>
             }
         >
