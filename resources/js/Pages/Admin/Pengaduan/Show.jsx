@@ -3,6 +3,8 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function Show({ pengaduan }) {
+    const [previewIndex, setPreviewIndex] = useState(null);
+
     const statusConfig = (status) => {
         switch (status) {
             case 'Diajukan': 
@@ -33,6 +35,17 @@ export default function Show({ pengaduan }) {
     };
 
     const status = statusConfig(pengaduan.status_progres);
+    const photos = pengaduan.foto_bukti || [];
+
+    const handlePrevPhoto = (e) => {
+        e.stopPropagation();
+        setPreviewIndex(prev => (prev > 0 ? prev - 1 : photos.length - 1));
+    };
+
+    const handleNextPhoto = (e) => {
+        e.stopPropagation();
+        setPreviewIndex(prev => (prev < photos.length - 1 ? prev + 1 : 0));
+    };
 
     const form = useForm({
         komentar: '',
@@ -139,30 +152,33 @@ export default function Show({ pengaduan }) {
                             {pengaduan.deskripsi}
                         </div>
 
-                        {/* Photo Attachments Grid */}
-                        {pengaduan.foto_bukti && pengaduan.foto_bukti.length > 0 && (
+                        {/* COMPACT THUMBNAILS WITH FULLSCREEN PREVIEW */}
+                        {photos.length > 0 && (
                             <div className="space-y-2 pt-2">
                                 <span className="text-xs font-black text-slate-500 uppercase tracking-wider block">
-                                    📸 Bukti Foto Terlampir ({pengaduan.foto_bukti.length})
+                                    📸 Bukti Foto Terlampir ({photos.length})
                                 </span>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                    {pengaduan.foto_bukti.map((foto, idx) => (
-                                        <a 
-                                            key={idx} 
-                                            href={`/storage/${foto}`} 
-                                            target="_blank" 
-                                            rel="noreferrer"
-                                            className="group relative rounded-2xl overflow-hidden border border-slate-200 aspect-video shadow-xs block"
+                                <div className="flex flex-wrap items-center gap-3">
+                                    {photos.map((foto, idx) => (
+                                        <div
+                                            key={idx}
+                                            onClick={() => setPreviewIndex(idx)}
+                                            className="group relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-slate-200 bg-slate-100 shadow-xs cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all duration-200 shrink-0"
+                                            title="Klik untuk Pratinjau Full Screen"
                                         >
                                             <img
                                                 src={`/storage/${foto}`}
                                                 alt={`Bukti ${idx + 1}`}
-                                                className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                                className="w-full h-full object-cover group-hover:scale-110 transition duration-300"
                                             />
-                                            <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-bold">
-                                                🔍 Perbesar
+                                            {/* Hover Overlay with Preview Badge */}
+                                            <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition flex flex-col items-center justify-center text-white gap-1 p-1">
+                                                <span className="text-base">🔍</span>
+                                                <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2 py-0.5 rounded-full backdrop-blur-xs">
+                                                    Preview
+                                                </span>
                                             </div>
-                                        </a>
+                                        </div>
                                     ))}
                                 </div>
                             </div>
@@ -273,6 +289,90 @@ export default function Show({ pengaduan }) {
                 </div>
 
             </div>
+
+            {/* FULL SCREEN LIGHTBOX PHOTO PREVIEW MODAL */}
+            {previewIndex !== null && photos[previewIndex] && (
+                <div 
+                    onClick={() => setPreviewIndex(null)}
+                    className="fixed inset-0 z-[99999] bg-slate-950/90 backdrop-blur-md flex flex-col items-center justify-between p-4 animate-in fade-in duration-200"
+                >
+                    {/* Top Bar */}
+                    <div 
+                        onClick={e => e.stopPropagation()} 
+                        className="w-full max-w-4xl flex items-center justify-between text-white py-2"
+                    >
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-1 rounded-full bg-indigo-500/30 text-amber-300 text-xs font-black border border-indigo-400/30">
+                                📸 Foto {previewIndex + 1} dari {photos.length}
+                            </span>
+                            <span className="text-xs text-slate-300 font-medium hidden sm:inline">
+                                {pengaduan.judul}
+                            </span>
+                        </div>
+                        <button
+                            onClick={() => setPreviewIndex(null)}
+                            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white font-bold text-sm transition cursor-pointer"
+                            title="Tutup (Esc)"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
+                    {/* Center High Definition Image Container */}
+                    <div 
+                        onClick={e => e.stopPropagation()} 
+                        className="relative flex items-center justify-center max-w-4xl w-full flex-1 my-2"
+                    >
+                        <img
+                            src={`/storage/${photos[previewIndex]}`}
+                            alt={`Preview ${previewIndex + 1}`}
+                            className="max-h-[75vh] max-w-full object-contain rounded-2xl shadow-2xl border-2 border-white/20 animate-in zoom-in-95 duration-200"
+                        />
+
+                        {/* Navigation Arrows */}
+                        {photos.length > 1 && (
+                            <>
+                                <button
+                                    onClick={handlePrevPhoto}
+                                    className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-white flex items-center justify-center text-lg font-black shadow-xl transition hover:scale-110 cursor-pointer"
+                                    title="Foto Sebelumnya"
+                                >
+                                    ←
+                                </button>
+                                <button
+                                    onClick={handleNextPhoto}
+                                    className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-slate-900/80 hover:bg-slate-900 border border-white/20 text-white flex items-center justify-center text-lg font-black shadow-xl transition hover:scale-110 cursor-pointer"
+                                    title="Foto Selanjutnya"
+                                >
+                                    →
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Bottom Action Footer */}
+                    <div 
+                        onClick={e => e.stopPropagation()} 
+                        className="flex items-center gap-3 text-xs text-white"
+                    >
+                        <a
+                            href={`/storage/${photos[previewIndex]}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold transition flex items-center gap-1.5"
+                        >
+                            <span>📥 Unduh / Buka Tab Baru</span>
+                        </a>
+                        <button
+                            type="button"
+                            onClick={() => setPreviewIndex(null)}
+                            className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-black transition border border-white/20"
+                        >
+                            Tutup Pratinjau
+                        </button>
+                    </div>
+                </div>
+            )}
         </AdminLayout>
     );
 }
