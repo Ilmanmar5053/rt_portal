@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proposal Penawaran - Portal RT Digital Pro</title>
+    
+    <!-- Google Fonts: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                            950: '#022c22',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* PAGE & PRINT CSS CONFIGURATION FOR EXACT FIT TO A4 PAPER */
+        @page {
+            size: A4 portrait;
+            margin: 10mm 12mm 12mm 12mm;
+        }
+
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .a4-page {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 100% !important;
+                min-height: auto !important;
+                padding: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+            }
+            .page-break {
+                break-before: page;
+                page-break-before: always;
+            }
+            .avoid-break {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Screen View Styles */
+        body {
+            background-color: #0f172a;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #334155;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .a4-page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 16mm 18mm;
+            margin: 20px auto;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+            position: relative;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .gradient-border-card {
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            background: linear-gradient(135deg, rgba(236, 253, 245, 0.5) 0%, rgba(255, 255, 255, 1) 100%);
+        }
+
+        .watermark {
+            position: absolute;
+            bottom: 12mm;
+            right: 15mm;
+            font-size: 8pt;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        .header-line {
+            height: 4px;
+            background: linear-gradient(90deg, #10b981 0%, #0d9488 50%, #0284c7 100%);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="py-6">
+
+    <!-- FLOATING PRINT BAR (Screen Only) -->
+    <div className="no-print fixed top-4 right-4 z-50 flex items-center gap-3 bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-slate-700 shadow-2xl text-white">
+        <div className="text-xs">
+            <p className="font-extrabold text-emerald-400">📄 Proposal Portal RT Digital Pro</p>
+            <p className="text-[10px] text-slate-400">Format Kertas: A4 Portrait (Fit to Page)</p>
+        </div>
+        <button 
+            onclick="window.print()" 
+            class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer transform hover:scale-105"
+        >
+            <span>🖨️ Cetak / Simpan PDF</span>
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 1: COVER PROPOSAL PROSES ELEGAN     -->
+    <!-- ========================================== -->
+    <div class="a4-page flex flex-col justify-between">
+        <div class="space-y-6">
+            
+            <!-- Top Brand Bar -->
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-cyan-700 flex items-center justify-center text-white text-2xl font-black shadow-lg shadow-emerald-600/30">
+                        🏡
+                    </div>
+                    <div>
+                        <h3 class="font-black text-slate-900 text-lg tracking-tight">PORTAL RT DIGITAL</h3>
+                        <p class="text-[11px] font-bold text-emerald-600 tracking-wider uppercase">Enterprise Community Solution</p>
+                    </div>
+                </div>
+                <span class="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-extrabold">
+                    Dokumen Penawaran Resmi
+                </span>
+            </div>
+
+            <!-- Cover Title Hero -->
+            <div class="pt-6 space-y-4">
+                <span class="px-3 py-1 rounded-md bg-emerald-100 text-emerald-900 text-xs font-black uppercase tracking-widest">
+                    PROPOSAL PENAWARAN SISTEM
+                </span>
+                <h1 class="text-3xl sm:text-4xl font-black text-slate-900 leading-tight tracking-tight">
+                    Modernisasi Tata Kelola Lingkungan RT/RW Berbasis Web Aplikasi Digital
+                </h1>
+                <p class="text-sm text-slate-600 font-medium leading-relaxed max-w-xl">
+                    Solusi terpadu administrasi kewargaan, pengaduan warga realtime, transparansi kas keuangan, e-payment QRIS, serta sistem keamanan audit trail berbasis AI.
+                </p>
+            </div>
+
+            <!-- Hero Feature Cover Graphic / Screenshot Showcase -->
+            <div class="relative rounded-2xl overflow-hidden border-2 border-emerald-500/20 shadow-2xl bg-slate-900">
+                <img src="/images/proposal/media__1786201608210.png" alt="Dashboard Portal RT Digital" class="w-full h-auto object-cover max-h-[220mm]" />
+                <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent p-4 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Interface Utama System</span>
+                            <p class="text-xs font-bold text-white">Dashboard Interactive Administrator & Realtime Monitoring</p>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-lg bg-emerald-500/30 text-emerald-300 border border-emerald-400/40 text-[10px] font-black">
+                            v3.5 Live Production
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Cover Footer Info Box -->
+        <div class="pt-6 border-t border-slate-100 grid grid-cols-2 gap-4 text-xs">
+            <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">DAPAT DIAPLIKASIKAN UNTUK:</span>
+                <p class="font-extrabold text-slate-800 text-xs">Pengurus RT / RW / Pengelola Perumahan / Cluster Residential</p>
+            </div>
+            <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
+                <span class="text-[10px] font-bold text-emerald-700 uppercase block mb-1">PENGEMBANG & DUKUNGAN TEKNIS:</span>
+                <p class="font-extrabold text-emerald-950 text-xs">Tim Pengembang Portal RT Digital Pro (Full Garansi)</p>
+            </div>
+            <div class="watermark">Halaman 1 dari 5 — Proposal Portal RT Digital</div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 2: EXECUTIVE SUMMARY & LATAR BELAKANG -->
+    <!-- ========================================== -->
+    <div class="a4-page page-break flex flex-col justify-between">
+        <div class="space-y-5">
+            <div class="header-line mb-4"></div>
+            
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <span>1. Latar Belakang & Tantangan Pengelolaan RT/RW</span>
+                </h2>
+                <span class="text-xs font-bold text-slate-400">BAGIAN I</span>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed">
+                Pengelolaan lingkungan RT/RW di era modern menuntut kecepatan, ketepatan data, serta transparansi keuangan yang dapat diakses oleh seluruh warga secara terbuka. Metode konvensional berbasis kertas dan pencatatan manual sering kali menghadapi hambatan besar yang menurunkan kualitas pelayanan lingkungan.
+            </p>
+
+            <!-- TANTANGAN VS SOLUSI GRID -->
+            <div class="grid grid-cols-2 gap-4 my-3 avoid-break">
+                <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 space-y-2">
+                    <div class="flex items-center gap-2 text-rose-800 font-extrabold text-xs">
+                        <span>❌</span>
+                        <span>Tantangan Sistem Konvensional</span>
+                    </div>
+                    <ul class="text-[11px] text-rose-950 space-y-1.5 list-disc pl-4 font-medium">
+                        <li><strong>Data KK Tidak Terpusat:</strong> Sering terjadi penggandaan data atau arsip fisik hilang.</li>
+                        <li><strong>Tunggakan Kas & Iuran:</strong> Rekapitulasi iuran kas rumit dan rawan salah hitung.</li>
+                        <li><strong>Pengaduan Lambat:</strong> Warga kesulitan melapor kejadian darurat atau kerusakan fasilitas.</li>
+                        <li><strong>Kurang Transparan:</strong> Warga tidak mengetahui rincian penggunaan uang kas RT.</li>
+                    </ul>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+                    <div class="flex items-center gap-2 text-emerald-900 font-extrabold text-xs">
+                        <span>✅</span>
+                        <span>Solusi Portal RT Digital Pro</span>
+                    </div>
+                    <ul class="text-[11px] text-emerald-950 space-y-1.5 list-disc pl-4 font-medium">
+                        <li><strong>Database Terpusat & AI Vision:</strong> Input data KK otomatis lewat AI Scanner & OCR.</li>
+                        <li><strong>E-Payment & Transparansi Kas:</strong> Bayar iuran via QRIS, saldo kas ter-update realtime.</li>
+                        <li><strong>Pengaduan Thread Realtime:</strong> Laporan warga cepat direspon dengan sistem timeline.</li>
+                        <li><strong>Notifikasi Realtime Toast:</strong> Pemberitahuan instant saat ada pengaduan/balasan.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h2 class="text-lg font-black text-slate-900 tracking-tight pt-2">
+                2. Visi Utama & Manfaat Bagi Lingkungan RT/RW
+            </h2>
+
+            <div class="grid grid-cols-3 gap-3 avoid-break">
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1">
+                    <span class="text-xl">⚡</span>
+                    <h4 class="font-extrabold text-xs text-slate-900">Efisiensi Administrasi</h4>
+                    <p class="text-[10px] text-slate-500 leading-normal">Pembuatan surat pengantar & pengisian data KK hanya membutuhkan hitungan detik.</p>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1">
+                    <span class="text-xl">🛡️</span>
+                    <h4 class="font-extrabold text-xs text-slate-900">Transparansi Keuangan</h4>
+                    <p class="text-[10px] text-slate-500 leading-normal">Seluruh iuran dan pengeluaran kas RT terbuka dan dapat dipantau warga 24/7.</p>
+                </div>
+                <div class="p-3.5 rounded-xl border border-slate-200 bg-white space-y-1">
+                    <span class="text-xl">📱</span>
+                    <h4 class="font-extrabold text-xs text-slate-900">Kemudahan Akses HP</h4>
+                    <p class="text-[10px] text-slate-500 leading-normal">Dapat diakses lancar dari HP, Tablet, maupun Laptop tanpa install aplikasi rumit.</p>
+                </div>
+            </div>
+
+            <!-- SCREENSHOT SHOWCASE AI KK SCANNER -->
+            <div class="pt-2 avoid-break">
+                <div class="rounded-xl overflow-hidden border border-slate-200 shadow-sm bg-slate-50 p-2 space-y-1.5">
+                    <div class="flex items-center justify-between px-2">
+                        <span class="text-[11px] font-extrabold text-slate-800">Teknologi Unggulan: AI Multimodal Vision KK Scanner</span>
+                        <span class="text-[10px] font-bold text-emerald-600">Ekstraksi NIK & Anggota KK Otomatis</span>
+                    </div>
+                    <img src="/images/proposal/media__1786110643567.png" alt="AI Multimodal Vision Scanner KK" class="w-full h-auto max-h-[65mm] object-cover rounded-lg border border-slate-200" />
+                </div>
+            </div>
+
+        </div>
+
+        <div class="watermark">Halaman 2 dari 5 — Proposal Portal RT Digital</div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 3: FITUR UNGGULAN & MODUL UTAMA (1) -->
+    <!-- ========================================== -->
+    <div class="a4-page page-break flex flex-col justify-between">
+        <div class="space-y-5">
+            <div class="header-line mb-4"></div>
+
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">
+                    3. Modul & Fitur Unggulan Sistem (Bagian I)
+                </h2>
+                <span class="text-xs font-bold text-slate-400">BAGIAN II</span>
+            </div>
+
+            <!-- MODUL 1: MASTER DATA RUMAH & DROPDOWN SYNC -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 avoid-break">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs font-black">
+                            🏠
+                        </span>
+                        <div>
+                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">
+                                Fitur 1: Master Data Rumah & Bulk Generator Massal
+                            </h3>
+                            <p class="text-[11px] text-slate-500">Sinkronisasi otomatis Blok/No Rumah dengan status hunian dan generator massal.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black">
+                        Master Data RT
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 items-center">
+                    <div class="col-span-7">
+                        <img src="/images/proposal/media__1786198959812.png" alt="Master Data Rumah Dropdown Sync" class="w-full h-auto object-cover rounded-xl border border-slate-200 shadow-xs" />
+                    </div>
+                    <div class="col-span-5 text-[11px] text-slate-600 space-y-1.5 font-medium">
+                        <p class="font-bold text-slate-800">Keunggulan Modul Rumah:</p>
+                        <ul class="list-disc pl-3 space-y-1 text-[10px]">
+                            <li><strong>Dropdown Sync:</strong> Blok & No Rumah pada form KK otomatis mengambil dari master rumah.</li>
+                            <li><strong>Bebas Duplikasi:</strong> Rumah yang sudah diisi KK lain otomatis terkunci/disabled.</li>
+                            <li><strong>Bulk Generator ⚡:</strong> Sekali klik dapat me-generate 100-200 rumah secara instan.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODUL 2: CITRA SATELIT MAPPING BLOK RUMAH -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 avoid-break">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
+                            🗺️
+                        </span>
+                        <div>
+                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">
+                                Fitur 2: Mapping Satelit Peta HD & Pin Rumah Terintegrasi KK
+                            </h3>
+                            <p class="text-[11px] text-slate-500">Visualisasi denah perumahan dengan tanda pin lokasi rumah warga.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black">
+                        Visual GIS
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 items-center">
+                    <div class="col-span-7">
+                        <img src="/images/proposal/media__1786122637666.png" alt="Mapping Satelit Pin Rumah" class="w-full h-auto object-cover rounded-xl border border-slate-200 shadow-xs" />
+                    </div>
+                    <div class="col-span-5 text-[11px] text-slate-600 space-y-1.5 font-medium">
+                        <p class="font-bold text-slate-800">Keunggulan Modul GIS:</p>
+                        <ul class="list-disc pl-3 space-y-1 text-[10px]">
+                            <li><strong>Citra Satelit HD:</strong> Menampilkan peta wilayah perumahan secara jernih.</li>
+                            <li><strong>Pin Interactive:</strong> Mengeklik pin rumah menampilkan nama Kepala Keluarga & foto.</li>
+                            <li><strong>Navigasi Cepat:</strong> Pengurus mudah menemukan alamat rumah warga baru.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODUL 3: TRANSPARANSI KAS & E-PAYMENT QRIS -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 avoid-break">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs font-black">
+                            💰
+                        </span>
+                        <div>
+                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">
+                                Fitur 3: Transparansi Kas Keuangan & Pembayaran QRIS Digital
+                            </h3>
+                            <p class="text-[11px] text-slate-500">Kemudahan warga membayar iuran serta transparansi pembukuan kas RT.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black">
+                        Financial System
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 items-center">
+                    <div class="col-span-7">
+                        <img src="/images/proposal/media__1786118422649.png" alt="E-Payment QRIS & Transparansi Kas" class="w-full h-auto object-cover rounded-xl border border-slate-200 shadow-xs" />
+                    </div>
+                    <div class="col-span-5 text-[11px] text-slate-600 space-y-1.5 font-medium">
+                        <p class="font-bold text-slate-800">Keunggulan Modul Keuangan:</p>
+                        <ul class="list-disc pl-3 space-y-1 text-[10px]">
+                            <li><strong>Scan QRIS / Transfer:</strong> Warga dapat upload bukti transfer / QRIS mandiri.</li>
+                            <li><strong>Laporan Keuangan Realtime:</strong> Grafik pemasukan & pengeluaran ter-update otomatis.</li>
+                            <li><strong>Bukti Kwitansi Digital:</strong> Konfirmasi pembayaran instant & rapi.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="watermark">Halaman 3 dari 5 — Proposal Portal RT Digital</div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 4: FITUR UNGGULAN & MODUL UTAMA (2) -->
+    <!-- ========================================== -->
+    <div class="a4-page page-break flex flex-col justify-between">
+        <div class="space-y-5">
+            <div class="header-line mb-4"></div>
+
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">
+                    4. Modul & Fitur Unggulan Sistem (Bagian II)
+                </h2>
+                <span class="text-xs font-bold text-slate-400">BAGIAN III</span>
+            </div>
+
+            <!-- MODUL 4: PENGADUAN WARGA THREADED SOCIAL STREAM & LIGHTBOX -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 avoid-break">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-7 h-7 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center text-xs font-black">
+                            💬
+                        </span>
+                        <div>
+                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">
+                                Fitur 4: Pengaduan Warga Threaded Stream & Fullscreen Lightbox
+                            </h3>
+                            <p class="text-[11px] text-slate-500">Layanan pengaduan warga beranak ala media sosial dengan preview foto HD.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-black">
+                        Layanan Publik
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 items-center">
+                    <div class="col-span-7">
+                        <img src="/images/proposal/media__1786122134210.png" alt="Threaded Social Media Pengaduan Warga" class="w-full h-auto object-cover rounded-xl border border-slate-200 shadow-xs" />
+                    </div>
+                    <div class="col-span-5 text-[11px] text-slate-600 space-y-1.5 font-medium">
+                        <p class="font-bold text-slate-800">Keunggulan Modul Pengaduan:</p>
+                        <ul class="list-disc pl-3 space-y-1 text-[10px]">
+                            <li><strong>Thread Beranak Rapi:</strong> Komunikasi pengaduan disusun rapi seperti thread sosmed.</li>
+                            <li><strong>Preview Foto HD Lightbox:</strong> Klik thumbnail foto bukti untuk melihat ukuran penuh.</li>
+                            <li><strong>One-Way Reply Safe:</strong> Respon satu arah dari Admin untuk menjaga ketertiban.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODUL 5: REALTIME AUDIT TRAIL STREAM & KEAMANAN -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-white space-y-3 avoid-break">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center text-xs font-black">
+                            🕵️‍♂️
+                        </span>
+                        <div>
+                            <h3 class="font-extrabold text-xs sm:text-sm text-slate-900">
+                                Fitur 5: Realtime Live Audit Trail Activity Logs & Role Access
+                            </h3>
+                            <p class="text-[11px] text-slate-500">Rekam jejak setiap aktivitas pengguna untuk menjamin keamanan & transparansi.</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 text-[10px] font-black">
+                        Security & Audit
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-12 gap-3 items-center">
+                    <div class="col-span-7">
+                        <img src="/images/proposal/media__1786196243125.png" alt="Audit Trail Realtime Stream" class="w-full h-auto object-cover rounded-xl border border-slate-200 shadow-xs" />
+                    </div>
+                    <div class="col-span-5 text-[11px] text-slate-600 space-y-1.5 font-medium">
+                        <p class="font-bold text-slate-800">Keunggulan Modul Audit:</p>
+                        <ul class="list-disc pl-3 space-y-1 text-[10px]">
+                            <li><strong>Live Stream Polling (4s):</strong> Log aktivitas masuk secara otomatis tanpa refresh page.</li>
+                            <li><strong>Laporan Detil:</strong> Mencatat Nama, Role, Tindakan, IP Address, dan Modul.</li>
+                            <li><strong>Multi-Role Security:</strong> Akses ketat berjenjang Superadmin, RW, RT, Bendahara, Warga.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FITUR NOTIFIKASI REALTIME TOAST WA/FB STYLE -->
+            <div class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs space-y-1 avoid-break">
+                <div class="flex items-center gap-2 font-extrabold text-emerald-900">
+                    <span>🔔</span>
+                    <span>Bilah Notifikasi Bell Drawer & Realtime Toast Popup (WA/FB Style)</span>
+                </div>
+                <p class="text-[10px] text-emerald-800 leading-relaxed">
+                    Aplikasi dilengkapi dengan popup notifikasi minimalis serupa WhatsApp/Facebook berwarna hijau soft (`w-80`) yang muncul otomatis di pojok kanan atas layar disertai suara bell chime saat ada pengaduan baru atau balasan admin.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="watermark">Halaman 4 dari 5 — Proposal Portal RT Digital</div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- HALAMAN 5: MANFAAT, SPESIFIKASI & PENUTUP   -->
+    <!-- ========================================== -->
+    <div class="a4-page page-break flex flex-col justify-between">
+        <div class="space-y-5">
+            <div class="header-line mb-4"></div>
+
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-black text-slate-900 tracking-tight">
+                    5. Spesifikasi Teknis, Keunggulan & Penutup
+                </h2>
+                <span class="text-xs font-bold text-slate-400">BAGIAN IV</span>
+            </div>
+
+            <!-- SPESIFIKASI TEKNIS APP -->
+            <div class="p-4 rounded-2xl border border-slate-200 bg-slate-50 space-y-2 avoid-break">
+                <h3 class="font-extrabold text-xs text-slate-900 uppercase tracking-wider">
+                    🛠️ Spesifikasi Arsitektur & Performa Sistem
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-[11px] text-slate-700 font-medium">
+                    <div class="space-y-1">
+                        <p>• <strong>Backend Framework:</strong> Laravel 11.x (High Security PHP Framework)</p>
+                        <p>• <strong>Frontend Interface:</strong> React 18 + Inertia.js (Single Page Experience)</p>
+                        <p>• <strong>Styling Design System:</strong> Tailwind CSS + Glassmorphism Aesthetics</p>
+                    </div>
+                    <div class="space-y-1">
+                        <p>• <strong>Database Storage:</strong> MySQL / MariaDB (Optimized Indexing)</p>
+                        <p>• <strong>Compatibility:</strong> Fully Responsive (HP Android/iPhone, Tablet, Laptop)</p>
+                        <p>• <strong>Kecepatan Load Page:</strong> &lt; 100 ms (Fast Performance Rendering)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABEL HARGA & PAKET PENAWARAN (ESTIMASI DENGAN VALUE MANFAAT) -->
+            <div class="space-y-2 avoid-break">
+                <h3 class="font-extrabold text-xs text-slate-900 uppercase tracking-wider">
+                    💼 Paket Layanan & Garansi Maintenance
+                </h3>
+
+                <div class="overflow-hidden rounded-xl border border-slate-200 text-xs">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-100 font-extrabold text-slate-700">
+                                <th class="p-2.5">Komponen Layanan</th>
+                                <th class="p-2.5">Rincian Fasilitas Included</th>
+                                <th class="p-2.5 text-right">Status Garansi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-[11px] text-slate-600">
+                            <tr>
+                                <td class="p-2.5 font-bold text-slate-900">Web Application Ready-to-Use</td>
+                                <td class="p-2.5">Seluruh Modul (Master Data Rumah, KK, Kas, Pengaduan, Notification, Audit Log)</td>
+                                <td class="p-2.5 text-right font-extrabold text-emerald-600">✓ Included Full</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold text-slate-900">Setup Server & Domain Hosting</td>
+                                <td class="p-2.5">Domain `.com` / `.id` + SSL Sertifikat Keamanan HTTPS Cloud Ready</td>
+                                <td class="p-2.5 text-right font-extrabold text-emerald-600">✓ Included 1 Tahun</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold text-slate-900">Pendampingan & Pelatihan Admin</td>
+                                <td class="p-2.5">Bimbingan penggunaan untuk Pengurus RT/RW sampai lancar beroperasi</td>
+                                <td class="p-2.5 text-right font-extrabold text-emerald-600">✓ Pendampingan 100%</td>
+                            </tr>
+                            <tr>
+                                <td class="p-2.5 font-bold text-slate-900">Garansi Maintenance & Backup</td>
+                                <td class="p-2.5">Perbaikan kendala teknis (Bug-free Guarantee) & Auto Database Backup</td>
+                                <td class="p-2.5 text-right font-extrabold text-emerald-600">✓ Garansi 12 Bulan</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LEMBAR PERSETUJUAN & KESIMPULAN -->
+            <div class="pt-4 space-y-4 avoid-break">
+                <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                    Demikian proposal penawaran <strong>Portal RT Digital Pro</strong> ini kami ajukan. Kami berkomitmen memberikan solusi teknologi terbaik untuk mewujudkan tata kelola lingkungan yang modern, aman, transparan, dan memudahkan seluruh warga.
+                </p>
+
+                <div class="grid grid-cols-2 gap-8 pt-4 border-t border-slate-200 text-xs">
+                    <div class="text-center space-y-12">
+                        <div>
+                            <p class="text-slate-500 font-medium">Diajukan Oleh,</p>
+                            <p class="font-extrabold text-slate-900">TIM PENGEMBANG PORTAL RT DIGITAL</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-900 underline">( ______________________ )</p>
+                            <p class="text-[10px] text-slate-500">System Technical Specialist</p>
+                        </div>
+                    </div>
+
+                    <div class="text-center space-y-12">
+                        <div>
+                            <p class="text-slate-500 font-medium">Disetujui & Diterima Oleh,</p>
+                            <p class="font-extrabold text-slate-900">KLIEN / KETUA RT / RW PERUMAHAN</p>
+                        </div>
+                        <div>
+                            <p class="font-bold text-slate-900 underline">( ______________________ )</p>
+                            <p class="text-[10px] text-slate-500">Perwakilan Pengurus Lingkungan</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="watermark">Halaman 5 dari 5 — Proposal Portal RT Digital</div>
+    </div>
+
+</body>
+</html>

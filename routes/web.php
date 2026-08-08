@@ -12,6 +12,10 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+Route::get('/proposal', function () {
+    return response()->file(public_path('proposal.html'));
+})->name('proposal.penawaran');
+
 Route::get('/', function () {
     $profil = \App\Models\ProfilRt::first() ?? new \App\Models\ProfilRt([
         'nama_rt' => 'RT 05 / RW 08',
