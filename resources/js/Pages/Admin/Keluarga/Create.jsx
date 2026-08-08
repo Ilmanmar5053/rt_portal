@@ -370,12 +370,12 @@ export default function Create({ rumahBloks = [] }) {
                                 <div>
                                     <InputLabel htmlFor="master_rumah" value="Pilih Blok & Nomor Rumah (Master Data RT) *" />
                                     <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm">
+                                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm z-10 pointer-events-none">
                                             🏠
                                         </span>
                                         <select
                                             id="master_rumah"
-                                            className="pl-10 block w-full font-bold text-xs sm:text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                            className="pl-11 pr-8 py-2.5 block w-full font-bold text-xs sm:text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 shadow-xs"
                                             value={selectedRumahId}
                                             onChange={(e) => handleSelectRumah(e.target.value)}
                                         >
@@ -385,9 +385,9 @@ export default function Create({ rumahBloks = [] }) {
                                                     key={r.id} 
                                                     value={r.id} 
                                                     disabled={r.is_occupied}
-                                                    className={r.is_occupied ? 'bg-rose-50 text-rose-800 font-medium' : 'bg-emerald-50 text-emerald-950 font-bold'}
+                                                    className={r.is_occupied ? 'bg-rose-50 text-rose-800' : 'bg-emerald-50 text-emerald-950 font-bold'}
                                                 >
-                                                    {r.label} {r.is_occupied ? `(⚠️ Sudah Diterapkan oleh Warga: ${r.occupant_name})` : '(🟢 Kosong / Tersedia)'}
+                                                    {r.label} — {r.is_occupied ? `[TERISI: KK ${r.occupant_name}]` : '[TERSEDIA / KOSONG]'}
                                                 </option>
                                             ))}
                                             <option value="__manual">✏️ + Input Manual Blok Baru (Tidak Ada di List)</option>
