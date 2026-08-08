@@ -146,6 +146,84 @@ class RumahBlokController extends Controller
     public function destroy(RumahBlok $rumah)
     {
         $rumah->delete();
-        return redirect()->route('admin.rumah-blok.index')->with('message', 'Data rumah berhasil dihapus.');
+        return redirect()->route('admin.rumah.index')->with('message', 'Data rumah berhasil dihapus.');
+    }
+
+    /**
+     * Generate daftar Blok & Nomor Rumah secara bulk/massal
+     */
+    public function generateBulk(Request $request)
+    {
+        $validated = $request->validate([
+            'blok' => 'required|string|max:50',
+            'nomor_awal' => 'required|integer|min:1|max:9999',
+            'nomor_akhir' => 'required|integer|min:1|max:9999|gte:nomor_awal',
+            'status_hunian' => 'required|string|in:Diisi,Kosong',
+            'mode' => 'required|string|in:skip,update',
+            'keterangan' => 'nullable|string|max:255',
+        ]);
+
+        $blokName = strtoupper(trim($validated['blok']));
+        $nomorAwal = (int) $validated['nomor_awal'];
+        $nomorAkhir = (int) $validated['nomor_akhir'];
+        $statusHunian = $validated['status_hunian'];
+        $mode = $validated['mode'];
+        $keterangan = $validated['keterangan'] ?? null;
+
+        $totalToGenerate = ($nomorAkhir - $nomorAwal) + 1;
+        if ($totalToGenerate > 1000) {
+            return redirect()->back()->withErrors(['nomor_akhir' => 'Batas maksimal generate sekali proses adalah 1000 unit rumah.']);
+        }
+
+        $createdCount = 0;
+        $updatedCount = 0;
+        $skippedCount = 0;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($blokName, $nomorAwal, $nomorAkhir, $statusHunian, $mode, $keterangan, &$createdCount, &$updatedCount, &$skippedCount) {
+            for ($i = $nomorAwal; $i <= $nomorAkhir; $i++) {
+                $noRumah = (string) $i;
+                
+                $existing = RumahBlok::where('blok', $blokName)
+                    ->where('nomor_rumah', $noRumah)
+                    ->first();
+
+                if ($existing) {
+                    if ($mode === 'update') {
+                        $existing->update([
+                            'status_hunian' => $statusHunian,
+                            'keterangan' => $keterangan ?: $existing->keterangan,
+                        ]);
+                        $updatedCount++;
+                    } else {
+                        $skippedCount++;
+                    }
+                } else {
+                    RumahBlok::create([
+                        'blok' => $blokName,
+                        'nomor_rumah' => $noRumah,
+                        'status_hunian' => $statusHunian,
+                        'keterangan' => $keterangan,
+                    ]);
+                    $createdCount++;
+                }
+            }
+        });
+
+        // Audit Trail log
+        \App\Services\AuditLogService::log(
+            'CREATE',
+            'Data Rumah',
+            "Bulk Generate Data Master Rumah {$blokName} (No. {$nomorAwal} - {$nomorAkhir}). Dibuat: {$createdCount}, Diperbarui: {$updatedCount}, Dilewati: {$skippedCount}",
+            null,
+            $validated,
+            auth()->id()
+        );
+
+        $msg = "Berhasil me-generate Master Data Rumah {$blokName} (No. {$nomorAwal} - {$nomorAkhir})! " .
+               "Berhasil dibuat: {$createdCount} unit" . 
+               ($updatedCount > 0 ? ", Diperbarui: {$updatedCount} unit" : "") . 
+               ($skippedCount > 0 ? ", Dilewati (sudah ada): {$skippedCount} unit" : "") . ".";
+
+        return redirect()->route('admin.rumah.index')->with('success', $msg);
     }
 }

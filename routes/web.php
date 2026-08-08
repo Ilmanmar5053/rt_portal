@@ -176,6 +176,7 @@ Route::middleware(['auth', 'verified', 'role:superadmin,rw,rt,bendahara,sekretar
     Route::post('warga/{warga}/generate-account', [WargaController::class, 'generateAccount'])->name('warga.generate-account')->middleware('module.access:data_warga');
     Route::resource('warga', WargaController::class)->middleware('module.access:data_warga');
     Route::resource('keluarga', App\Http\Controllers\Admin\KeluargaController::class)->middleware('module.access:data_keluarga');
+    Route::post('rumah/generate-bulk', [\App\Http\Controllers\Admin\RumahBlokController::class, 'generateBulk'])->name('rumah.generate-bulk')->middleware('module.access:data_rumah');
     Route::resource('rumah', \App\Http\Controllers\Admin\RumahBlokController::class)->middleware('module.access:data_rumah');
     
     // Mapping Blok Rumah (Citra Satelit HD & Tanda Pin Rumah Terintegrasi KK)

@@ -1,10 +1,14 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import TextInput from '@/Components/TextInput';
+import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
 import { useState } from 'react';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 
 export default function Index({ rumahBloks, filters }) {
-    const { data, setData, get } = useForm({
+    const { data, setData } = useForm({
         search: filters.search || '',
         blok: filters.blok || '',
         nomor_rumah: filters.nomor_rumah || '',
@@ -17,6 +21,17 @@ export default function Index({ rumahBloks, filters }) {
 
     const [showModal, setShowModal] = useState(false);
     const [selectedRumah, setSelectedRumah] = useState(null);
+
+    // Bulk Generator Modal State
+    const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+    const bulkForm = useForm({
+        blok: 'A',
+        nomor_awal: 1,
+        nomor_akhir: 50,
+        status_hunian: 'Kosong',
+        mode: 'skip',
+        keterangan: '',
+    });
 
     const sortField = data.sort_field || filters.sort_field || 'blok';
     const sortDirection = data.sort_direction || filters.sort_direction || 'asc';
@@ -57,11 +72,28 @@ export default function Index({ rumahBloks, filters }) {
         setSelectedRumah(null);
     };
 
+    const handleBulkSubmit = (e) => {
+        e.preventDefault();
+        bulkForm.post(route('admin.rumah.generate-bulk'), {
+            onSuccess: () => {
+                setIsBulkModalOpen(false);
+                bulkForm.reset();
+            },
+        });
+    };
+
+    const totalEstimate = Math.max(
+        0,
+        (parseInt(bulkForm.data.nomor_akhir) || 0) - (parseInt(bulkForm.data.nomor_awal) || 0) + 1
+    );
+
     return (
         <AdminLayout header="Data Master Rumah">
             <Head title="Data Rumah" />
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                
+                {/* Header Action Bar */}
                 <div className="p-6 border-b border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <form onSubmit={handleSearch} className="w-full sm:w-1/2 md:w-1/3 flex">
                         <TextInput
@@ -72,15 +104,30 @@ export default function Index({ rumahBloks, filters }) {
                             placeholder="Cari Blok / Nomor..."
                             onChange={(e) => setData('search', e.target.value)}
                         />
-                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-md transition-colors">
+                        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-r-md transition-colors cursor-pointer">
                             Cari
                         </button>
                     </form>
 
-                    <Link href={route('admin.rumah.create')} className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg font-medium transition-colors inline-flex items-center gap-2">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-                        Tambah Rumah
-                    </Link>
+                    <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+                        {/* BULK GENERATOR BUTTON */}
+                        <button
+                            type="button"
+                            onClick={() => setIsBulkModalOpen(true)}
+                            className="bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 hover:from-emerald-700 hover:to-teal-900 text-white px-4 py-2.5 rounded-xl font-bold shadow-md shadow-emerald-700/20 transition-all inline-flex items-center gap-2 text-xs sm:text-sm cursor-pointer hover:scale-105"
+                        >
+                            <span>⚡</span>
+                            <span>Generate Massal</span>
+                        </button>
+
+                        <Link 
+                            href={route('admin.rumah.create')} 
+                            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-bold transition-all inline-flex items-center gap-2 text-xs sm:text-sm shadow-md cursor-pointer hover:scale-105"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span>Tambah Rumah</span>
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -144,11 +191,11 @@ export default function Index({ rumahBloks, filters }) {
                                         name="status"
                                         value={data.status}
                                         onChange={handleStatusChange}
-                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
                                     >
                                         <option value="Semua">Semua</option>
-                                        <option value="Kosong">Kosong</option>
                                         <option value="Diisi">Diisi</option>
+                                        <option value="Kosong">Kosong</option>
                                     </select>
                                 </td>
                                 <td className="px-4 py-2">
@@ -167,208 +214,410 @@ export default function Index({ rumahBloks, filters }) {
                                     <button
                                         type="button"
                                         onClick={handleFilter}
-                                        className="bg-emerald-700 text-white px-4 py-2 rounded-lg hover:bg-emerald-800 text-sm font-bold shadow-sm"
+                                        className="bg-emerald-800 hover:bg-emerald-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
                                     >
                                         Terapkan
                                     </button>
                                 </td>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200 text-sm">
+                        <tbody className="bg-white divide-y divide-gray-200">
                             {rumahBloks.data.length > 0 ? (
                                 rumahBloks.data.map((rumah, index) => (
                                     <tr key={rumah.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                            {rumahBloks.from ? rumahBloks.from + index : index + 1}
+                                        <td className="px-4 py-3 whitespace-nowrap text-gray-500">
+                                            {(rumahBloks.current_page - 1) * rumahBloks.per_page + index + 1}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap font-bold text-gray-900">
+                                            {rumah.blok}
+                                        </td>
+                                        <td className="px-4 py-3 whitespace-nowrap font-bold text-gray-900">
+                                            {rumah.nomor_rumah}
+                                        </td>
+                                        <td className="px-4 py-3 text-gray-600 max-w-xs truncate">
+                                            {rumah.keluargas && rumah.keluargas.length > 0 && rumah.keluargas[0].alamat_lengkap ? (
+                                                rumah.keluargas[0].alamat_lengkap
+                                            ) : (
+                                                <span className="text-gray-400 italic">Belum diatur</span>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap">
-                                            <div className="text-sm font-bold text-gray-900">{rumah.blok}</div>
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">{rumah.nomor_rumah}</div>
-                                        </td>
-                                        <td className="px-4 py-3">
-                                            <div className="text-sm text-gray-900 line-clamp-1 max-w-[220px]">
-                                                {rumah.keluargas && rumah.keluargas.length > 0 ? rumah.keluargas[0].alamat_lengkap : '-'}
-                                            </div>
-                                        </td>
-                                        <td className="px-4 py-3 whitespace-nowrap">
-                                            <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-medium ${rumah.status_hunian === 'Kosong' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>
+                                            <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                                rumah.status_hunian === 'Diisi' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                            }`}>
                                                 {rumah.status_hunian}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-4 py-3 whitespace-nowrap text-gray-600 font-semibold">
                                             {rumah.keluargas_count} KK
                                         </td>
                                         <td className="px-4 py-3 whitespace-nowrap">
-                                            {rumah.keluargas_count > 0 ? (
-                                                <button
-                                                    onClick={() => openPenghuniModal(rumah)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                                    Lihat
-                                                </button>
-                                            ) : (
-                                                <span className="text-xs text-gray-400 italic">Tidak ada penghuni</span>
-                                            )}
+                                            <button
+                                                onClick={() => openPenghuniModal(rumah)}
+                                                className="inline-flex items-center gap-1 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded-md transition-colors border border-blue-200 cursor-pointer"
+                                            >
+                                                <span>👨‍👩‍👧‍👦</span>
+                                                <span>Lihat</span>
+                                            </button>
                                         </td>
-                                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                                        <td className="px-4 py-3 whitespace-nowrap text-right font-medium space-x-2">
                                             <Link
                                                 href={route('admin.rumah.edit', rumah.id)}
-                                                className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-indigo-600 hover:bg-indigo-50 hover:text-indigo-900 transition"
-                                                title="Edit"
+                                                className="text-indigo-600 hover:text-indigo-900 p-1 inline-block"
+                                                title="Edit Data Rumah"
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M18.5 2.5a2.121 2.121 0 113 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                                </svg>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                             </Link>
                                             <Link
                                                 href={route('admin.rumah.destroy', rumah.id)}
                                                 method="delete"
                                                 as="button"
-                                                className="inline-flex items-center justify-center h-9 w-9 rounded-lg text-red-600 hover:bg-red-50 hover:text-red-800 transition"
-                                                title="Hapus"
+                                                className="text-rose-600 hover:text-rose-900 p-1 inline-block cursor-pointer"
+                                                title="Hapus Data Rumah"
                                                 onClick={(e) => {
-                                                    if (!confirm('Apakah Anda yakin ingin menghapus data rumah ini?')) e.preventDefault();
+                                                    if (!confirm('Apakah Anda yakin ingin menghapus data rumah ini?')) {
+                                                        e.preventDefault();
+                                                    }
                                                 }}
                                             >
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-1 12a2 2 0 01-2 2H8a2 2 0 01-2-2L5 7" />
-                                                </svg>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </Link>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="7" className="px-4 py-10 text-center text-gray-500">
-                                        Tidak ada data Rumah yang ditemukan.
+                                    <td colSpan="8" className="px-4 py-8 text-center text-gray-500 font-medium">
+                                        Tidak ada data rumah ditemukan.
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
-                
-                <div className="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                        Menampilkan {rumahBloks.from || 0} sampai {rumahBloks.to || 0} dari {rumahBloks.total} data
-                    </span>
-                    <div className="flex space-x-1">
-                        {rumahBloks.links.map((link, index) => (
-                            <Link
-                                key={index}
-                                href={link.url || '#'}
-                                className={`px-3 py-1 rounded-md text-sm ${link.active ? 'bg-blue-600 text-white font-medium' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'} ${!link.url && 'opacity-50 cursor-not-allowed'}`}
-                                dangerouslySetInnerHTML={{ __html: link.label }}
-                                preserveScroll
-                            />
-                        ))}
+
+                {/* Pagination Footer */}
+                {rumahBloks.links && rumahBloks.links.length > 3 && (
+                    <div className="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                        <span className="text-xs text-gray-500">
+                            Menampilkan {rumahBloks.from || 0} - {rumahBloks.to || 0} dari {rumahBloks.total} data
+                        </span>
+                        <div className="flex gap-1">
+                            {rumahBloks.links.map((link, i) => (
+                                <Link
+                                    key={i}
+                                    href={link.url || '#'}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                    className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${
+                                        link.active
+                                            ? 'bg-blue-600 text-white font-bold'
+                                            : link.url
+                                            ? 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    }`}
+                                />
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
-            {/* Modal Lihat Penghuni */}
-            {showModal && selectedRumah && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={closeModal}></div>
-                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-hidden z-10">
-                        {/* Modal Header */}
-                        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-5 text-white">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className="text-lg font-bold">Daftar Penghuni Rumah</h3>
-                                    <p className="text-blue-100 text-sm mt-1">
-                                        Blok {selectedRumah.blok} No. {selectedRumah.nomor_rumah}
-                                    </p>
-                                </div>
-                                <button onClick={closeModal} className="text-white/80 hover:text-white transition p-1 rounded-lg hover:bg-white/10">
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                                </button>
-                            </div>
-                        </div>
+            {/* MODAL BULK GENERATOR DATA MASTER RUMAH */}
+            <Transition show={isBulkModalOpen} as={Fragment}>
+                <Dialog as="div" className="relative z-[9999]" onClose={() => setIsBulkModalOpen(false)}>
+                    <Transition.Child
+                        as={Fragment}
+                        enter="ease-out duration-200"
+                        enterFrom="opacity-0"
+                        enterTo="opacity-100"
+                        leave="ease-in duration-150"
+                        leaveFrom="opacity-100"
+                        leaveTo="opacity-0"
+                    >
+                        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" />
+                    </Transition.Child>
 
-                        {/* Modal Body */}
-                        <div className="p-6 overflow-y-auto max-h-[60vh] space-y-6">
-                            {selectedRumah.keluargas && selectedRumah.keluargas.length > 0 ? (
-                                selectedRumah.keluargas.map((kk, index) => (
-                                    <div key={kk.id} className="border border-gray-200 rounded-xl overflow-hidden">
-                                        {/* KK Header */}
-                                        <div className="bg-gray-50 px-5 py-3 border-b border-gray-200">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="bg-blue-100 text-blue-700 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold">
-                                                        {index + 1}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">No. KK</p>
-                                                        <p className="text-sm font-bold text-gray-900">{kk.no_kk}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className="text-xs text-gray-500">Kepala Keluarga</p>
-                                                    <p className="text-sm font-semibold text-gray-800">
-                                                        {kk.kepala_keluarga ? kk.kepala_keluarga.nama_lengkap : '-'}
-                                                    </p>
-                                                </div>
+                    <div className="fixed inset-0 overflow-y-auto">
+                        <div className="flex min-h-full items-center justify-center p-4 text-center">
+                            <Transition.Child
+                                as={Fragment}
+                                enter="ease-out duration-200"
+                                enterFrom="opacity-0 scale-95"
+                                enterTo="opacity-100 scale-100"
+                                leave="ease-in duration-150"
+                                leaveFrom="opacity-100 scale-100"
+                                leaveTo="opacity-0 scale-95"
+                            >
+                                <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-3xl bg-white p-6 text-left align-middle shadow-2xl transition-all border border-gray-100 space-y-5">
+                                    {/* Modal Header */}
+                                    <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                                        <div className="flex items-center gap-2.5">
+                                            <span className="w-9 h-9 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center text-lg shadow-inner">
+                                                ⚡
+                                            </span>
+                                            <div>
+                                                <Dialog.Title as="h3" className="text-base font-black text-gray-900 leading-snug">
+                                                    Bulk Generator Data Master Rumah
+                                                </Dialog.Title>
+                                                <p className="text-xs text-gray-500 font-medium">
+                                                    Buat urutan Blok & Nomor Rumah secara otomatis & massal
+                                                </p>
                                             </div>
                                         </div>
 
-                                        {/* Anggota Keluarga */}
-                                        <div className="divide-y divide-gray-100">
-                                            {kk.wargas && kk.wargas.length > 0 ? (
-                                                kk.wargas.map((warga) => (
-                                                    <div key={warga.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white text-xs font-bold shadow-sm">
-                                                                {warga.nama_lengkap ? warga.nama_lengkap.charAt(0).toUpperCase() : '?'}
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsBulkModalOpen(false)}
+                                            className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs transition cursor-pointer"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    {/* Modal Form */}
+                                    <form onSubmit={handleBulkSubmit} className="space-y-4">
+                                        
+                                        {/* Nama Blok */}
+                                        <div>
+                                            <InputLabel htmlFor="bulk_blok" value="Nama Blok Rumah *" />
+                                            <div className="relative mt-1">
+                                                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm">
+                                                    🏢
+                                                </span>
+                                                <TextInput
+                                                    id="bulk_blok"
+                                                    type="text"
+                                                    className="pl-10 block w-full uppercase font-black text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                                    value={bulkForm.data.blok}
+                                                    onChange={(e) => bulkForm.setData('blok', e.target.value.toUpperCase())}
+                                                    placeholder="Cth: A, B, AA, B1, C2"
+                                                    required
+                                                />
+                                            </div>
+                                            <InputError message={bulkForm.errors.blok} className="mt-1" />
+                                        </div>
+
+                                        {/* Range Nomor Rumah (Awal & Akhir) */}
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <InputLabel htmlFor="nomor_awal" value="Nomor Awal *" />
+                                                <TextInput
+                                                    id="nomor_awal"
+                                                    type="number"
+                                                    min="1"
+                                                    max="9999"
+                                                    className="mt-1 block w-full font-bold text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                                    value={bulkForm.data.nomor_awal}
+                                                    onChange={(e) => bulkForm.setData('nomor_awal', e.target.value)}
+                                                    required
+                                                />
+                                                <InputError message={bulkForm.errors.nomor_awal} className="mt-1" />
+                                            </div>
+
+                                            <div>
+                                                <InputLabel htmlFor="nomor_akhir" value="Nomor Akhir *" />
+                                                <TextInput
+                                                    id="nomor_akhir"
+                                                    type="number"
+                                                    min="1"
+                                                    max="9999"
+                                                    className="mt-1 block w-full font-bold text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                                    value={bulkForm.data.nomor_akhir}
+                                                    onChange={(e) => bulkForm.setData('nomor_akhir', e.target.value)}
+                                                    required
+                                                />
+                                                <InputError message={bulkForm.errors.nomor_akhir} className="mt-1" />
+                                            </div>
+                                        </div>
+
+                                        {/* Dynamic Live Estimation Banner */}
+                                        <div className="p-3.5 bg-emerald-50/80 rounded-2xl border border-emerald-200 text-emerald-950 text-xs font-semibold space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-base">📊</span>
+                                                <span className="font-extrabold text-emerald-900">
+                                                    Estimasi Hasil: {totalEstimate} Unit Rumah Baru
+                                                </span>
+                                            </div>
+                                            <p className="text-[11px] text-emerald-800 leading-snug">
+                                                Akan me-generate: <strong>Blok {bulkForm.data.blok || 'A'} No. {bulkForm.data.nomor_awal || 1}</strong> sampai <strong>Blok {bulkForm.data.blok || 'A'} No. {bulkForm.data.nomor_akhir || 50}</strong>
+                                            </p>
+                                        </div>
+
+                                        {/* Status Hunian & Mode Handling */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <InputLabel htmlFor="bulk_status" value="Status Hunian Default *" />
+                                                <select
+                                                    id="bulk_status"
+                                                    className="mt-1 block w-full font-bold text-xs sm:text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                                    value={bulkForm.data.status_hunian}
+                                                    onChange={(e) => bulkForm.setData('status_hunian', e.target.value)}
+                                                >
+                                                    <option value="Kosong">🟢 Kosong (Default)</option>
+                                                    <option value="Diisi">🏠 Diisi</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <InputLabel htmlFor="bulk_mode" value="Handling Jika Sudah Ada *" />
+                                                <select
+                                                    id="bulk_mode"
+                                                    className="mt-1 block w-full font-bold text-xs sm:text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                                    value={bulkForm.data.mode}
+                                                    onChange={(e) => bulkForm.setData('mode', e.target.value)}
+                                                >
+                                                    <option value="skip">⏭️ Lewati (Abaikan Duplikat)</option>
+                                                    <option value="update">🔄 Timpa / Update Data</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        {/* Footer Actions */}
+                                        <div className="pt-3 flex items-center justify-end gap-2.5 border-t border-gray-100">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsBulkModalOpen(false)}
+                                                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs transition cursor-pointer"
+                                            >
+                                                Batal
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={bulkForm.processing || totalEstimate <= 0}
+                                                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-xs shadow-md shadow-emerald-700/20 transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                                            >
+                                                <span>⚡ Generate {totalEstimate} Unit Sekarang</span>
+                                            </button>
+                                        </div>
+
+                                    </form>
+                                </Dialog.Panel>
+                            </Transition.Child>
+                        </div>
+                    </div>
+                </Dialog>
+            </Transition>
+
+            {/* PENGHUNI MODAL (LIST DAFTAR KK) */}
+            {selectedRumah && (
+                <Transition show={showModal} as={Fragment}>
+                    <Dialog as="div" className="relative z-[9999]" onClose={closeModal}>
+                        <Transition.Child
+                            as={Fragment}
+                            enter="ease-out duration-200"
+                            enterFrom="opacity-0"
+                            enterTo="opacity-100"
+                            leave="ease-in duration-150"
+                            leaveFrom="opacity-100"
+                            leaveTo="opacity-0"
+                        >
+                            <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs" />
+                        </Transition.Child>
+
+                        <div className="fixed inset-0 overflow-y-auto">
+                            <div className="flex min-h-full items-center justify-center p-4 text-center">
+                                <Transition.Child
+                                    as={Fragment}
+                                    enter="ease-out duration-200"
+                                    enterFrom="opacity-0 scale-95"
+                                    enterTo="opacity-100 scale-100"
+                                    leave="ease-in duration-150"
+                                    leaveFrom="opacity-100 scale-100"
+                                    leaveTo="opacity-0 scale-95"
+                                >
+                                    <Dialog.Panel className="w-full max-w-xl transform overflow-hidden rounded-3xl bg-white p-6 text-left align-middle shadow-2xl transition-all border border-gray-100 space-y-4">
+                                        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-black">
+                                                    🏠
+                                                </span>
+                                                <div>
+                                                    <Dialog.Title as="h3" className="text-base font-black text-gray-900 leading-snug">
+                                                        Daftar Penghuni Rumah — Blok {selectedRumah.blok} No. {selectedRumah.nomor_rumah}
+                                                    </Dialog.Title>
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        Status Hunian: <span className="font-bold text-emerald-700">{selectedRumah.status_hunian}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={closeModal}
+                                                className="w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 font-bold text-xs transition cursor-pointer"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                                            {selectedRumah.keluargas && selectedRumah.keluargas.length > 0 ? (
+                                                selectedRumah.keluargas.map((kk) => (
+                                                    <div key={kk.id} className="p-4 bg-slate-50 rounded-2xl border border-gray-200 space-y-2">
+                                                        <div className="flex items-center justify-between border-b border-gray-200 pb-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-black uppercase">
+                                                                    Kartu Keluarga
+                                                                </span>
+                                                                <span className="font-mono text-xs font-bold text-gray-800">
+                                                                    KK: {kk.no_kk}
+                                                                </span>
                                                             </div>
-                                                            <div>
-                                                                <p className="text-sm font-medium text-gray-900">{warga.nama_lengkap}</p>
-                                                                <p className="text-xs text-gray-500">{warga.nik || '-'}</p>
-                                                            </div>
+                                                            <Link
+                                                                href={route('admin.keluarga.show', kk.id)}
+                                                                className="text-[11px] font-bold text-blue-600 hover:underline"
+                                                            >
+                                                                Detail KK →
+                                                            </Link>
                                                         </div>
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                                            warga.status_hubungan_keluarga === 'Kepala Keluarga' ? 'bg-blue-100 text-blue-800' :
-                                                            warga.status_hubungan_keluarga === 'Istri' ? 'bg-pink-100 text-pink-800' :
-                                                            warga.status_hubungan_keluarga === 'Anak' ? 'bg-amber-100 text-amber-800' :
-                                                            'bg-gray-100 text-gray-800'
-                                                        }`}>
-                                                            {warga.status_hubungan_keluarga || '-'}
-                                                        </span>
+
+                                                        <div className="space-y-1 text-xs text-gray-700">
+                                                            <p>
+                                                                👤 <strong>Kepala Keluarga:</strong>{' '}
+                                                                {kk.kepala_keluarga_nama || (kk.kepala_keluarga ? kk.kepala_keluarga.nama_lengkap : 'Belum diatur')}
+                                                            </p>
+                                                            <p>
+                                                                👨‍👩‍👧‍👦 <strong>Jumlah Anggota:</strong>{' '}
+                                                                {kk.wargas ? kk.wargas.length : 0} Orang
+                                                            </p>
+                                                            {kk.wargas && kk.wargas.length > 0 && (
+                                                                <div className="pt-2 border-t border-gray-200/60">
+                                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-1">
+                                                                        Daftar Anggota Keluarga:
+                                                                    </span>
+                                                                    <div className="flex flex-wrap gap-1.5">
+                                                                        {kk.wargas.map(w => (
+                                                                            <span key={w.id} className="px-2 py-0.5 rounded-md bg-white border border-gray-200 text-[11px] font-semibold text-gray-800 shadow-2xs">
+                                                                                {w.nama_lengkap} ({w.status_hubungan_keluarga})
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="px-5 py-4 text-center text-sm text-gray-400 italic">
-                                                    Belum ada data anggota warga terdaftar di KK ini.
+                                                <div className="p-6 text-center space-y-1">
+                                                    <span className="text-2xl block">🟢</span>
+                                                    <p className="text-xs font-bold text-gray-600">Rumah ini belum terdaftar memiliki penghuni KK.</p>
+                                                    <p className="text-[11px] text-gray-400">Gunakan menu Tambah KK untuk mendaftarkan penghuni di alamat ini.</p>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-8 text-gray-500">
-                                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path></svg>
-                                    <p>Tidak ada data KK yang terdaftar di rumah ini.</p>
-                                </div>
-                            )}
-                        </div>
 
-                        {/* Modal Footer */}
-                        <div className="border-t border-gray-100 px-6 py-4 bg-gray-50 flex justify-end">
-                            <button
-                                onClick={closeModal}
-                                className="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
-                            >
-                                Tutup
-                            </button>
+                                        <div className="pt-3 border-t border-gray-100 flex justify-end">
+                                            <button
+                                                onClick={closeModal}
+                                                className="px-4 py-2 bg-gray-900 text-white font-bold text-xs rounded-xl hover:bg-gray-800 transition cursor-pointer"
+                                            >
+                                                Tutup
+                                            </button>
+                                        </div>
+                                    </Dialog.Panel>
+                                </Transition.Child>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                    </Dialog>
+                </Transition>
             )}
         </AdminLayout>
     );
