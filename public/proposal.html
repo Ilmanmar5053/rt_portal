@@ -611,74 +611,131 @@
     </section>
 
     <!-- ========================================== -->
-    <!-- HALAMAN 6: SPESIFIKASI, PAKET & KONTAK     -->
+    <!-- HALAMAN 6: RINCIAN ANGGARAN BIAYA & KONTAK -->
     <!-- ========================================== -->
     <section class="a4-page">
         <!-- Main Upper Content -->
-        <div class="space-y-3">
+        <div class="space-y-2.5">
             <div class="header-line"></div>
 
             <div class="flex justify-between items-center">
                 <h2 class="text-base font-black text-slate-900 tracking-tight">
-                    6. Spesifikasi Teknis, Paket Penawaran & Penutup
+                    6. Rincian Anggaran Biaya (RAB) & Infrastruktur Hosting
                 </h2>
                 <span class="text-[10px] font-bold text-slate-400 uppercase">BAGIAN V</span>
             </div>
 
-            <!-- SPESIFIKASI TEKNIS APP -->
-            <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 space-y-1 avoid-break">
-                <h3 class="font-extrabold text-[11px] text-slate-900 uppercase tracking-wider">
-                    🛠️ Spesifikasi Arsitektur & Performa Sistem
-                </h3>
-                <div class="grid grid-cols-2 gap-3 text-[10px] text-slate-700 font-medium">
-                    <div class="space-y-0.5">
-                        <p>• <strong>Backend Framework:</strong> Laravel 11.x (High Security Framework)</p>
-                        <p>• <strong>Frontend Interface:</strong> React 18 + Inertia.js (Single Page Experience)</p>
-                        <p>• <strong>Styling System:</strong> Tailwind CSS + Glassmorphism Aesthetics</p>
-                    </div>
-                    <div class="space-y-0.5">
-                        <p>• <strong>Database Storage:</strong> MySQL / MariaDB (Optimized Indexing)</p>
-                        <p>• <strong>Compatibility:</strong> Responsive (HP Android/iPhone, Tablet, Laptop)</p>
-                        <p>• <strong>Kecepatan Load:</strong> &lt; 100 ms (Fast Performance Rendering)</p>
-                    </div>
+            <!-- INFOGRAFIS BOX SIMULASI BEBAN IURAN WARGA -->
+            <div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-[10px] space-y-0.5 avoid-break">
+                <div class="flex items-center justify-between font-extrabold text-emerald-900 text-[11px]">
+                    <span>💡 Estimasi Beban Iuran Per Warga (Sangat Ekonomis & Terjangkau)</span>
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-600 text-white font-black text-[9px]">Hanya ±Rp 750 / Bulan / KK</span>
+                </div>
+                <p class="text-emerald-800 leading-tight">
+                    Biaya dirancang khusus ramah anggaran kas RT/RW. Dengan asumsi 100 KK per RT, biaya operasional tahunan Rp 900.000 hanya membutuhkan <strong>Rp 750 / KK per bulan</strong> (atau Rp 9.000 / KK per tahun).
+                </p>
+            </div>
+
+            <!-- TABEL 1: RINCIAN BIAYA SETUP SISTEM (ONE-TIME SETUP) -->
+            <div class="space-y-1 avoid-break">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-extrabold text-[10.5px] text-slate-900 uppercase tracking-wider">
+                        1. Rincian Biaya Lisensi & Deployment Sistem (Sekali Bayar / Lifetime)
+                    </h3>
+                    <span class="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">One-Time Investment</span>
+                </div>
+
+                <div class="overflow-hidden rounded-xl border border-slate-200 text-[9.5px] shadow-xs">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-white font-black uppercase tracking-wider text-[8.5px]">
+                                <th class="p-1.5 w-[5%] text-center">No</th>
+                                <th class="p-1.5 w-[35%]">Komponen Layanan Teknis</th>
+                                <th class="p-1.5 w-[42%]">Spesifikasi & Fasilitas Included</th>
+                                <th class="p-1.5 w-[18%] text-right">Biaya (Rp)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 text-slate-700">
+                            <tr>
+                                <td class="p-1.5 text-center font-bold">1</td>
+                                <td class="p-1.5 font-bold text-slate-900">Lisensi Web App Portal RT Pro</td>
+                                <td class="p-1.5">Master Source Code Ready, 12 Modul (Master Rumah, KK, Kas, Pengaduan, AI KK)</td>
+                                <td class="p-1.5 text-right font-bold text-slate-900">1.500.000</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 text-center font-bold">2</td>
+                                <td class="p-1.5 font-bold text-slate-900">Setup Server & Environment Configuration</td>
+                                <td class="p-1.5">Instalasi Laravel 11, React Inertia, MySQL Database, Cron Job, SSL Security</td>
+                                <td class="p-1.5 text-right font-bold text-slate-900">350.000</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 text-center font-bold">3</td>
+                                <td class="p-1.5 font-bold text-slate-900">Branding & Data Customization</td>
+                                <td class="p-1.5">Custom Nama RT/RW, Kop Surat Pengantar, Logo Perumahan & Import Data Warga</td>
+                                <td class="p-1.5 text-right font-bold text-slate-900">250.000</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 text-center font-bold">4</td>
+                                <td class="p-1.5 font-bold text-slate-900">Pelatihan & Pendampingan Admin</td>
+                                <td class="p-1.5">Sesi Edukasi & Buku Panduan Penggunaan untuk Pengurus RT/RW (Ketua RT, Sekr, Bend)</td>
+                                <td class="p-1.5 text-right font-extrabold text-emerald-600">GRATIS</td>
+                            </tr>
+                            <tr class="bg-emerald-50 font-black text-slate-900">
+                                <td colspan="3" class="p-1.5 text-right text-emerald-950 uppercase">TOTAL INVESTASI BIAYA AWAL SETUP:</td>
+                                <td class="p-1.5 text-right text-emerald-700 text-xs">Rp 2.100.000</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- TABEL HARGA & PAKET PENAWARAN -->
+            <!-- TABEL 2: RINCIAN BIAYA OPERASIONAL HOSTING & DOMAIN (TAHUNAN) -->
             <div class="space-y-1 avoid-break">
-                <h3 class="font-extrabold text-[11px] text-slate-900 uppercase tracking-wider">
-                    💼 Paket Layanan & Garansi Maintenance
-                </h3>
+                <div class="flex items-center justify-between">
+                    <h3 class="font-extrabold text-[10.5px] text-slate-900 uppercase tracking-wider">
+                        2. Rata-Rata Biaya Operasional Hosting, Domain & Maintenance (Tahunan)
+                    </h3>
+                    <span class="text-[9px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">Annual Renewals</span>
+                </div>
 
-                <div class="overflow-hidden rounded-xl border border-slate-200 text-[10px] shadow-xs">
+                <div class="overflow-hidden rounded-xl border border-slate-200 text-[9.5px] shadow-xs">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-slate-100 font-extrabold text-slate-700 text-[9px]">
-                                <th class="p-1.5">Komponen Layanan</th>
-                                <th class="p-1.5">Rincian Fasilitas Included</th>
-                                <th class="p-1.5 text-right">Status Garansi</th>
+                            <tr class="bg-slate-800 text-white font-black uppercase tracking-wider text-[8.5px]">
+                                <th class="p-1.5 w-[5%] text-center">No</th>
+                                <th class="p-1.5 w-[35%]">Infrastruktur & Maintenance</th>
+                                <th class="p-1.5 w-[42%]">Spesifikasi Server & Provider Standard</th>
+                                <th class="p-1.5 w-[18%] text-right">Biaya/Thn (Rp)</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-slate-100 text-[9.5px] text-slate-600">
+                        <tbody class="divide-y divide-slate-200 text-slate-700">
                             <tr>
-                                <td class="p-1.5 font-bold text-slate-900">Web Application Ready-to-Use</td>
-                                <td class="p-1.5">Seluruh Modul (Master Rumah, KK, Kas, Pengaduan, Notification, Audit Log)</td>
-                                <td class="p-1.5 text-right font-extrabold text-emerald-600">✓ Included Full</td>
+                                <td class="p-1.5 text-center font-bold">1</td>
+                                <td class="p-1.5 font-bold text-slate-900">Domain Nama Perumahan / RT</td>
+                                <td class="p-1.5">Registrasi Domain `.com` / `.my.id` / `.id` (misal: `rt05puridelta.com`)</td>
+                                <td class="p-1.5 text-right font-bold text-slate-900">175.000</td>
                             </tr>
                             <tr>
-                                <td class="p-1.5 font-bold text-slate-900">Setup Server & Domain Hosting</td>
-                                <td class="p-1.5">Domain `.com` / `.id` + SSL Sertifikat Keamanan HTTPS Cloud Ready</td>
-                                <td class="p-1.5 text-right font-extrabold text-emerald-600">✓ Included 1 Tahun</td>
+                                <td class="p-1.5 text-center font-bold">2</td>
+                                <td class="p-1.5 font-bold text-slate-900">Cloud Hosting High Performance</td>
+                                <td class="p-1.5">SSD NVMe Storage 10GB, Bandwidth Unmetered, Support PHP 8.3 & Auto Backup</td>
+                                <td class="p-1.5 text-right font-bold text-slate-900">450.000</td>
                             </tr>
                             <tr>
-                                <td class="p-1.5 font-bold text-slate-900">Pendampingan & Pelatihan Admin</td>
-                                <td class="p-1.5">Bimbingan penggunaan untuk Pengurus RT/RW sampai lancar beroperasi</td>
-                                <td class="p-1.5 text-right font-extrabold text-emerald-600">✓ Pendampingan 100%</td>
+                                <td class="p-1.5 text-center font-bold">3</td>
+                                <td class="p-1.5 font-bold text-slate-900">SSL HTTPS & Firewall Security</td>
+                                <td class="p-1.5">Enkripsi SSL 256-bit (Let's Encrypt Enterprise) & Anti DDOS Filter Protection</td>
+                                <td class="p-1.5 text-right font-extrabold text-emerald-600">GRATIS</td>
                             </tr>
                             <tr>
-                                <td class="p-1.5 font-bold text-slate-900">Garansi Maintenance & Backup</td>
-                                <td class="p-1.5">Perbaikan kendala teknis (Bug-free Guarantee) & Auto Database Backup</td>
-                                <td class="p-1.5 text-right font-extrabold text-emerald-600">✓ Garansi 12 Bulan</td>
+                                <td class="p-1.5 text-center font-bold">4</td>
+                                <td class="p-1.5 font-bold text-slate-900">Garansi Maintenance & Support</td>
+                                <td class="p-1.5">Perbaikan Kendala Teknis (Bug-Free Guarantee) & Customer Support 24/7</td>
+                                <td class="p-1.5 text-right font-bold text-slate-900">275.000</td>
+                            </tr>
+                            <tr class="bg-blue-50 font-black text-slate-900">
+                                <td colspan="3" class="p-1.5 text-right text-blue-950 uppercase">TOTAL OPERASIONAL TAHUNAN (TAHUN KE-2 DST):</td>
+                                <td class="p-1.5 text-right text-blue-700 text-xs">Rp 900.000 / Thn</td>
                             </tr>
                         </tbody>
                     </table>
@@ -686,43 +743,39 @@
             </div>
 
             <!-- LEMBAR PERSETUJUAN & KESIMPULAN -->
-            <div class="pt-1 space-y-2 avoid-break">
-                <p class="text-[10px] text-slate-600 leading-relaxed font-medium">
-                    Demikian proposal penawaran <strong>Portal RT Digital Pro</strong> ini kami ajukan. Kami berkomitmen memberikan solusi teknologi terbaik untuk mewujudkan tata kelola lingkungan yang modern, aman, transparan, dan memudahkan seluruh warga.
-                </p>
-
-                <div class="grid grid-cols-2 gap-6 pt-1 border-t border-slate-200 text-[10px]">
-                    <div class="text-center space-y-6">
+            <div class="pt-0.5 space-y-1.5 avoid-break">
+                <div class="grid grid-cols-2 gap-4 pt-1 border-t border-slate-200 text-[9.5px]">
+                    <div class="text-center space-y-4">
                         <div>
                             <p class="text-slate-500 font-medium">Diajukan Oleh,</p>
                             <p class="font-extrabold text-slate-900">TIM PENGEMBANG PORTAL RT DIGITAL</p>
                         </div>
                         <div>
                             <p class="font-bold text-slate-900 underline">( ______________________ )</p>
-                            <p class="text-[9px] text-slate-500">System Technical Specialist</p>
+                            <p class="text-[8.5px] text-slate-500">System Technical Specialist</p>
                         </div>
                     </div>
 
-                    <div class="text-center space-y-6">
+                    <div class="text-center space-y-4">
                         <div>
                             <p class="text-slate-500 font-medium">Disetujui & Diterima Oleh,</p>
                             <p class="font-extrabold text-slate-900">KLIEN / KETUA RT / RW PERUMAHAN</p>
                         </div>
                         <div>
                             <p class="font-bold text-slate-900 underline">( ______________________ )</p>
-                            <p class="text-[9px] text-slate-500">Perwakilan Pengurus Lingkungan</p>
+                            <p class="text-[8.5px] text-slate-500">Perwakilan Pengurus Lingkungan</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- INFORMASI KONTAK PENGEMBANG (PROMINENT CENTER CARD) -->
-            <div class="mt-2 p-3.5 rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white text-center space-y-1 border-2 border-emerald-500/40 shadow-lg avoid-break">
-                <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[9px] font-black uppercase tracking-widest">
+            <div class="mt-1.5 p-3 rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-white text-center space-y-1 border-2 border-emerald-500/40 shadow-lg avoid-break">
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[8.5px] font-black uppercase tracking-widest">
                     📞 Informasi Kontak & Technical Support Pengembang
                 </span>
                 
-                <h3 class="text-base sm:text-lg font-black tracking-tight text-white pt-0.5">
+                <h3 class="text-sm sm:text-base font-black tracking-tight text-white pt-0.5">
                     Ilman — Fullstack Developer & System Architect
                 </h3>
 
@@ -737,7 +790,7 @@
                     </a>
                 </div>
 
-                <p class="text-[9px] text-emerald-300/80 pt-0.5 italic font-medium">
+                <p class="text-[8.5px] text-emerald-300/80 pt-0.5 italic font-medium">
                     Konsultasi Gratis • Demo Live Presentation • Pendampingan Full System Operation
                 </p>
             </div>
