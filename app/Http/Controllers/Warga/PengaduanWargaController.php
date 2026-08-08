@@ -119,6 +119,16 @@ class PengaduanWargaController extends Controller
             ]
         ]);
 
+        // Record Audit Trail Log Aktivitas Realtime
+        \App\Services\AuditLogService::log(
+            'CREATE',
+            'Pengaduan',
+            ($request->boolean('is_anonim') ? 'Warga (Anonim)' : $warga->nama_lengkap) . ' mengajukan pengaduan baru: "' . $validated['judul'] . '"',
+            null,
+            $validated,
+            auth()->id()
+        );
+
         return redirect()->route('warga.pengaduan.index')->with('success', 'Pengaduan berhasil dikirim.');
     }
 

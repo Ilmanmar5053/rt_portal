@@ -121,6 +121,16 @@ class PengaduanController extends Controller
             ]);
         }
 
+        // Record Audit Trail Log Aktivitas Realtime
+        \App\Services\AuditLogService::log(
+            'COMMENT',
+            'Pengaduan',
+            (auth()->user() ? auth()->user()->name : 'Admin') . ' memberikan tanggapan resmi pada pengaduan: "' . $pengaduan->judul . '"',
+            null,
+            ['komentar' => $validated['komentar']],
+            auth()->id()
+        );
+
         return redirect()->route('admin.pengaduan.show', $pengaduan->id)->with('success', 'Tanggapan berhasil dikirim.');
     }
 
@@ -138,6 +148,7 @@ class PengaduanController extends Controller
     public function update(Request $request, $id)
     {
         $pengaduan = Pengaduan::with('warga.user')->findOrFail($id);
+        $oldStatus = $pengaduan->status_progres;
 
         $validated = $request->validate([
             'warga_id' => 'required|exists:wargas,id',
@@ -154,6 +165,16 @@ class PengaduanController extends Controller
         // Update pengaduan fields (exclude komentar)
         $updateData = collect($validated)->except(['komentar'])->toArray();
         $pengaduan->update($updateData);
+
+        // Record Audit Trail Log Aktivitas Realtime
+        \App\Services\AuditLogService::log(
+            'UPDATE',
+            'Pengaduan',
+            (auth()->user() ? auth()->user()->name : 'Admin') . ' memperbarui status pengaduan "' . $pengaduan->judul . '" dari [' . $oldStatus . '] menjadi [' . $validated['status_progres'] . ']',
+            ['status_progres' => $oldStatus],
+            $validated,
+            auth()->id()
+        );
 
         // Jika admin mengirim komentar, simpan ke pengaduan_logs (PengaduanLog) & kirim notifikasi
         if (!empty($validated['komentar'])) {

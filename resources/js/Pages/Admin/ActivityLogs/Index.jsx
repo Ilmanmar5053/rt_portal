@@ -1,6 +1,6 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
 
@@ -12,6 +12,20 @@ export default function Index({ logsData, filters }) {
     const [sortOrder, setSortOrder] = useState(filters.sort_order || 'desc');
     const [selectedGroup, setSelectedGroup] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [isLiveActive, setIsLiveActive] = useState(true);
+
+    // Auto-refresh poll every 4 seconds for realtime stream
+    useEffect(() => {
+        if (!isLiveActive) return;
+        const interval = setInterval(() => {
+            router.reload({
+                only: ['logsData'],
+                preserveScroll: true,
+                preserveState: true,
+            });
+        }, 4000);
+        return () => clearInterval(interval);
+    }, [isLiveActive]);
 
     // Handle filter / sorting change
     const handleFilter = (newSortBy = sortBy, newSortOrder = sortOrder, searchVal = search) => {
@@ -107,11 +121,28 @@ export default function Index({ logsData, filters }) {
     return (
         <AdminLayout
             header={
-                <div className="flex items-center gap-2">
-                    <span>Log Aktivitas & Audit Trail</span>
-                    <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-xs font-black border border-rose-200">
-                        🔒 Rahasia System
-                    </span>
+                <div className="flex items-center justify-between gap-4 w-full">
+                    <div className="flex items-center gap-2">
+                        <span>Log Aktivitas & Audit Trail</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-xs font-black border border-rose-200">
+                            🔒 Rahasia System
+                        </span>
+                    </div>
+
+                    {/* Live Stream Auto Refresh Toggle */}
+                    <button
+                        type="button"
+                        onClick={() => setIsLiveActive(prev => !prev)}
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-black transition cursor-pointer border ${
+                            isLiveActive
+                                ? 'bg-emerald-500/10 text-emerald-700 border-emerald-300 shadow-xs'
+                                : 'bg-slate-100 text-slate-600 border-slate-300'
+                        }`}
+                        title="Klik untuk Mengaktifkan/Mematikan Live Realtime Auto-Refresh"
+                    >
+                        <span className={`w-2 h-2 rounded-full ${isLiveActive ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'}`}></span>
+                        <span>{isLiveActive ? '🟢 Live Stream Realtime Active' : '⏸️ Stream Paused'}</span>
+                    </button>
                 </div>
             }
         >
