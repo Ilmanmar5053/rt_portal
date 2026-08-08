@@ -83,7 +83,28 @@ class KeluargaController extends Controller
 
     public function create()
     {
-        $rumahBloks = RumahBlok::orderBy('blok')->orderBy('nomor_rumah')->get();
+        $rumahBloks = RumahBlok::with(['keluargas.kepalaKeluarga'])
+            ->orderBy('blok')
+            ->orderBy('nomor_rumah')
+            ->get()
+            ->map(function ($r) {
+                $occupiedKk = $r->keluargas->first();
+                $isOccupied = !is_null($occupiedKk);
+                $occupantName = $occupiedKk 
+                    ? ($occupiedKk->kepala_keluarga_nama ?: ($occupiedKk->kepalaKeluarga ? $occupiedKk->kepalaKeluarga->nama_lengkap : 'Warga')) 
+                    : null;
+
+                return [
+                    'id' => $r->id,
+                    'blok' => $r->blok,
+                    'nomor_rumah' => $r->nomor_rumah,
+                    'label' => "Blok {$r->blok} No. {$r->nomor_rumah}",
+                    'is_occupied' => $isOccupied,
+                    'occupant_name' => $occupantName,
+                    'keluarga_id' => $occupiedKk ? $occupiedKk->id : null,
+                ];
+            });
+
         return Inertia::render('Admin/Keluarga/Create', [
             'rumahBloks' => $rumahBloks
         ]);
@@ -219,8 +240,32 @@ class KeluargaController extends Controller
     public function edit(Keluarga $keluarga)
     {
         $keluarga->load(['kepalaKeluarga', 'rumahBlok']);
-        $rumahBloks = RumahBlok::orderBy('blok')->orderBy('nomor_rumah')->get();
+
+        $rumahBloks = RumahBlok::with(['keluargas.kepalaKeluarga'])
+            ->orderBy('blok')
+            ->orderBy('nomor_rumah')
+            ->get()
+            ->map(function ($r) use ($keluarga) {
+                $occupiedKk = $r->keluargas->first();
+                // If occupied by ANOTHER KK (not current $keluarga->id), it's occupied
+                $isOccupiedByOther = $occupiedKk && $occupiedKk->id != $keluarga->id;
+                $occupantName = $occupiedKk 
+                    ? ($occupiedKk->kepala_keluarga_nama ?: ($occupiedKk->kepalaKeluarga ? $occupiedKk->kepalaKeluarga->nama_lengkap : 'Warga')) 
+                    : null;
+
+                return [
+                    'id' => $r->id,
+                    'blok' => $r->blok,
+                    'nomor_rumah' => $r->nomor_rumah,
+                    'label' => "Blok {$r->blok} No. {$r->nomor_rumah}",
+                    'is_occupied' => $isOccupiedByOther,
+                    'occupant_name' => $occupantName,
+                    'keluarga_id' => $occupiedKk ? $occupiedKk->id : null,
+                ];
+            });
+
         $wargas = $keluarga->wargas()->get();
+
         return Inertia::render('Admin/Keluarga/Edit', [
             'keluarga' => $keluarga,
             'rumahBloks' => $rumahBloks,

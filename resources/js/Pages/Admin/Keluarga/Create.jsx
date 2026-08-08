@@ -7,7 +7,10 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-export default function Create() {
+export default function Create({ rumahBloks = [] }) {
+    const [selectedRumahId, setSelectedRumahId] = useState('');
+    const [isManualInput, setIsManualInput] = useState(false);
+
     const { data, setData, post, processing, errors } = useForm({
         no_kk: '',
         kepala_keluarga_nama: '',
@@ -25,6 +28,27 @@ export default function Create() {
         file_ktp_kepala: null,
         anggota: [],
     });
+
+    const handleSelectRumah = (val) => {
+        setSelectedRumahId(val);
+        if (val === '__manual') {
+            setIsManualInput(true);
+            setData(prev => ({ ...prev, blok: '', nomor_rumah: '' }));
+        } else if (val) {
+            setIsManualInput(false);
+            const found = rumahBloks.find(r => String(r.id) === String(val));
+            if (found) {
+                setData(prev => ({
+                    ...prev,
+                    blok: found.blok,
+                    nomor_rumah: found.nomor_rumah
+                }));
+            }
+        } else {
+            setIsManualInput(false);
+            setData(prev => ({ ...prev, blok: '', nomor_rumah: '' }));
+        }
+    };
 
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [scannedAnggotaList, setScannedAnggotaList] = useState([]);
@@ -341,44 +365,92 @@ export default function Create() {
                                 <InputError message={errors.no_kk} className="mt-1" />
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* MASTER DATA RUMAH SELECTION DROPDOWN */}
+                            <div className="space-y-3">
                                 <div>
-                                    <InputLabel htmlFor="blok" value="Blok Rumah (Domisili RT) *" />
-                                    <div className="relative mt-1">
-                                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm">
-                                            🏢
-                                        </span>
-                                        <TextInput
-                                            id="blok"
-                                            type="text"
-                                            className="pl-10 block w-full uppercase font-extrabold text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                            value={data.blok}
-                                            onChange={(e) => setData('blok', e.target.value.toUpperCase())}
-                                            placeholder="Cth: BLOK A, BLOK B1"
-                                            required
-                                        />
-                                    </div>
-                                    <InputError message={errors.blok} className="mt-1" />
-                                </div>
-
-                                <div>
-                                    <InputLabel htmlFor="nomor_rumah" value="Nomor Rumah *" />
+                                    <InputLabel htmlFor="master_rumah" value="Pilih Blok & Nomor Rumah (Master Data RT) *" />
                                     <div className="relative mt-1">
                                         <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm">
                                             🏠
                                         </span>
-                                        <TextInput
-                                            id="nomor_rumah"
-                                            type="text"
-                                            className="pl-10 block w-full font-extrabold text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
-                                            value={data.nomor_rumah}
-                                            onChange={(e) => setData('nomor_rumah', e.target.value)}
-                                            placeholder="Cth: 12, 14A, 105"
-                                            required
-                                        />
+                                        <select
+                                            id="master_rumah"
+                                            className="pl-10 block w-full font-bold text-xs sm:text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                            value={selectedRumahId}
+                                            onChange={(e) => handleSelectRumah(e.target.value)}
+                                        >
+                                            <option value="">-- Pilih Rumah dari Master Data RT --</option>
+                                            {rumahBloks.map((r) => (
+                                                <option 
+                                                    key={r.id} 
+                                                    value={r.id} 
+                                                    disabled={r.is_occupied}
+                                                    className={r.is_occupied ? 'bg-rose-50 text-rose-800 font-medium' : 'bg-emerald-50 text-emerald-950 font-bold'}
+                                                >
+                                                    {r.label} {r.is_occupied ? `(⚠️ Sudah Diterapkan oleh Warga: ${r.occupant_name})` : '(🟢 Kosong / Tersedia)'}
+                                                </option>
+                                            ))}
+                                            <option value="__manual">✏️ + Input Manual Blok Baru (Tidak Ada di List)</option>
+                                        </select>
                                     </div>
-                                    <InputError message={errors.nomor_rumah} className="mt-1" />
                                 </div>
+
+                                {/* IF MANUAL INPUT OR CUSTOM NEW HOUSE */}
+                                {(isManualInput || (!selectedRumahId && (!data.blok || !data.nomor_rumah))) ? (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in duration-200 bg-amber-50/40 p-4 rounded-2xl border border-amber-200/80">
+                                        <div>
+                                            <InputLabel htmlFor="blok" value="Blok Rumah (Domisili RT) *" />
+                                            <div className="relative mt-1">
+                                                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm">
+                                                    🏢
+                                                </span>
+                                                <TextInput
+                                                    id="blok"
+                                                    type="text"
+                                                    className="pl-10 block w-full uppercase font-extrabold text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                                    value={data.blok}
+                                                    onChange={(e) => setData('blok', e.target.value.toUpperCase())}
+                                                    placeholder="Cth: BLOK A, BLOK B1"
+                                                    required
+                                                />
+                                            </div>
+                                            <InputError message={errors.blok} className="mt-1" />
+                                        </div>
+
+                                        <div>
+                                            <InputLabel htmlFor="nomor_rumah" value="Nomor Rumah *" />
+                                            <div className="relative mt-1">
+                                                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400 text-sm">
+                                                    🏠
+                                                </span>
+                                                <TextInput
+                                                    id="nomor_rumah"
+                                                    type="text"
+                                                    className="pl-10 block w-full font-extrabold text-sm rounded-xl border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
+                                                    value={data.nomor_rumah}
+                                                    onChange={(e) => setData('nomor_rumah', e.target.value)}
+                                                    placeholder="Cth: 12, 14A, 105"
+                                                    required
+                                                />
+                                            </div>
+                                            <InputError message={errors.nomor_rumah} className="mt-1" />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-emerald-950 font-bold text-xs flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span>✅</span>
+                                            <span>Rumah Terpilih: <strong>Blok {data.blok} No. {data.nomor_rumah}</strong> (Status: Tersedia / Kosong)</span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsManualInput(true)}
+                                            className="text-[11px] font-black text-emerald-700 hover:text-emerald-900 underline"
+                                        >
+                                            Ubah
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
